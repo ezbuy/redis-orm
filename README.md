@@ -1,7 +1,9 @@
 # redis-orm
 redis-orm fly orm up 
 
-## standard yaml definition
+*注意* 版本开发中，请勿在生产环境中使用
+
+## 标准Yaml格式定义
 
 ````yaml
 
@@ -22,17 +24,15 @@ ModelName:
   ranges: [[FieldName1, ..., RangeFieldName],[FieldName1, ..., RangeFieldName]]
   orders: [[FieldName1, ..., FieldNameN],[FieldName1, ..., FieldNameM]]
   relation:
-    - storetype: pair
-    - storetype: int 
-    - storetype: ReferenceModelName
+    - storetype: pair | set | zset | geo | list
+    - valuetype: int32 
+    - modeltype: ReferenceModelName
   importSQL: 'select fields... from table'
 
 ````
+具体使用参见[样例](example/yaml/user.yaml)
 
-please check the example yaml.
-
-
-## Generate code from yaml
+## 代码生成
 
 ````
 $: go get github.com/ezbuy/redis-orm
@@ -41,10 +41,10 @@ $: redis-orm code -i example/yaml -o example/model
 
 ````
 
-## How to use codes from project
+## 快速开始
 
 
-### How to use MySQL orm
+### MySQL ORM的使用
 
 ````
 import "github.com/ezbuy/redis-orm/example/model"
