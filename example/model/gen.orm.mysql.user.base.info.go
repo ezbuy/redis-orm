@@ -9,6 +9,9 @@ import (
 
 var (
 	_ sql.DB
+	_ fmt.Formatter
+	_ strings.Reader
+	_ orm.VSet
 )
 
 type _UserBaseInfoMySQLMgr struct {

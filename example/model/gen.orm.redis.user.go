@@ -115,15 +115,3 @@ func (m *_UserRedisMgr) Clear() error {
 }
 
 //! uniques
-
-//! relation
-
-//! indexes
-
-//! relation
-
-//! ranges
-
-//! orders
-
-//! relation

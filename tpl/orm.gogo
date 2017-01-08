@@ -1,38 +1,40 @@
 {{define "orm"}}package {{.GoPackage}}
 {{$obj := .}}
 
-type _{{$obj.Name}}Mgr struct {
-}
-var {{$obj.Name}}Mgr *_{{$obj.Name}}Mgr
+{{if not $obj.Relation}}
+	type _{{$obj.Name}}Mgr struct {
+	}
+	var {{$obj.Name}}Mgr *_{{$obj.Name}}Mgr
 
-func (m *_{{$obj.Name}}Mgr) New{{$obj.Name}}() *{{$obj.Name}} {
-	return &{{$obj.Name}}{}
-}
+	func (m *_{{$obj.Name}}Mgr) New{{$obj.Name}}() *{{$obj.Name}} {
+		return &{{$obj.Name}}{}
+	}
 
-{{- if $obj.DbContains "mysql"}}
-func (m *_{{$obj.Name}}Mgr) MySQL() *ReferenceResult {
-	return NewReferenceResult({{$obj.Name}}MySQLMgr())
-}
-{{- end}}
-{{- if $obj.DbContains "mssql"}}
-func (m *_{{$obj.Name}}Mgr) MsSQL() *ReferenceResult {
-	return NewReferenceResult({{$obj.Name}}MsSQLMgr())
-}
-{{- end}}
-{{- if $obj.DbContains "redis"}}
-func (m *_{{$obj.Name}}Mgr) Redis() *ReferenceResult {
-	return NewReferenceResult({{$obj.Name}}RedisMgr())
-}
-{{- end}}
-{{- if $obj.DbContains "mongo"}}
-func (m *_{{$obj.Name}}Mgr) Mongo() *ReferenceResult {
-	return NewReferenceResult({{$obj.Name}}MongoMgr())
-}
-{{- end}}
-{{- if $obj.DbContains "elastic"}}
-func (m *_{{$obj.Name}}Mgr) Elastic() *ReferenceResult {
-	return NewReferenceResult({{$obj.Name}}ElasticMgr())
-}
-{{- end}}
+	{{- if $obj.DbContains "mysql"}}
+	func (m *_{{$obj.Name}}Mgr) MySQL() *ReferenceResult {
+		return NewReferenceResult({{$obj.Name}}MySQLMgr())
+	}
+	{{- end}}
+	{{- if $obj.DbContains "mssql"}}
+	func (m *_{{$obj.Name}}Mgr) MsSQL() *ReferenceResult {
+		return NewReferenceResult({{$obj.Name}}MsSQLMgr())
+	}
+	{{- end}}
+	{{- if $obj.DbContains "redis"}}
+	func (m *_{{$obj.Name}}Mgr) Redis() *ReferenceResult {
+		return NewReferenceResult({{$obj.Name}}RedisMgr())
+	}
+	{{- end}}
+	{{- if $obj.DbContains "mongo"}}
+	func (m *_{{$obj.Name}}Mgr) Mongo() *ReferenceResult {
+		return NewReferenceResult({{$obj.Name}}MongoMgr())
+	}
+	{{- end}}
+	{{- if $obj.DbContains "elastic"}}
+	func (m *_{{$obj.Name}}Mgr) Elastic() *ReferenceResult {
+		return NewReferenceResult({{$obj.Name}}ElasticMgr())
+	}
+	{{- end}}
+{{end}}
 
 {{end}}

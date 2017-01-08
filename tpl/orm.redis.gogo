@@ -40,23 +40,23 @@ func (m *_{{$obj.Name}}RedisMgr) BeginPipeline() *_{{$obj.Name}}RedisPipeline {
 
 		//! uniques
 		{{- range $i, $unique := $obj.Uniques}}
-		{{template "relation" ($unique.GetRelation "pair" "{{$primaryField.GetTransformType}}" "{{$obj.Name}}")}}
+		{{template "relation.pair" ($unique.GetRelation "pair" "{{$primaryField.GetTransformType}}" "{{$obj.Name}}")}}
 		{{- end}}
 
 		//! indexes
 		{{- range $i, $index := $obj.Indexes}}
-		{{template "relation" ($index.GetRelation "set" "{{$primaryField.GetTransformType}}" "{{$obj.Name}}")}}
+		{{template "relation.set" ($index.GetRelation "set" "{{$primaryField.GetTransformType}}" "{{$obj.Name}}")}}
 		{{- end}}
 
 		//! ranges
 		{{- range $i, $rg := $obj.Ranges}}
-		{{template "relation" ($rg.GetRelation "zset" "{{$primaryField.GetTransformType}}" "{{$obj.Name}}")}}
+		{{template "relation.zset" ($rg.GetRelation "zset" "{{$primaryField.GetTransformType}}" "{{$obj.Name}}")}}
 		{{- end}}
 
 		//! orders
 		{{- range $i, $order := $obj.Orders}}
-		{{template "relation" ($order.GetRelation "zset" "{{$primaryField.GetTransformType}}" "{{$obj.Name}}")}}
+		{{template "relation.zset" ($order.GetRelation "zset" "{{$primaryField.GetTransformType}}" "{{$obj.Name}}")}}
 		{{- end}}
 {{- end}}
-	{{template "relation" $obj.Relation}}
+	
 {{end}}

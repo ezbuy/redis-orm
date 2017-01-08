@@ -10,6 +10,9 @@ import (
 
 var (
 	_ sql.DB
+	_ fmt.Formatter
+	_ strings.Reader
+	_ orm.VSet
 )
 
 type _{{$obj.Name}}MySQLMgr struct {
