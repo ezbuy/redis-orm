@@ -65,16 +65,73 @@ model.UserMySQLMgr().FetchByIds(ids []string) ([]*User, error)
 
 //! write access
 tx, _ := model.UserMySQLMgr().BeginTx()
+tx.Save(obj)
 tx.Create(obj)
 tx.Update(obj)
 tx.Delete(obj)
 tx.Close()
 
-//! high level manager op
+//! high level access
 model.UserMgr.MySQL().FindOne(unique)
 model.UserMgr.MySQL().Find(index)
 model.UserMgr.MySQL().Range(scope)
 model.UserMgr.MySQL().OrderBy(sort)
+
+//! intersect result
+ids := model.UserMgr.MySQL().Find(index1).Find(index2).Values()
+
+//! unionsect result
+ids := model.UserMgr.MySQL().Find(index1).Find(index2).Unions()
+
+//! fetch objs
+objs, err := model.UserMySQLMgr().FetchByIds(ids)
+
+````
+
+### Redis ORM的使用
+
+````
+import "github.com/ezbuy/redis-orm/example/model"
+
+model.RedisSetup(cf)
+//! sync from db
+model.UserRedisMgr().Load(model.UserMySQLMgr())
+
+//! read access
+
+//! query (ids []string) by unique & index & range & order definitions
+model.UserRedisMgr().FindOne(unique)
+model.UserRedisMgr().Find(index)
+model.UserRedisMgr().Range(scope)
+model.UserRedisMgr().OrderBy(sort)
+
+//! fetch object 
+model.UserRedisMgr().Fetch(id string) (*User, error)
+model.UserRedisMgr().FetchByIds(ids []string) ([]*User, error)
+
+//! write access
+model.UserRedisMgr().Save(obj)
+model.UserRedisMgr().Create(obj)
+model.UserRedisMgr().Update(obj)
+model.UserRedisMgr().Delete(obj)
+
+//! high level access
+model.UserMgr.Redis().FindOne(unique)
+model.UserMgr.Redis().Find(index)
+model.UserMgr.Redis().Range(scope)
+model.UserMgr.Redis().OrderBy(sort)
+
+//! intersect result
+ids := model.UserMgr.Redis().Find(index1).Find(index2).Values()
+
+//! unionsect result
+ids := model.UserMgr.Redis().Find(index1).Find(index2).Unions()
+
+//! fetch objs from mysql
+objs, err := model.UserMySQLMgr().FetchByIds(ids)
+
+//! fetch objs from redis
+objs, err := model.UserRedisMgr().FetchByIds(ids)
 
 ````
 
