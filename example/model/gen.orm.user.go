@@ -11,3 +11,6 @@ func (m *_UserMgr) NewUser() *User {
 func (m *_UserMgr) MySQL() *ReferenceResult {
 	return NewReferenceResult(UserMySQLMgr())
 }
+func (m *_UserMgr) Redis() *ReferenceResult {
+	return NewReferenceResult(UserRedisMgr())
+}

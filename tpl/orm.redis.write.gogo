@@ -2,5 +2,24 @@
 {{$obj := .}}
 {{$primaryField := $obj.PrimaryField}}
 
+func (m *_{{$obj.Name}}RedisMgr) Create(obj *{{$obj.Name}}) error {
+	return m.Save(obj)
+}
+
+func (m *_{{$obj.Name}}RedisMgr) Update(obj *{{$obj.Name}}) error {
+	return m.Save(obj)
+}
+
+func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
+	return nil
+}
+
+func (m *_{{$obj.Name}}RedisMgr) Save(obj *{{$obj.Name}}) error {
+	return nil
+}
+
+func (m *_{{$obj.Name}}RedisMgr) Clear() error {
+	return nil
+}
 
 {{end}}

@@ -33,88 +33,30 @@ func (m *_{{$obj.Name}}RedisMgr) BeginPipeline() *_{{$obj.Name}}RedisPipeline {
 	return &_{{$obj.Name}}RedisPipeline{m.Pipeline(), nil}
 }
 
-
-func (m *_{{$obj.Name}}RedisMgr) Load(db DBFetcher) error {
-	{{if ne $obj.ImportSQL ""}}
-	if err := m.Clear(); err != nil {
-		return err
-	}
-	return m.AddBySQL(db, "{{$obj.ImportSQL}}")
-	{{end}}
-	return nil
-}
-
-func (m *_{{$obj.Name}}RedisMgr) AddBySQL(db DBFetcher, sql string, args ...interface{}) error {
-	objs, err := db.FetchBySQL(sql, args)
-	if err != nil {
-		return err
-	}
-
-	for _, obj := range objs {
-		if err := m.Save(obj.({{$obj.Name}})); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-func (m *_{{$obj.Name}}RedisMgr) DelBySQL(db DBFetcher, sql string, args ...interface{}) error {
-	objs, err := db.FetchBySQL(sql, args)
-	if err != nil {
-		return err
-	}
-
-	for _, obj := range objs {
-		if err := m.Delete(obj.({{$obj.Name}})); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (m *_{{$obj.Name}}RedisMgr) Clear() error {
-	return nil
-}
-
 {{- if not $obj.Relation}}
-	{{template "orm.redis.read" .}}
-	{{template "orm.redis.write" .}}
+	{{template "orm.redis.sync" $obj}}
+	{{template "orm.redis.read" $obj}}
+	{{template "orm.redis.write" $obj}}
 
-	{{- range $i, $unique := $obj.Uniques}}
-		{{template "orm.redis.relation.pair" $unique}}		
-	{{- end}}
+		//! uniques
+		{{- range $i, $unique := $obj.Uniques}}
+		{{template "relation" ($unique.GetRelation "pair" "{{$primaryField.GetTransformType}}" "{{$obj.Name}}")}}
+		{{- end}}
 
-	{{- range $i, $index := $obj.Indexes}}
-		{{template "orm.redis.relation.set" $index}}
-	{{- end}}
+		//! indexes
+		{{- range $i, $index := $obj.Indexes}}
+		{{template "relation" ($index.GetRelation "set" "{{$primaryField.GetTransformType}}" "{{$obj.Name}}")}}
+		{{- end}}
 
-	{{- range $i, $rg := $obj.Ranges}}
-		{{template "orm.redis.relation.zset" $rg}}
-	{{- end}}
+		//! ranges
+		{{- range $i, $rg := $obj.Ranges}}
+		{{template "relation" ($rg.GetRelation "zset" "{{$primaryField.GetTransformType}}" "{{$obj.Name}}")}}
+		{{- end}}
 
-	{{- range $i, $order := $obj.Orders}}
-		{{template "orm.redis.relation.zset" $order}}
-	{{- end}}
-{{- else}}
-	{{- if or (eq $obj.Relation.StoreType "pair")}}
-	{{template "orm.redis.relation.pair" $obj}}
-	{{- end}}
-
-	{{- if eq $obj.Relation.StoreType "set"}}
-	{{template "orm.redis.relation.set" $obj}}
-	{{- end}}
-
-	{{- if eq $obj.Relation.StoreType "zset"}}
-	{{template "orm.redis.relation.zset" $obj}}
-	{{- end}}
-
-	{{- if eq $obj.Relation.StoreType "geo"}}
-	{{template "orm.redis.relation.geo" $obj}}
-	{{- end}}
-
-	{{- if eq $obj.Relation.StoreType "list"}}
-	{{template "orm.redis.relation.list" $obj}}
-	{{- end}}
+		//! orders
+		{{- range $i, $order := $obj.Orders}}
+		{{template "relation" ($order.GetRelation "zset" "{{$primaryField.GetTransformType}}" "{{$obj.Name}}")}}
+		{{- end}}
 {{- end}}
-
+	{{template "relation" $obj.Relation}}
 {{end}}

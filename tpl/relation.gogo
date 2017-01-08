@@ -1,8 +1,5 @@
 {{define "relation"}}
 {{$relation := .}}
-type {{$relation.Name}} struct{
-	{{- range $i, $field := $relation.Fields}}
-	{{$field.Name}} {{$field.GetType}} {{$field.GetTag}}
-	{{- end}}
-}
+//! relation
+
 {{end}}

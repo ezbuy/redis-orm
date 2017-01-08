@@ -1,5 +1,5 @@
 User:
-  dbs: [mysql]
+  dbs: [mysql, redis]
   dbname: ezorm
   dbtable: users
   fields:

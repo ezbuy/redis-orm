@@ -1,4 +1,5 @@
-{{define "conf.redis"}}package {{.GoPackage}}
+package model
+
 //! conf.redis
 import (
 	"fmt"
@@ -27,10 +28,10 @@ type Object interface {
 	GetIndexes() []string
 }
 
-type RedisConfig struct{
-	Host 	 	string
-	Port 		int
-	Password 	string
+type RedisConfig struct {
+	Host     string
+	Port     int
+	Password string
 }
 
 func RedisSetUp(cf *RedisConfig) {
@@ -63,7 +64,7 @@ func pairOfClass(obj Object, keys ...string) string {
 	if suffix != "" {
 		return fmt.Sprintf("%s:%s:%s", PAIR, obj.GetClassName(), suffix)
 	}
-	return fmt.Sprintf("%s:%s", PAIR, obj.GetClassName())	
+	return fmt.Sprintf("%s:%s", PAIR, obj.GetClassName())
 }
 
 func setOfClass(obj Object, keys ...string) string {
@@ -71,7 +72,7 @@ func setOfClass(obj Object, keys ...string) string {
 	if suffix != "" {
 		return fmt.Sprintf("%s:%s:%s", SET, obj.GetClassName(), suffix)
 	}
-	return fmt.Sprintf("%s:%s", SET, obj.GetClassName())		
+	return fmt.Sprintf("%s:%s", SET, obj.GetClassName())
 }
 
 func zsetOfClass(obj Object, keys ...string) string {
@@ -79,7 +80,7 @@ func zsetOfClass(obj Object, keys ...string) string {
 	if suffix != "" {
 		return fmt.Sprintf("%s:%s:%s", ZSET, obj.GetClassName(), suffix)
 	}
-	return fmt.Sprintf("%s:%s", ZSET, obj.GetClassName())	
+	return fmt.Sprintf("%s:%s", ZSET, obj.GetClassName())
 }
 
 func geoOfClass(obj Object, keys ...string) string {
@@ -87,7 +88,7 @@ func geoOfClass(obj Object, keys ...string) string {
 	if suffix != "" {
 		return fmt.Sprintf("%s:%s:%s", GEO, obj.GetClassName(), suffix)
 	}
-	return fmt.Sprintf("%s:%s", GEO, obj.GetClassName())	
+	return fmt.Sprintf("%s:%s", GEO, obj.GetClassName())
 }
 
 func listOfClass(obj Object, keys ...string) string {
@@ -95,7 +96,5 @@ func listOfClass(obj Object, keys ...string) string {
 	if suffix != "" {
 		return fmt.Sprintf("%s:%s:%s", LIST, obj.GetClassName(), suffix)
 	}
-	return fmt.Sprintf("%s:%s", LIST, obj.GetClassName())	
+	return fmt.Sprintf("%s:%s", LIST, obj.GetClassName())
 }
-
-{{end}}

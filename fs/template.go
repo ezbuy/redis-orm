@@ -115,13 +115,14 @@ func init() {
 		"tpl/orm.mysql.write.gogo",
 		"tpl/orm.redis.gogo",
 		"tpl/orm.redis.read.gogo",
-		"tpl/orm.redis.relation.geo.gogo",
-		"tpl/orm.redis.relation.list.gogo",
-		"tpl/orm.redis.relation.pair.gogo",
-		"tpl/orm.redis.relation.set.gogo",
-		"tpl/orm.redis.relation.zset.gogo",
+		"tpl/orm.redis.sync.gogo",
 		"tpl/orm.redis.write.gogo",
+		"tpl/relation.geo.gogo",
 		"tpl/relation.gogo",
+		"tpl/relation.list.gogo",
+		"tpl/relation.pair.gogo",
+		"tpl/relation.set.gogo",
+		"tpl/relation.zset.gogo",
 	}
 	for _, fname := range files {
 		data, err := tpl.Asset(fname)

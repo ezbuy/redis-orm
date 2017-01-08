@@ -36,26 +36,6 @@ var (
 			{{$field.Name}}  {{$field.GetType}} {{$field.GetTag}} 
 			{{- end}}
 		}
-
-		//! uniques
-		{{- range $i, $unique := $obj.Uniques}}
-		{{template "relation" ($unique.GetRelation "pair" "{{$primaryField.GetTransformType}}" "{{$obj.Name}}")}}
-		{{- end}}
-
-		//! indexes
-		{{- range $i, $index := $obj.Indexes}}
-		{{template "relation" ($index.GetRelation "set" "{{$primaryField.GetTransformType}}" "{{$obj.Name}}")}}
-		{{- end}}
-
-		//! ranges
-		{{- range $i, $rg := $obj.Ranges}}
-		{{template "relation" ($rg.GetRelation "zset" "{{$primaryField.GetTransformType}}" "{{$obj.Name}}")}}
-		{{- end}}
-
-		//! orders
-		{{- range $i, $order := $obj.Orders}}
-		{{template "relation" ($order.GetRelation "zset" "{{$primaryField.GetTransformType}}" "{{$obj.Name}}")}}
-		{{- end}}
 	{{end}}
 
 	{{if eq $obj.Db "mongo"}}

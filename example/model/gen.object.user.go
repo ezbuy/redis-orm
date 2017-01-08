@@ -15,18 +15,18 @@ var (
 )
 
 type User struct {
-	Id          int32     `db:"id"`
-	Name        string    `db:"name"`
-	Mailbox     string    `db:"mailbox"`
-	Sex         bool      `db:"sex"`
-	Longitude   float64   `db:"longitude"`
-	Latitude    float64   `db:"latitude"`
-	Description string    `db:"description"`
-	Password    string    `db:"password"`
-	HeadUrl     string    `db:"head_url"`
-	Status      int32     `db:"status"`
-	CreatedAt   time.Time `db:"created_at"`
-	UpdatedAt   time.Time `db:"updated_at"`
+	Id          int32     `db:"id" json:"id"`
+	Name        string    `db:"name" json:"name"`
+	Mailbox     string    `db:"mailbox" json:"mailbox"`
+	Sex         bool      `db:"sex" json:"sex"`
+	Longitude   float64   `db:"longitude" json:"longitude"`
+	Latitude    float64   `db:"latitude" json:"latitude"`
+	Description string    `db:"description" json:"description"`
+	Password    string    `db:"password" json:"password"`
+	HeadUrl     string    `db:"head_url" json:"head_url"`
+	Status      int32     `db:"status" json:"status"`
+	CreatedAt   time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt   time.Time `db:"updated_at" json:"updated_at"`
 }
 
 //! uniques
@@ -141,4 +141,18 @@ func (obj *User) GetColumns() []string {
 		"`updated_at`",
 	}
 	return columns
+}
+func (obj *User) GetIndexes() []string {
+	idx := []string{
+		"Sex",
+	}
+	return idx
+}
+
+func (obj *User) GetStoreType() string {
+	return "hash"
+}
+
+func (obj *User) GetPrimaryName() string {
+	return "Id"
 }

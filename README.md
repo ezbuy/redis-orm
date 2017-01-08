@@ -37,7 +37,7 @@ please check the example yaml.
 ````
 $: go get github.com/ezbuy/redis-orm
 
-$: redis-orm code -i example/yamls -o example/model
+$: redis-orm code -i example/yaml -o example/model
 
 ````
 

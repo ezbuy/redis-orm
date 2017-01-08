@@ -7,18 +7,18 @@ func (m *_{{$obj.Name}}RedisMgr) FindOne(unique Unique) (string, error) {
 }
 
 func (m *_{{$obj.Name}}RedisMgr) Find(index Index) ([]string, error) {
-	return "", nil
+	return nil, nil
 }
 
 func (m *_{{$obj.Name}}RedisMgr) Range(scope Range) ([]string, error) {
-	return "", nil
+	return nil, nil
 }
 
 func (m *_{{$obj.Name}}RedisMgr) OrderBy(sort OrderBy) ([]string, error) {
-	return "", nil
+	return nil, nil
 }
 
-func (m *_{{$obj.Name}}RedisMgr) Fetch{{$primaryField.Name | camel2name}} string) (*{{$obj.Name}}, error) {
+func (m *_{{$obj.Name}}RedisMgr) Fetch({{$primaryField.Name | camel2name}} string) (*{{$obj.Name}}, error) {
 	return nil, nil
 }
 

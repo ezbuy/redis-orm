@@ -39,7 +39,7 @@ func (obj *{{.Name}}) GetIndexes() []string {
 }
 
 func (obj *{{.Name}}) GetStoreType() string {
-	return "{{$obj.StoreType}}"
+	return "hash"
 }
 
 func (obj *{{.Name}}) GetPrimaryName() string {
