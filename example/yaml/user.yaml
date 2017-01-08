@@ -1,0 +1,36 @@
+User:
+  dbs: [mysql, redis]
+  dbname: ezorm
+  dbtable: users
+  fields:
+    - Id: int32
+      flags: [primary]
+    - Name: string
+    - Mailbox: string
+    - Sex: bool
+      flags: [index]
+    - Longitude: float64
+    - Latitude: float64
+    - Description: string
+    - Password: string
+    - HeadUrl: string
+    - Status: int32
+    - CreatedAt: timestamp
+    - UpdatedAt: timestamp
+  uniques: [[Mailbox, Password]]
+  importSQL: "SELECT `id`,`name`,`mailbox`,`sex`,`longitude`,`latitude`,`description`,`password`,`head_url`,`status`,`created_at`, `updated_at` FROM users"
+
+UserBaseInfo:
+  dbs: [mysql]
+  dbname: ezorm
+  dbview: user_base_info
+  fields:
+    - Id: int32
+      flags: [primary]
+    - Name: string
+      flags: [index]
+    - Mailbox: string
+    - Password: string
+    - Sex: bool
+  uniques: [[Mailbox, Password]]
+  importSQL: "SELECT `id`,`name`,`mailbox`,`sex` FROM users"

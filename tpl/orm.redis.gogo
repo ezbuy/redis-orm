@@ -1,0 +1,62 @@
+{{define "orm.redis"}}package {{.GoPackage}}
+{{$obj := .}}
+{{$primaryField := $obj.PrimaryField}}
+
+import (
+	"github.com/ezbuy/redis-orm/orm"
+	redis "gopkg.in/redis.v5"
+)
+
+type _{{$obj.Name}}RedisMgr struct {
+	*orm.RedisStore
+}
+
+func {{$obj.Name}}RedisMgr() *_{{$obj.Name}}RedisMgr {	
+	return &_{{$obj.Name}}RedisMgr{_redis_store}
+}
+
+func New{{$obj.Name}}RedisMgr(cf *RedisConfig) (*_{{$obj.Name}}RedisMgr, error) {
+	store, err := orm.NewRedisStore(cf.Host, cf.Port, cf.Password, 0)
+	if err != nil {
+		return nil, err
+	}
+	return &_{{$obj.Name}}RedisMgr{store}, nil
+}
+
+//! pipeline write
+type _{{$obj.Name}}RedisPipeline struct {
+	*redis.Pipeline
+	Err error
+}
+
+func (m *_{{$obj.Name}}RedisMgr) BeginPipeline() *_{{$obj.Name}}RedisPipeline {
+	return &_{{$obj.Name}}RedisPipeline{m.Pipeline(), nil}
+}
+
+{{- if not $obj.Relation}}
+	{{template "orm.redis.sync" $obj}}
+	{{template "orm.redis.read" $obj}}
+	{{template "orm.redis.write" $obj}}
+
+		//! uniques
+		{{- range $i, $unique := $obj.Uniques}}
+		{{template "relation.pair" ($unique.GetRelation "pair" "{{$primaryField.GetTransformType}}" "{{$obj.Name}}")}}
+		{{- end}}
+
+		//! indexes
+		{{- range $i, $index := $obj.Indexes}}
+		{{template "relation.set" ($index.GetRelation "set" "{{$primaryField.GetTransformType}}" "{{$obj.Name}}")}}
+		{{- end}}
+
+		//! ranges
+		{{- range $i, $rg := $obj.Ranges}}
+		{{template "relation.zset" ($rg.GetRelation "zset" "{{$primaryField.GetTransformType}}" "{{$obj.Name}}")}}
+		{{- end}}
+
+		//! orders
+		{{- range $i, $order := $obj.Orders}}
+		{{template "relation.zset" ($order.GetRelation "zset" "{{$primaryField.GetTransformType}}" "{{$obj.Name}}")}}
+		{{- end}}
+{{- end}}
+	
+{{end}}

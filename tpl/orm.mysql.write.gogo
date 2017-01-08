@@ -1,0 +1,290 @@
+{{define "orm.mysql.write"}}
+{{$obj := .}}
+{{$primaryField := $obj.PrimaryField}}
+//! orm.mysql.write
+///////////////////////////
+//! 	how to use tx
+//!
+//! 	tx, err := {{$obj.Name}}MySQLMgr().BeginTx()
+//! 	if err != nil {
+//! 		return err
+//! 	}
+//! 	defer tx.Close()
+//! 
+//! 	tx.Create(obj)
+//! 	tx.Update(obj)
+//! 	tx.Delete(obj)
+///////////////////////////
+
+//! tx write
+type _{{$obj.Name}}MySQLTx struct {
+	*sql.Tx
+	Err error
+	RowsAffected int64
+}
+
+func (m *_{{$obj.Name}}MySQLMgr) BeginTx() (*_{{$obj.Name}}MySQLTx, error) {
+	tx, err := m.Begin()
+	if err != nil {
+		return nil, err
+	}
+	return &_{{$obj.Name}}MySQLTx{tx, nil, 0}, nil
+}
+
+func (tx *_{{$obj.Name}}MySQLTx) Create(obj *{{$obj.Name}}) error {
+	{{- if $primaryField.IsAutoIncrement}}
+		params := orm.NewStringSlice({{len $obj.Fields}}, "?")
+		q := fmt.Sprintf("INSERT INTO `{{$obj.DbTable}}`(%s) VALUES(%s)", 
+			strings.Join(obj.GetColumns(), ","), 
+			strings.Join(params, ","))
+
+		result, err := tx.Exec(q 
+		{{- range $i, $field := $obj.Fields -}}
+			, {{$field.GetTransformValue "obj."}}
+		{{- end -}}
+		)
+		if err != nil {
+			tx.Err = err
+			return err
+		}
+		lastInsertId, err := result.LastInsertId()
+		if err != nil {
+			tx.Err = err
+			return err
+		}
+		obj.{{$primaryField.Name}} = {{$primaryField.GetType}}(lastInsertId)
+		tx.RowsAffected, tx.Err = result.RowsAffected()
+		return tx.Err
+	{{- else}}
+		params := orm.NewStringSlice({{sub (len $obj.Fields) 1}}, "?")
+		q := fmt.Sprintf("INSERT INTO `{{$obj.DbTable}}`(%s) VALUES(0, %s)", 
+			strings.Join(obj.GetColumns(), ","), 
+			strings.Join(params, ","))
+
+		result, err := tx.Exec(q 
+		{{- range $i, $field := $obj.Fields -}}
+			{{- if not $field.IsPrimary -}}
+			, {{$field.GetTransformValue "obj."}}
+			{{- end -}}
+		{{- end -}}
+		)
+		if err != nil {
+			tx.Err = err
+			return err
+		}
+		tx.RowsAffected, tx.Err = result.RowsAffected()
+		return tx.Err
+	{{- end}}
+}
+
+func (tx *_{{$obj.Name}}MySQLTx) Update(obj *{{$obj.Name}}) error {
+	columns := []string{
+	{{- range $i, $field := $obj.Fields}}
+		{{- if not $field.IsPrimary}}
+		"`{{$field.Name | camel2name}}` = ?",
+		{{- end}}
+	{{- end}}
+	}
+	q := fmt.Sprintf("UPDATE `{{$obj.DbTable}}` SET %s WHERE `{{$primaryField.Name | camel2name}}`=?", 
+		strings.Join(columns, ","))
+	result, err := tx.Exec(q 
+		{{- range $i, $field := $obj.Fields -}}
+			{{- if not $field.IsPrimary -}}
+			, {{$field.GetTransformValue "obj."}}
+			{{- end -}}
+		{{- end -}}
+		, {{$primaryField.GetTransformValue "obj."}})
+	if err != nil {
+		tx.Err = err
+		return err
+	}
+	tx.RowsAffected, tx.Err = result.RowsAffected()
+	return tx.Err
+}
+
+func (tx *_{{$obj.Name}}MySQLTx) Save(obj *{{$obj.Name}}) error {
+	err := tx.Update(obj)
+	if err != nil {
+		return err
+	}	
+	if tx.RowsAffected > 0 {
+		return nil
+	}
+	return tx.Create(obj)
+}
+
+func (tx *_{{$obj.Name}}MySQLTx) Delete(obj *{{$obj.Name}}) error {
+	q := fmt.Sprintf("DELETE FROM `{{$obj.DbTable}}` WHERE `{{$primaryField.Name | camel2name}}`=?")
+	result, err := tx.Exec(q , {{$primaryField.GetTransformValue "obj."}})
+	if err != nil {
+		tx.Err = err
+		return err
+	}
+	tx.RowsAffected, tx.Err = result.RowsAffected()
+	return tx.Err
+}
+
+func (tx *_{{$obj.Name}}MySQLTx) DeleteBy{{$primaryField.Name}}s({{$primaryField.Name | camel2name}}s []string) error { 
+	if len({{$primaryField.Name | camel2name}}s) == 0 {
+		return nil
+	}
+		
+	q := fmt.Sprintf("DELETE FROM `{{$obj.DbTable}}` WHERE `{{$primaryField.Name | camel2name}}` IN (%s)",
+		 strings.Join({{$primaryField.Name | camel2name}}s, ","))
+	result, err := tx.Exec(q)
+	if err != nil {
+		tx.Err = err
+		return err
+	}
+	tx.RowsAffected, tx.Err = result.RowsAffected()
+	return tx.Err
+}
+
+
+func (tx *_{{$obj.Name}}MySQLTx) Close() error {
+	if tx.Err != nil {
+		return tx.Rollback()
+	}
+	return tx.Commit()
+}
+
+//! tx read
+func (tx *_{{$obj.Name}}MySQLTx) FindOne(unique Unique) (string, error) {
+	objs, err := tx.queryLimit(unique.SQLFormat(), unique.SQLLimit(), unique.SQLParams()...)
+	if err != nil {
+		tx.Err = err
+		return "", err
+	}
+	if len(objs) > 0 {
+		return fmt.Sprint(objs[0]), nil
+	}
+	tx.Err = fmt.Errorf("{{$obj.Name}} find record not found")
+	return "", tx.Err
+}
+
+func (tx *_{{$obj.Name}}MySQLTx) Find(index Index) ([]string, error) {
+	return tx.queryLimit(index.SQLFormat(), index.SQLLimit(), index.SQLParams()...)
+}
+
+func (tx *_{{$obj.Name}}MySQLTx) Range(scope Range) ([]string, error) {
+	return tx.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+}
+
+func (tx *_{{$obj.Name}}MySQLTx) OrderBy(sort OrderBy) ([]string, error) {
+	return tx.queryLimit(sort.SQLFormat(), sort.SQLLimit(), sort.SQLParams()...)
+}
+
+func (tx *_{{$obj.Name}}MySQLTx) queryLimit(where string, limit int, args ...interface{}) (results []string, err error){
+	query := fmt.Sprintf("SELECT `{{$primaryField.Name | camel2name}}` FROM `{{$obj.DbTable}}`")
+	if where != "" {
+		query += " WHERE " 
+		query += where
+	}
+
+	rows, err := tx.Query(query, args...)
+	if err != nil {
+		tx.Err = err
+		return nil, fmt.Errorf("{{$obj.Name}} query limit error: %v", err)
+	}
+	defer rows.Close()
+
+	offset :=0
+	for rows.Next() {
+		if limit >= 0 && offset >= limit {
+			break
+		}
+		offset++
+
+		var result {{$primaryField.GetType}}
+		if err = rows.Scan(&result); err != nil {
+			tx.Err = err
+			return nil, err
+		}
+		results = append(results, fmt.Sprint(result))
+	}
+	if err := rows.Err() ;err != nil {
+		tx.Err = err
+		return nil, fmt.Errorf("{{$obj.Name}} query limit result error: %v", err)
+	}
+	return
+}
+
+func (tx *_{{$obj.Name}}MySQLTx) Fetch({{$primaryField.Name | camel2name}} interface{}) (*{{$obj.Name}}, error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` WHERE `{{$primaryField.Name}}` = (%s)", strings.Join(obj.GetColumns(), ","), fmt.Sprint({{$primaryField.Name | camel2name}}))
+	objs, err := tx.FetchBySQL(query)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0], nil
+	}
+	return nil, fmt.Errorf("{{$obj.Name}} fetch record not found")
+}
+
+func (tx *_{{$obj.Name}}MySQLTx) FetchBy{{$primaryField.Name}}s({{$primaryField.Name | camel2name}}s []string) ( []*{{$obj.Name}}, error) {
+	if len({{$primaryField.Name | camel2name}}s) == 0 {
+		return []*{{$obj.Name}}{}, nil
+	}
+		
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbTable}}` WHERE `{{$primaryField.Name}}` IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join({{$primaryField.Name | camel2name}}s, ","))
+	return tx.FetchBySQL(query)
+}
+
+func (tx *_{{$obj.Name}}MySQLTx) FetchBySQL(sql string, args ... interface{}) (results []*{{$obj.Name}}, err error) {
+	rows, err := tx.Query(sql, args...)
+	if err != nil {
+		tx.Err = err
+		return nil, fmt.Errorf("{{$obj.Name}} fetch error: %v", err)
+	}
+	defer rows.Close()
+
+	{{range $index, $field := $obj.Fields}}
+	{{- if $field.IsNullablePrimitive }}
+	var {{$field.Name}} sql.{{$field.GetNullSQLType}}
+	{{- else if $field.IsNeedTransform }}
+	var {{$field.Name}} {{$field.GetTransformType.TypeOrigin}}
+	{{- end -}}
+	{{- end }}
+
+	for rows.Next() {
+		var result {{$obj.Name}}
+		err = rows.Scan(
+		{{- range $index, $field := $obj.Fields -}}
+		{{- if or $field.IsNullablePrimitive $field.IsNeedTransform -}}
+			&{{$field.Name}},
+		{{- else -}}
+			&(result.{{$field.Name}}),
+		{{ end }}
+		{{- end -}}
+		)
+		if err != nil {
+			tx.Err = err
+			return nil, err
+		}
+
+		{{range $index, $field := $obj.Fields}}
+		{{- if $field.IsNullablePrimitive}}
+			result.{{$field.Name}} =
+			{{- if $field.NullSQLTypeNeedCast -}}
+				{{$field.GetType}}({{$field.Name}}.{{$field.NullSQLTypeValue}})
+			{{- else -}}
+			{{$field.Name}}.{{$field.NullSQLTypeValue}}
+			{{- end -}}
+		{{- else if $field.IsNeedTransform }}
+		   result.{{$field.Name}} =
+		   {{- printf $field.GetTransformType.ConvertTo $field.Name}}
+		{{end -}}
+		{{end}}
+
+		results = append(results, &result)
+	}
+	if err = rows.Err() ;err != nil {
+		tx.Err = err
+		return nil, fmt.Errorf("{{$obj.Name}} fetch result error: %v", err)
+	}
+	return
+}
+
+{{end}}

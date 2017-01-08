@@ -1,0 +1,3 @@
+{{define "conf.mssql"}}package {{.GoPackage}}
+//! conf.mssql
+{{end}}

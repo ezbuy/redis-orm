@@ -1,0 +1,3 @@
+{{define "conf.elastic"}}package {{.GoPackage}}
+//! conf.elastic
+{{end}}

@@ -1,0 +1,42 @@
+{{define "orm.redis.sync"}}
+{{$obj := .}}
+{{$primaryField := $obj.PrimaryField}}
+func (m *_{{$obj.Name}}RedisMgr) Load(db DBFetcher) error {
+	{{if ne $obj.ImportSQL ""}}
+	if err := m.Clear(); err != nil {
+		return err
+	}
+	return m.AddBySQL(db, "{{$obj.ImportSQL}}")
+	{{end}}
+	return nil
+}
+
+func (m *_{{$obj.Name}}RedisMgr) AddBySQL(db DBFetcher, sql string, args ...interface{}) error {
+	objs, err := db.FetchBySQL(sql, args)
+	if err != nil {
+		return err
+	}
+
+	for _, obj := range objs {
+		if err := m.Save(obj.(*{{$obj.Name}})); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+func (m *_{{$obj.Name}}RedisMgr) DelBySQL(db DBFetcher, sql string, args ...interface{}) error {
+	objs, err := db.FetchBySQL(sql, args)
+	if err != nil {
+		return err
+	}
+
+	for _, obj := range objs {
+		if err := m.Delete(obj.(*{{$obj.Name}})); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+{{end}}

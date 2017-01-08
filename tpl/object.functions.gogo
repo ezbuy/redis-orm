@@ -1,0 +1,49 @@
+{{define "object.functions"}}
+{{$obj := .}}
+{{$primaryField := $obj.PrimaryField}}
+func (obj *{{.Name}}) GetNameSpace() string {
+	return "{{.Package}}"
+}
+
+func (obj *{{.Name}}) GetClassName() string {
+	return "{{.Name}}"
+}
+
+func (obj *{{.Name}}) GetTableName() string {
+	return "{{.DbTable}}"	
+}
+
+func (obj *{{.Name}}) GetColumns() []string {
+	columns := []string{
+	{{- range $field := .Fields}}
+	{{- if $obj.DbContains "mysql"}}
+		"`{{$field.Name | camel2name}}`",
+	{{- else}}
+		"`{{$field.Name}}`",
+	{{- end}}
+	{{- end}}
+	}
+	return columns
+}
+
+{{- if $obj.DbContains "redis"}}
+func (obj *{{.Name}}) GetIndexes() []string {
+	idx := []string{
+	{{- range $field := .Fields}}
+	{{- if $field.HasIndex}}
+		"{{$field.Name}}",
+	{{- end}}
+	{{- end}}
+	}
+	return idx
+}
+
+func (obj *{{.Name}}) GetStoreType() string {
+	return "hash"
+}
+
+func (obj *{{.Name}}) GetPrimaryName() string {
+	return "{{$primaryField.Name}}"
+}
+{{- end}}
+{{end}}
