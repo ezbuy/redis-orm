@@ -96,7 +96,7 @@ func (rr *ReferenceResult) Find(index Index) *ReferenceResult {
 func (rr *ReferenceResult) Range(scope Range) *ReferenceResult {
 	rr.times = rr.times + 1
 	if strs, err := rr.db.Range(scope); err == nil {
-		rr.set.SortAdd(1, strs...)
+		rr.set.Add(1, strs...)
 	} else {
 		rr.err = err
 	}
@@ -106,7 +106,7 @@ func (rr *ReferenceResult) Range(scope Range) *ReferenceResult {
 func (rr *ReferenceResult) OrderBy(sort OrderBy) *ReferenceResult {
 	rr.times = rr.times + 1
 	if strs, err := rr.db.OrderBy(sort); err == nil {
-		rr.set.SortAdd(1, strs...)
+		rr.set.Add(1, strs...)
 	} else {
 		rr.err = err
 	}

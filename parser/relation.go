@@ -20,6 +20,15 @@ func NewRelation(obj *MetaObject) *Relation {
 	}
 }
 
+func (r *Relation) PrimaryField() *Field {
+	for _, f := range r.Fields {
+		if f.IsPrimary() {
+			return f
+		}
+	}
+	return nil
+}
+
 func (r *Relation) build() error {
 	switch r.StoreType {
 	case "pair", "set", "list":

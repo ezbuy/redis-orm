@@ -1,136 +1,43 @@
-{{define "orm.redis.set"}}
-{{$obj := .}}
-{{$idFieldName := $obj.GetPrimaryKeyName}}
-{{$idField := $obj.GetPrimaryKey}}
-
-//! orm.redis.set
-import (
-	"github.com/liujianping/redis-orm/orm"
-	"time"
-)
-var (
-	_ orm.James
-	_ time.Time
-)
-
-{{- if or ($obj.DbContains "mysql") ($obj.DbContains "mssql")}}
-func (m *_{{$obj.Name}}Mgr) AddBySQL(sql string, args ...interface{}) error {
-	objs, err := m.Query(sql)
-	if err != nil {
-		return err
-	}
-
-	for _, obj := range objs {
-		if err := m.SetAdd(obj.Key, obj); err != nil {
-			return err
-		}
-	}	
-	return nil
+{{define "relation.set"}}
+{{$relation := .}}
+{{$primaryField := $relation.PrimaryField}}
+//! redis relation pair
+type _{{$relation.Name}}RedisMgr struct {
+	*orm.RedisStore
 }
 
-func (m *_{{$obj.Name}}Mgr) DelBySQL(sql string, args ...interface{}) error {
-	objs, err := m.Query(sql)
-	if err != nil {
-		return err
-	}
-
-	for _, obj := range objs {
-		if err := m.SetRem(obj.Key, obj); err != nil {
-			return err
-		}
-	}	
-	return nil
+func {{$relation.Name}}RedisMgr() *_{{$relation.Name}}RedisMgr {	
+	return &_{{$relation.Name}}RedisMgr{_redis_store}
 }
 
-{{- if ne $obj.ImportSQL ""}}
-func (m *_{{$obj.Name}}Mgr) Import() error {	
-	return m.AddBySQL("{{$obj.ImportSQL}}")
-}
-{{- end}}
-
-{{- end}}
-
-///////////// SET /////////////////////////////////////////////////////
-func (m *_{{$obj.Name}}RedisMgr) SetAdd(key string, obj *{{$obj.Name}}) error {
-	{{- if $obj.ValueField.IsNeedTransform}}
-		transformed_{{$obj.ValueField.Name}} := {{- printf $obj.ValueField.GetTransformType.ConvertBack (printf "obj.%s" $obj.ValueField.Name)}}
-		return redisSetAdd(obj, key, transformed_{{$obj.ValueField.Name}})
-	{{- else}}
-		return redisSetAdd(obj, key, obj.Value)
-	{{- end}}
-}
-
-func (m *_{{$obj.Name}}RedisMgr) SetGet(key string) ([]*{{$obj.Name}}, error) {
-	strs, err := redisSetGet(m.New{{$obj.Name}}(), key)
+func New{{$relation.Name}}RedisMgr(cf *RedisConfig) (*_{{$relation.Name}}RedisMgr, error) {
+	store, err := orm.NewRedisStore(cf.Host, cf.Port, cf.Password, 0)
 	if err != nil {
 		return nil, err
 	}
-
-	objs := []*{{$obj.Name}}{}
-	for _, str := range strs {
-		obj := m.New{{$obj.Name}}()
-		obj.Key = key
-		{{- if $obj.ValueField.IsNeedTransform}}
-			var val {{$obj.ValueField.GetTransformType.TypeOrigin}}
-			if err := redisStringScan(str, &val); err != nil {
-				return nil, err
-			}
-			obj.{{$obj.ValueField.Name}} = {{- printf $obj.ValueField.GetTransformType.ConvertTo "val"}}
-		{{- else}}
-		if err := redisStringScan(str, &obj.Value); err != nil {
-			return nil, err
-		}
-		{{- end}}
-		objs = append(objs, obj)
-	}
-	return objs, nil
+	return &_{{$relation.Name}}RedisMgr{store}, nil
 }
 
-func (m *_{{$obj.Name}}RedisMgr) SetRem(key string, obj *{{$obj.Name}}) error {
-	{{- if $obj.ValueField.IsNeedTransform}}
-		transformed_{{$obj.ValueField.Name}} := {{- printf $obj.ValueField.GetTransformType.ConvertBack (printf "obj.%s" $obj.ValueField.Name)}}
-		return redisSetRem(obj, key, transformed_{{$obj.ValueField.Name}})
-	{{- else}}
-		return redisSetRem(obj, key, obj.Value)
-	{{- end}}
+//! pipeline write
+type _{{$relation.Name}}RedisPipeline struct {
+	*redis.Pipeline
+	Err error
 }
 
-func (m *_{{$obj.Name}}RedisMgr) SetDel(key string) error {
-	return redisSetDel(m.New{{$obj.Name}}(), key)
+func (m *_{{$relation.Name}}RedisMgr) BeginPipeline() *_{{$relation.Name}}RedisPipeline {
+	return &_{{$relation.Name}}RedisPipeline{m.Pipeline(), nil}
 }
 
-{{- if ne $obj.ModelType ""}}
-func (m *_{{$obj.Name}}RedisMgr) Related{{$obj.ModelType}}s(key string) ([]*{{$obj.ModelType}}, error) {
-	strs, err := redisSetGet(m.New{{$obj.Name}}(), key)
-	if err != nil {
-		return nil, err
-	}
-
-	objs := []*{{$obj.ModelType}}{}
-	for _, str := range strs {
-		{{- if $obj.ValueField.IsNeedTransform}}
-			var val {{$obj.ValueField.GetTransformType.TypeOrigin}}
-			if err := redisStringScan(str, &val); err != nil {
-				return nil, err
-			}
-			transformed_val := {{- printf $obj.ValueField.GetTransformType.ConvertTo "val"}}
-			obj, err := {{$obj.ModelType}}Mgr.Get{{$obj.ModelType}}ById(transformed_val)
-			if err != nil {
-				return nil, err
-			}
-			objs = append(objs, obj)
-		{{- else}}
-			var val {{$obj.ValueField.Type}}
-			if err := redisStringScan(str, &val); err != nil {
-				return nil, err
-			}
-			if obj, err := {{$obj.ModelType}}Mgr.Get{{$obj.ModelType}}ById(val); err == nil {
-				objs = append(objs, obj)
-			}
-		{{- end}}
-	}
-	return objs, nil
+func (m *_{{$relation.Name}}RedisMgr) SAdd(obj *{{$relation.Name}}) error {
+	return nil
 }
-{{- end}}
+
+func (m *_{{$relation.Name}}RedisMgr) SGet(obj *{{$relation.Name}}) error {
+	return nil
+}
+
+func (m *_{{$relation.Name}}RedisMgr) SRem(obj *{{$relation.Name}}) error {
+	return nil
+}
 
 {{end}}

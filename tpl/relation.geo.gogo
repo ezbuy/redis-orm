@@ -1,137 +1,54 @@
-{{define "orm.redis.geo"}}
-{{$obj := .}}
-{{$idFieldName := $obj.GetPrimaryKeyName}}
-{{$idField := $obj.GetPrimaryKey}}
+{{define "relation.geo"}}
+{{$relation := .}}
+{{$primaryField := $relation.PrimaryField}}
 
-//! orm.redis.geo
-import (
-	"time"
-	redis "gopkg.in/redis.v5"
-	"github.com/liujianping/redis-orm/orm"
-)
-var (
-	_ orm.James
-	_ time.Time
-)
-
-{{- if or ($obj.DbContains "mysql") ($obj.DbContains "mssql")}}
-func (m *_{{$obj.Name}}Mgr) AddBySQL(sql string, args ...interface{}) error {
-	objs, err := m.Query(sql)
-	if err != nil {
-		return err
-	}
-
-	for _, obj := range objs {
-		if err := m.GeoAdd(obj.Key, obj); err != nil {
-			return err
-		}
-	}	
-	return nil
+type _{{$relation.Name}}RedisMgr struct {
+	*orm.RedisStore
 }
 
-func (m *_{{$obj.Name}}Mgr) DelBySQL(sql string, args ...interface{}) error {
-	objs, err := m.Query(sql)
-	if err != nil {
-		return err
-	}
-
-	for _, obj := range objs {
-		if err := m.GeoRem(obj.Key, obj); err != nil {
-			return err
-		}
-	}	
-	return nil
+func {{$relation.Name}}RedisMgr() *_{{$relation.Name}}RedisMgr {	
+	return &_{{$relation.Name}}RedisMgr{_redis_store}
 }
 
-{{- if ne $obj.ImportSQL ""}}
-func (m *_{{$obj.Name}}Mgr) Import() error {	
-	return m.AddBySQL("{{$obj.ImportSQL}}")
-}
-{{- end}}
-
-{{- end}}
-
-///////////// GEO /////////////////////////////////////////////////////
-func (m *_{{$obj.Name}}RedisMgr) GeoAdd(key string, obj *{{$obj.Name}}) error {
-	{{- if $obj.ValueField.IsNeedTransform}}
-		transformed_{{$obj.ValueField.Name}} := {{- printf $obj.ValueField.GetTransformType.ConvertBack (printf "obj.%s" $obj.ValueField.Name)}}
-		return redisGeoAdd(obj, key, obj.Longitude, obj.Latitude, transformed_{{$obj.ValueField.Name}})
-	{{- else}}
-		return redisGeoAdd(obj, key, obj.Longitude, obj.Latitude, obj.Value)
-	{{- end}}
-}
-
-func (m *_{{$obj.Name}}RedisMgr) GeoRadius(key string, longitude float64, latitude float64, query *redis.GeoRadiusQuery) ([]*{{$obj.Name}}, error) {
-	strs, err := redisGeoRadius(m.New{{$obj.Name}}(), key, longitude, latitude, query)
+func New{{$relation.Name}}RedisMgr(cf *RedisConfig) (*_{{$relation.Name}}RedisMgr, error) {
+	store, err := orm.NewRedisStore(cf.Host, cf.Port, cf.Password, 0)
 	if err != nil {
 		return nil, err
 	}
-
-	objs := []*{{$obj.Name}}{}
-	for _, str := range strs {
-		obj := m.New{{$obj.Name}}()
-		obj.Key = key
-		{{- if $obj.ValueField.IsNeedTransform}}
-			var val {{$obj.ValueField.GetTransformType.TypeOrigin}}
-			if err := redisStringScan(str, &val); err != nil {
-				return nil, err
-			}
-			obj.{{$obj.ValueField.Name}} = {{- printf $obj.ValueField.GetTransformType.ConvertTo "val"}}
-		{{- else}}
-		if err := redisStringScan(str, &obj.Value); err != nil {
-			return nil, err
-		}
-		{{- end}}
-		objs = append(objs, obj)
-	}
-	return objs, nil
+	return &_{{$relation.Name}}RedisMgr{store}, nil
 }
 
-{{- if ne $obj.ModelType ""}}
-func (m *_{{$obj.Name}}RedisMgr) GeoRadiusRelated{{$obj.ModelType}}s(key string, longitude float64, latitude float64, query *redis.GeoRadiusQuery) ([]*{{$obj.ModelType}}, error) {
-	strs, err := redisGeoRadius(m.New{{$obj.Name}}(), key, longitude, latitude, query)
-	if err != nil {
-		return nil, err
-	}
+//! pipeline write
+type _{{$relation.Name}}RedisPipeline struct {
+	*redis.Pipeline
+	Err error
+}
 
-	objs := []*{{$obj.ModelType}}{}
-	for _, str := range strs {
-		{{- if $obj.ValueField.IsNeedTransform}}
-			var val {{$obj.ValueField.GetTransformType.TypeOrigin}}
-			if err := redisStringScan(str, &val); err != nil {
-				return nil, err
-			}
-			transformed_val := {{- printf $obj.ValueField.GetTransformType.ConvertTo "val"}}
-			obj, err := {{$obj.ModelType}}Mgr.Get{{$obj.ModelType}}ById(transformed_val)
-			if err != nil {
-				return nil, err
-			}
-			objs = append(objs, obj)
-		{{- else}}
-			var val {{$obj.ValueField.Type}}
-			if err := redisStringScan(str, &val); err != nil {
-				return nil, err
-			}
-			if obj, err := {{$obj.ModelType}}Mgr.Get{{$obj.ModelType}}ById(val); err == nil {
-				objs = append(objs, obj)
-			}
-		{{- end}}
-	}
-	return objs, nil
+func (m *_{{$relation.Name}}RedisMgr) BeginPipeline() *_{{$relation.Name}}RedisPipeline {
+	return &_{{$relation.Name}}RedisPipeline{m.Pipeline(), nil}
+}
+
+//! redis relation pair
+func (m *_{{$relation.Name}}RedisMgr) GeoAdd(obj *{{$relation.Name}}) error {
+	return nil
+}
+
+func (m *_{{$relation.Name}}RedisMgr) GeoRadius(key string, longitude float64, latitude float64, query *redis.GeoRadiusQuery) ([]*{{$relation.Name}}, error) {
+	return nil, nil
+}
+
+{{- if ne $relation.ModelType ""}}
+func (m *_{{$relation.Name}}RedisMgr) GeoRadiusRelated{{$relation.ModelType}}s(key string, longitude float64, latitude float64, query *redis.GeoRadiusQuery) ([]*{{$relation.ModelType}}, error) {
+	return nil, nil
 }
 {{- end}}
 
-func (m *_{{$obj.Name}}RedisMgr) GeoRem(key string, obj *{{$obj.Name}}) error {
-	return redisSetRem(obj, key, obj.Value)
-	{{- if $obj.ValueField.IsNeedTransform}}
-		transformed_{{$obj.ValueField.Name}} := {{- printf $obj.ValueField.GetTransformType.ConvertBack (printf "obj.%s" $obj.ValueField.Name)}}
-		return redisZRem(obj, key, transformed_{{$obj.ValueField.Name}})
-	{{- else}}
-		return redisZRem(obj, key, obj.Value)
-	{{- end}}
+func (m *_{{$relation.Name}}RedisMgr) GeoRem(key string, obj *{{$relation.Name}}) error {
+	return nil
 }
 
-func (m *_{{$obj.Name}}RedisMgr) GeoDel(key string) error {
-	return redisGeoDel(m.New{{$obj.Name}}(), key)
+func (m *_{{$relation.Name}}RedisMgr) Clear() error {
+	return nil
 }
 {{end}}
+

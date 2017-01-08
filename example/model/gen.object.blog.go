@@ -25,6 +25,34 @@ type Blog struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
+//! object function
+
+func (obj *Blog) GetNameSpace() string {
+	return "model"
+}
+
+func (obj *Blog) GetClassName() string {
+	return "Blog"
+}
+
+func (obj *Blog) GetTableName() string {
+	return "blogs"
+}
+
+func (obj *Blog) GetColumns() []string {
+	columns := []string{
+		"`id`",
+		"`user_id`",
+		"`title`",
+		"`content`",
+		"`status`",
+		"`readed`",
+		"`created_at`",
+		"`updated_at`",
+	}
+	return columns
+}
+
 //! uniques
 
 //! indexes
@@ -74,29 +102,3 @@ func (u *UserIdOfBlogIndex) Offset(n int) {
 //! ranges
 
 //! orders
-
-func (obj *Blog) GetNameSpace() string {
-	return "model"
-}
-
-func (obj *Blog) GetClassName() string {
-	return "Blog"
-}
-
-func (obj *Blog) GetTableName() string {
-	return "blogs"
-}
-
-func (obj *Blog) GetColumns() []string {
-	columns := []string{
-		"`id`",
-		"`user_id`",
-		"`title`",
-		"`content`",
-		"`status`",
-		"`readed`",
-		"`created_at`",
-		"`updated_at`",
-	}
-	return columns
-}
