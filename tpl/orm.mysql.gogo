@@ -1,0 +1,8 @@
+{{define "orm.mysql"}}package {{.GoPackage}}
+{{$obj := .}}
+{{- template "orm.mysql.read" . -}}
+
+{{- if ne $obj.DbTable "" -}}
+{{- template "orm.mysql.write" . -}}
+{{- end -}}
+{{end}}

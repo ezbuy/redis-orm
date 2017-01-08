@@ -1,0 +1,19 @@
+{{define "orm.redis.relation.pair"}}
+{{$obj := .}}
+{{$primaryField := $obj.PrimaryField}}
+//! redis relation pair
+
+func (pipe *_{{$obj.Name}}RedisPipeline) PairAdd(obj *{{$obj.Name}}) error {
+	pipe.Set()
+}
+
+func (pipe *_{{$obj.Name}}RedisPipeline) PairGet(obj *{{$obj.Name}}) error {
+	pipe.Set()
+}
+
+func (pipe *_{{$obj.Name}}RedisPipeline) PairRem(obj *{{$obj.Name}}) error {
+	pipe.Del()
+}
+
+
+{{end}}

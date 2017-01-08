@@ -1,0 +1,7 @@
+{{define "orm.mongo"}}package {{.GoPackage}}
+{{$obj := .}}
+//! orm.mongo
+
+
+
+{{end}}

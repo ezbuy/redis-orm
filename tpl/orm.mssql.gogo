@@ -1,0 +1,10 @@
+{{define "orm.mssql"}}package {{.GoPackage}}
+{{$obj := .}}
+//! orm.mssql
+{{template "orm.mssql.read" .}}
+
+{{- if ne $obj.Table ""}}
+{{template "orm.mssql.write" .}}
+{{- end}}
+
+{{end}}

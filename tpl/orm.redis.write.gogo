@@ -1,0 +1,6 @@
+{{define "orm.redis.write"}}
+{{$obj := .}}
+{{$primaryField := $obj.PrimaryField}}
+
+
+{{end}}

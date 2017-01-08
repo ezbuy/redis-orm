@@ -1,0 +1,7 @@
+{{define "orm.mssql.read"}}package {{.GoPackage}}
+{{$obj := .}}
+//! orm.mssql.read
+
+
+
+{{end}}

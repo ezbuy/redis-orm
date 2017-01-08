@@ -1,0 +1,3 @@
+{{define "conf.mongo"}}package {{.GoPackage}}
+//! conf.mongo
+{{end}}

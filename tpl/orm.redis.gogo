@@ -1,0 +1,120 @@
+{{define "orm.redis"}}package {{.GoPackage}}
+{{$obj := .}}
+{{$primaryField := $obj.PrimaryField}}
+
+import (
+	"github.com/ezbuy/redis-orm/orm"
+	redis "gopkg.in/redis.v5"
+)
+
+type _{{$obj.Name}}RedisMgr struct {
+	*orm.RedisStore
+}
+
+func {{$obj.Name}}RedisMgr() *_{{$obj.Name}}RedisMgr {	
+	return &_{{$obj.Name}}RedisMgr{_redis_store}
+}
+
+func New{{$obj.Name}}RedisMgr(cf *RedisConfig) (*_{{$obj.Name}}RedisMgr, error) {
+	store, err := orm.NewRedisStore(cf.Host, cf.Port, cf.Password, 0)
+	if err != nil {
+		return nil, err
+	}
+	return &_{{$obj.Name}}RedisMgr{store}, nil
+}
+
+//! pipeline write
+type _{{$obj.Name}}RedisPipeline struct {
+	*redis.Pipeline
+	Err error
+}
+
+func (m *_{{$obj.Name}}RedisMgr) BeginPipeline() *_{{$obj.Name}}RedisPipeline {
+	return &_{{$obj.Name}}RedisPipeline{m.Pipeline(), nil}
+}
+
+
+func (m *_{{$obj.Name}}RedisMgr) Load(db DBFetcher) error {
+	{{if ne $obj.ImportSQL ""}}
+	if err := m.Clear(); err != nil {
+		return err
+	}
+	return m.AddBySQL(db, "{{$obj.ImportSQL}}")
+	{{end}}
+	return nil
+}
+
+func (m *_{{$obj.Name}}RedisMgr) AddBySQL(db DBFetcher, sql string, args ...interface{}) error {
+	objs, err := db.FetchBySQL(sql, args)
+	if err != nil {
+		return err
+	}
+
+	for _, obj := range objs {
+		if err := m.Save(obj.({{$obj.Name}})); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+func (m *_{{$obj.Name}}RedisMgr) DelBySQL(db DBFetcher, sql string, args ...interface{}) error {
+	objs, err := db.FetchBySQL(sql, args)
+	if err != nil {
+		return err
+	}
+
+	for _, obj := range objs {
+		if err := m.Delete(obj.({{$obj.Name}})); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (m *_{{$obj.Name}}RedisMgr) Clear() error {
+	return nil
+}
+
+{{- if not $obj.Relation}}
+	{{template "orm.redis.read" .}}
+	{{template "orm.redis.write" .}}
+
+	{{- range $i, $unique := $obj.Uniques}}
+		{{template "orm.redis.relation.pair" $unique}}		
+	{{- end}}
+
+	{{- range $i, $index := $obj.Indexes}}
+		{{template "orm.redis.relation.set" $index}}
+	{{- end}}
+
+	{{- range $i, $rg := $obj.Ranges}}
+		{{template "orm.redis.relation.zset" $rg}}
+	{{- end}}
+
+	{{- range $i, $order := $obj.Orders}}
+		{{template "orm.redis.relation.zset" $order}}
+	{{- end}}
+{{- else}}
+	{{- if or (eq $obj.Relation.StoreType "pair")}}
+	{{template "orm.redis.relation.pair" $obj}}
+	{{- end}}
+
+	{{- if eq $obj.Relation.StoreType "set"}}
+	{{template "orm.redis.relation.set" $obj}}
+	{{- end}}
+
+	{{- if eq $obj.Relation.StoreType "zset"}}
+	{{template "orm.redis.relation.zset" $obj}}
+	{{- end}}
+
+	{{- if eq $obj.Relation.StoreType "geo"}}
+	{{template "orm.redis.relation.geo" $obj}}
+	{{- end}}
+
+	{{- if eq $obj.Relation.StoreType "list"}}
+	{{template "orm.redis.relation.list" $obj}}
+	{{- end}}
+{{- end}}
+
+{{end}}

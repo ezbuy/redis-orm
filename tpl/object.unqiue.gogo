@@ -1,0 +1,39 @@
+{{define "object.unique"}}
+{{$unique := .}}
+type {{$unique.Name}}Unique struct{
+	{{- range $j, $field := $unique.Fields}}
+	{{$field.Name}} {{$field.GetType}}
+	{{- end}}
+}
+
+func (u *{{$unique.Name}}Unique) Key() string {
+	strs := []string{
+		{{- range $j, $field := $unique.Fields}}
+		"{{$field.Name}}",
+		fmt.Sprint(u.{{$field.Name}}),
+		{{- end}}
+	}
+	return fmt.Sprintf("unique:%s", strings.Join(strs, ":"))
+}
+
+func (u *{{$unique.Name}}Unique) SQLFormat() string {
+	conditions := []string{
+		{{- range $j, $field := $unique.Fields}}
+		"{{$field.Name | camel2name}} = ?",
+		{{- end}}
+	}
+	return strings.Join(conditions, " AND ")
+}
+
+func (u *{{$unique.Name}}Unique) SQLParams() []interface{} {
+	return []interface{}{
+		{{- range $j, $field := $unique.Fields}}
+		u.{{$field.Name}},
+		{{- end}}
+	}
+}
+
+func (u *{{$unique.Name}}Unique) SQLLimit() int {
+	return 1
+}
+{{end}}

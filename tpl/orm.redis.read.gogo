@@ -1,0 +1,29 @@
+{{define "orm.redis.read"}}
+{{$obj := .}}
+{{$primaryField := $obj.PrimaryField}}
+//! redis model read
+func (m *_{{$obj.Name}}RedisMgr) FindOne(unique Unique) (string, error) {
+	return "", nil
+}
+
+func (m *_{{$obj.Name}}RedisMgr) Find(index Index) ([]string, error) {
+	return "", nil
+}
+
+func (m *_{{$obj.Name}}RedisMgr) Range(scope Range) ([]string, error) {
+	return "", nil
+}
+
+func (m *_{{$obj.Name}}RedisMgr) OrderBy(sort OrderBy) ([]string, error) {
+	return "", nil
+}
+
+func (m *_{{$obj.Name}}RedisMgr) Fetch{{$primaryField.Name | camel2name}} string) (*{{$obj.Name}}, error) {
+	return nil, nil
+}
+
+func (m *_{{$obj.Name}}RedisMgr) FetchBy{{$primaryField.Name}}s({{$primaryField.Name | camel2name}}s []string) ([]*{{$obj.Name}}, error) {
+	return nil, nil
+}
+
+{{end}}

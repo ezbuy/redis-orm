@@ -1,0 +1,170 @@
+{{define "orm.mysql.read"}}
+{{$obj := .}}
+{{$primaryField := $obj.PrimaryField}}
+import (
+	"fmt"
+	"strings"
+	"database/sql"
+	"github.com/ezbuy/redis-orm/orm"
+)
+
+var (
+	_ sql.DB
+)
+
+type _{{$obj.Name}}MySQLMgr struct {
+	*orm.MySQLStore
+}
+
+func {{$obj.Name}}MySQLMgr() *_{{$obj.Name}}MySQLMgr {
+	return &_{{$obj.Name}}MySQLMgr{_mysql_store}
+}
+
+func New{{$obj.Name}}MySQLMgr(cf *MySQLConfig) (*_{{$obj.Name}}MySQLMgr, error) {
+	store, err := orm.NewMySQLStore(cf.Host, cf.Port, cf.Database, cf.UserName, cf.Password)
+	if err != nil {
+		return nil, err
+	}
+	return &_{{$obj.Name}}MySQLMgr{store}, nil
+}
+
+func (m *_{{$obj.Name}}MySQLMgr) FetchBySQL(sql string, args ... interface{}) (results []interface{}, err error) {
+	rows, err := m.Query(sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("{{$obj.Name}} fetch error: %v", err)
+	}
+	defer rows.Close()
+
+	{{range $index, $field := $obj.Fields}}
+	{{- if $field.IsNullablePrimitive }}
+	var {{$field.Name}} sql.{{$field.GetNullSQLType}}
+	{{- else if $field.IsNeedTransform }}
+	var {{$field.Name}} {{$field.GetTransformType.TypeOrigin}}
+	{{- end -}}
+	{{- end }}
+
+	for rows.Next() {
+		var result {{$obj.Name}}
+		err = rows.Scan(
+		{{- range $index, $field := $obj.Fields -}}
+		{{- if or $field.IsNullablePrimitive $field.IsNeedTransform -}}
+			&{{$field.Name}},
+		{{- else -}}
+			&(result.{{$field.Name}}),
+		{{ end }}
+		{{- end -}}
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		{{range $index, $field := $obj.Fields}}
+		{{- if $field.IsNullablePrimitive}}
+			result.{{$field.Name}} =
+			{{- if $field.NullSQLTypeNeedCast -}}
+				{{$field.GetType}}({{$field.Name}}.{{$field.NullSQLTypeValue}})
+			{{- else -}}
+			{{$field.Name}}.{{$field.NullSQLTypeValue}}
+			{{- end -}}
+		{{- else if $field.IsNeedTransform }}
+		   	result.{{$field.Name}} = {{- printf $field.GetTransformType.ConvertTo $field.Name}}
+		{{end -}}
+		{{end}}
+
+		results = append(results, &result)
+	}
+	if err = rows.Err() ;err != nil {
+		return nil, fmt.Errorf("{{$obj.Name}} fetch result error: %v", err)
+	}
+	return
+}
+
+{{- if ne $obj.DbSource ""}}
+func (m *_{{$obj.Name}}MySQLMgr) Fetch({{$primaryField.Name | camel2name}} string) (*{{$obj.Name}}, error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` WHERE `{{$primaryField.Name}}` = (%s)", strings.Join(obj.GetColumns(), ","), {{$primaryField.Name | camel2name}})
+	objs, err := m.FetchBySQL(query)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0].(*{{$obj.Name}}), nil
+	}
+	return nil, fmt.Errorf("{{$obj.Name}} fetch record not found")
+}
+
+func (m *_{{$obj.Name}}MySQLMgr) FetchBy{{$primaryField.Name}}s({{$primaryField.Name | camel2name}}s []string) ([]*{{$obj.Name}}, error) {
+	if len({{$primaryField.Name | camel2name}}s) == 0 {
+		return []*{{$obj.Name}}{}, nil
+	}
+		
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` WHERE `{{$primaryField.Name}}` IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join({{$primaryField.Name | camel2name}}s, ","))
+	objs, err := m.FetchBySQL(query)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*{{$obj.Name}}, len(objs))
+	for _, obj := range objs {
+		results = append(results, obj.(*{{$obj.Name}}))
+	}
+	return results, nil
+}
+
+func (m *_{{$obj.Name}}MySQLMgr) FindOne(unique Unique) (string, error) {
+	objs, err := m.queryLimit(unique.SQLFormat(), unique.SQLLimit(), unique.SQLParams()...)
+	if err != nil {
+		return "", err
+	}
+	if len(objs) > 0 {
+		return fmt.Sprint(objs[0]), nil
+	}
+	return "", fmt.Errorf("{{$obj.Name}} find record not found")
+}
+
+func (m *_{{$obj.Name}}MySQLMgr) Find(index Index) ([]string, error) {
+	return m.queryLimit(index.SQLFormat(), index.SQLLimit(), index.SQLParams()...)
+}
+
+func (m *_{{$obj.Name}}MySQLMgr) Range(scope Range) ([]string, error) {
+	return m.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+}
+
+func (m *_{{$obj.Name}}MySQLMgr) OrderBy(sort OrderBy) ([]string, error) {
+	return m.queryLimit(sort.SQLFormat(), sort.SQLLimit(), sort.SQLParams()...)
+}
+
+func (m *_{{$obj.Name}}MySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []string, err error){
+	query := fmt.Sprintf("SELECT `{{$primaryField.Name | camel2name}}` FROM `{{$obj.DbSource}}`")
+	if where != "" {
+		query += " WHERE " 
+		query += where
+	}
+
+	rows, err := m.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("{{$obj.Name}} query limit error: %v", err)
+	}
+	defer rows.Close()
+
+	offset :=0
+	for rows.Next() {
+		if limit >= 0 && offset >= limit {
+			break
+		}
+		offset++
+
+		var result {{$primaryField.GetType}}
+		if err = rows.Scan(&result); err != nil {
+			return nil, err
+		}
+		results = append(results, fmt.Sprint(result))
+	}
+	if err := rows.Err() ;err != nil {
+		return nil, fmt.Errorf("{{$obj.Name}} query limit result error: %v", err)
+	}
+	return
+}
+{{- end}}
+
+{{end}}

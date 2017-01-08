@@ -1,0 +1,16 @@
+Blog:
+  dbs: [mysql]
+  dbname: ezorm
+  dbtable: blogs
+  fields:
+    - Id: int32
+      flags: [primary]
+    - UserId: int32
+      flags: [index]
+    - Title: string
+    - Content: string
+    - Status: int32
+    - Readed: int32
+    - CreatedAt: timestamp
+    - UpdatedAt: timestamp
+  importSQL: "SELECT `id`,`user_id`,`title`,`content`,`status`,`readed`, `created_at`, `updated_at` FROM blogs"

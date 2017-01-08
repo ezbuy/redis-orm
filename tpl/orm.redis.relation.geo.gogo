@@ -1,0 +1,137 @@
+{{define "orm.redis.geo"}}
+{{$obj := .}}
+{{$idFieldName := $obj.GetPrimaryKeyName}}
+{{$idField := $obj.GetPrimaryKey}}
+
+//! orm.redis.geo
+import (
+	"time"
+	redis "gopkg.in/redis.v5"
+	"github.com/liujianping/redis-orm/orm"
+)
+var (
+	_ orm.James
+	_ time.Time
+)
+
+{{- if or ($obj.DbContains "mysql") ($obj.DbContains "mssql")}}
+func (m *_{{$obj.Name}}Mgr) AddBySQL(sql string, args ...interface{}) error {
+	objs, err := m.Query(sql)
+	if err != nil {
+		return err
+	}
+
+	for _, obj := range objs {
+		if err := m.GeoAdd(obj.Key, obj); err != nil {
+			return err
+		}
+	}	
+	return nil
+}
+
+func (m *_{{$obj.Name}}Mgr) DelBySQL(sql string, args ...interface{}) error {
+	objs, err := m.Query(sql)
+	if err != nil {
+		return err
+	}
+
+	for _, obj := range objs {
+		if err := m.GeoRem(obj.Key, obj); err != nil {
+			return err
+		}
+	}	
+	return nil
+}
+
+{{- if ne $obj.ImportSQL ""}}
+func (m *_{{$obj.Name}}Mgr) Import() error {	
+	return m.AddBySQL("{{$obj.ImportSQL}}")
+}
+{{- end}}
+
+{{- end}}
+
+///////////// GEO /////////////////////////////////////////////////////
+func (m *_{{$obj.Name}}RedisMgr) GeoAdd(key string, obj *{{$obj.Name}}) error {
+	{{- if $obj.ValueField.IsNeedTransform}}
+		transformed_{{$obj.ValueField.Name}} := {{- printf $obj.ValueField.GetTransformType.ConvertBack (printf "obj.%s" $obj.ValueField.Name)}}
+		return redisGeoAdd(obj, key, obj.Longitude, obj.Latitude, transformed_{{$obj.ValueField.Name}})
+	{{- else}}
+		return redisGeoAdd(obj, key, obj.Longitude, obj.Latitude, obj.Value)
+	{{- end}}
+}
+
+func (m *_{{$obj.Name}}RedisMgr) GeoRadius(key string, longitude float64, latitude float64, query *redis.GeoRadiusQuery) ([]*{{$obj.Name}}, error) {
+	strs, err := redisGeoRadius(m.New{{$obj.Name}}(), key, longitude, latitude, query)
+	if err != nil {
+		return nil, err
+	}
+
+	objs := []*{{$obj.Name}}{}
+	for _, str := range strs {
+		obj := m.New{{$obj.Name}}()
+		obj.Key = key
+		{{- if $obj.ValueField.IsNeedTransform}}
+			var val {{$obj.ValueField.GetTransformType.TypeOrigin}}
+			if err := redisStringScan(str, &val); err != nil {
+				return nil, err
+			}
+			obj.{{$obj.ValueField.Name}} = {{- printf $obj.ValueField.GetTransformType.ConvertTo "val"}}
+		{{- else}}
+		if err := redisStringScan(str, &obj.Value); err != nil {
+			return nil, err
+		}
+		{{- end}}
+		objs = append(objs, obj)
+	}
+	return objs, nil
+}
+
+{{- if ne $obj.ModelType ""}}
+func (m *_{{$obj.Name}}RedisMgr) GeoRadiusRelated{{$obj.ModelType}}s(key string, longitude float64, latitude float64, query *redis.GeoRadiusQuery) ([]*{{$obj.ModelType}}, error) {
+	strs, err := redisGeoRadius(m.New{{$obj.Name}}(), key, longitude, latitude, query)
+	if err != nil {
+		return nil, err
+	}
+
+	objs := []*{{$obj.ModelType}}{}
+	for _, str := range strs {
+		{{- if $obj.ValueField.IsNeedTransform}}
+			var val {{$obj.ValueField.GetTransformType.TypeOrigin}}
+			if err := redisStringScan(str, &val); err != nil {
+				return nil, err
+			}
+			transformed_val := {{- printf $obj.ValueField.GetTransformType.ConvertTo "val"}}
+			obj, err := {{$obj.ModelType}}Mgr.Get{{$obj.ModelType}}ById(transformed_val)
+			if err != nil {
+				return nil, err
+			}
+			objs = append(objs, obj)
+		{{- else}}
+			var val {{$obj.ValueField.Type}}
+			if err := redisStringScan(str, &val); err != nil {
+				return nil, err
+			}
+			if obj, err := {{$obj.ModelType}}Mgr.Get{{$obj.ModelType}}ById(val); err == nil {
+				objs = append(objs, obj)
+			}
+		{{- end}}
+	}
+	return objs, nil
+}
+{{- end}}
+
+func (m *_{{$obj.Name}}RedisMgr) GeoRem(key string, obj *{{$obj.Name}}) error {
+	return redisSetRem(obj, key, obj.Value)
+	{{- if $obj.ValueField.IsNeedTransform}}
+		transformed_{{$obj.ValueField.Name}} := {{- printf $obj.ValueField.GetTransformType.ConvertBack (printf "obj.%s" $obj.ValueField.Name)}}
+		return redisZRem(obj, key, transformed_{{$obj.ValueField.Name}})
+	{{- else}}
+		return redisZRem(obj, key, obj.Value)
+	{{- end}}
+}
+
+func (m *_{{$obj.Name}}RedisMgr) GeoDel(key string) error {
+	return redisGeoDel(m.New{{$obj.Name}}(), key)
+}
+{{end}}
