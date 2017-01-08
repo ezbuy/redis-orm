@@ -29,6 +29,52 @@ type User struct {
 	UpdatedAt   time.Time `db:"updated_at" json:"updated_at"`
 }
 
+//! object function
+
+func (obj *User) GetNameSpace() string {
+	return "model"
+}
+
+func (obj *User) GetClassName() string {
+	return "User"
+}
+
+func (obj *User) GetTableName() string {
+	return "users"
+}
+
+func (obj *User) GetColumns() []string {
+	columns := []string{
+		"`id`",
+		"`name`",
+		"`mailbox`",
+		"`sex`",
+		"`longitude`",
+		"`latitude`",
+		"`description`",
+		"`password`",
+		"`head_url`",
+		"`status`",
+		"`created_at`",
+		"`updated_at`",
+	}
+	return columns
+}
+func (obj *User) GetIndexes() []string {
+	idx := []string{
+		"Sex",
+	}
+	return idx
+}
+
+func (obj *User) GetStoreType() string {
+	return "hash"
+}
+
+func (obj *User) GetPrimaryName() string {
+	return "Id"
+}
+
 //! uniques
 
 type MailboxPasswordOfUserUnique struct {
@@ -112,47 +158,3 @@ func (u *SexOfUserIndex) Offset(n int) {
 //! ranges
 
 //! orders
-
-func (obj *User) GetNameSpace() string {
-	return "model"
-}
-
-func (obj *User) GetClassName() string {
-	return "User"
-}
-
-func (obj *User) GetTableName() string {
-	return "users"
-}
-
-func (obj *User) GetColumns() []string {
-	columns := []string{
-		"`id`",
-		"`name`",
-		"`mailbox`",
-		"`sex`",
-		"`longitude`",
-		"`latitude`",
-		"`description`",
-		"`password`",
-		"`head_url`",
-		"`status`",
-		"`created_at`",
-		"`updated_at`",
-	}
-	return columns
-}
-func (obj *User) GetIndexes() []string {
-	idx := []string{
-		"Sex",
-	}
-	return idx
-}
-
-func (obj *User) GetStoreType() string {
-	return "hash"
-}
-
-func (obj *User) GetPrimaryName() string {
-	return "Id"
-}

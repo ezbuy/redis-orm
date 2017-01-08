@@ -9,6 +9,7 @@ type Index struct {
 	Name       string
 	Fields     []*Field
 	FieldNames []string
+	relation   *Relation
 	Obj        *MetaObject
 }
 
@@ -25,15 +26,18 @@ func (idx *Index) build() error {
 		}
 		idx.Fields = append(idx.Fields, f)
 	}
+
 	return nil
 }
 
 func (idx *Index) GetRelation(storetype, valuetype, modeltype string) *Relation {
-	relation := NewRelation(idx.Obj)
-	relation.Name = idx.Name
-	relation.StoreType = storetype
-	relation.ValueType = valuetype
-	relation.ModelType = modeltype
-	relation.build()
-	return nil
+	if idx.relation == nil {
+		idx.relation = NewRelation(idx.Obj)
+	}
+	idx.relation.Name = idx.Name + "Relation"
+	idx.relation.StoreType = storetype
+	idx.relation.ValueType = valuetype
+	idx.relation.ModelType = modeltype
+	idx.relation.build()
+	return idx.relation
 }

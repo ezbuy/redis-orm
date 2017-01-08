@@ -1,19 +1,20 @@
 {{define "object"}}package {{.GoPackage}}
 {{$obj := .}}
 {{$primaryField := $obj.PrimaryField}}
-import (
-	"fmt"
-	"time"
-	"strings"
-	"github.com/ezbuy/redis-orm/orm"
-)
-var (
-	_ time.Time
-	_ fmt.Formatter
-	_ strings.Reader
-	_ orm.VSet
-)
 {{if not $obj.Relation}}
+	import (
+		"fmt"
+		"time"
+		"strings"
+		"github.com/ezbuy/redis-orm/orm"
+	)
+	var (
+		_ time.Time
+		_ fmt.Formatter
+		_ strings.Reader
+		_ orm.VSet
+	)
+
 	{{if eq $obj.Db "mysql"}}
 		type {{.Name}} struct {
 			{{- range $field := .Fields}}
@@ -54,7 +55,8 @@ var (
 			{{- end}}
 		}
 	{{end}}
-
+	//! object function
+	{{template "object.functions" $obj}}
 	//! uniques
 	{{- range $i, $unique := $obj.Uniques}}
 	{{template "object.unique" $unique}}
@@ -73,10 +75,15 @@ var (
 	//! orders
 	{{- range $i, $order := $obj.Orders}}
 	{{template "object.order.by" $order}}
-	{{- end}}
-
-	{{template "object.functions" $obj}}
+	{{- end}}	
 {{else}}
+	import (
+		"github.com/ezbuy/redis-orm/orm"
+		redis "gopkg.in/redis.v5"
+	)
+	var (
+		_ orm.VSet
+	)
 	{{template "relation" $obj.Relation}}
 {{end}}
 

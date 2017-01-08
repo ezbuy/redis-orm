@@ -1,9 +1,31 @@
 {{define "relation"}}
 {{$relation := .}}
+{{$primaryField := $relation.PrimaryField}}
 //! relation
 type {{.Name}} struct {
 	{{- range $field := .Fields}}
 	{{$field.Name}}  {{$field.GetType}} {{$field.GetTag}} 
 	{{- end}}
 }
+
+{{if eq $relation.StoreType "pair"}}
+	{{template "relation.pair" .}}
+{{end}}
+
+{{if eq $relation.StoreType "set"}}
+	{{template "relation.set" .}}
+{{end}}
+
+{{if eq $relation.StoreType "zset"}}
+	{{template "relation.zset" .}}
+{{end}}
+
+{{if eq $relation.StoreType "geo"}}
+	{{template "relation.geo" .}}
+{{end}}
+
+{{if eq $relation.StoreType "list"}}
+	{{template "relation.list" .}}
+{{end}}
+
 {{end}}

@@ -121,7 +121,7 @@ func (f *Field) HasIndex() bool {
 
 func (f *Field) GetType() string {
 	st := f.Type
-	if transform := f.GetTransformType(); transform != nil {
+	if transform := f.GetTransform(); transform != nil {
 		st = transform.TypeTarget
 	}
 
@@ -212,10 +212,10 @@ var transformMap = map[string]Transform{
 }
 
 func (f *Field) IsNeedTransform() bool {
-	return f.GetTransformType() != nil
+	return f.GetTransform() != nil
 }
 
-func (f *Field) GetTransformType() *Transform {
+func (f *Field) GetTransform() *Transform {
 	key := fmt.Sprintf("%v_%v", f.Obj.Db, f.Type)
 	t, ok := transformMap[key]
 	if !ok {
@@ -225,7 +225,7 @@ func (f *Field) GetTransformType() *Transform {
 }
 
 func (f *Field) GetTransformValue(prefix string) string {
-	t := f.GetTransformType()
+	t := f.GetTransform()
 	if t == nil {
 		return prefix + f.Name
 	}

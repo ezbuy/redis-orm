@@ -2,9 +2,10 @@ package model
 
 import (
 	"fmt"
-	"github.com/ezbuy/redis-orm/orm"
 	"strings"
 	"time"
+
+	"github.com/ezbuy/redis-orm/orm"
 )
 
 var (
@@ -20,6 +21,31 @@ type UserBaseInfo struct {
 	Mailbox  string `db:"mailbox"`
 	Password string `db:"password"`
 	Sex      bool   `db:"sex"`
+}
+
+//! object function
+
+func (obj *UserBaseInfo) GetNameSpace() string {
+	return "model"
+}
+
+func (obj *UserBaseInfo) GetClassName() string {
+	return "UserBaseInfo"
+}
+
+func (obj *UserBaseInfo) GetTableName() string {
+	return ""
+}
+
+func (obj *UserBaseInfo) GetColumns() []string {
+	columns := []string{
+		"`id`",
+		"`name`",
+		"`mailbox`",
+		"`password`",
+		"`sex`",
+	}
+	return columns
 }
 
 //! uniques
@@ -105,26 +131,3 @@ func (u *NameOfUserBaseInfoIndex) Offset(n int) {
 //! ranges
 
 //! orders
-
-func (obj *UserBaseInfo) GetNameSpace() string {
-	return "model"
-}
-
-func (obj *UserBaseInfo) GetClassName() string {
-	return "UserBaseInfo"
-}
-
-func (obj *UserBaseInfo) GetTableName() string {
-	return ""
-}
-
-func (obj *UserBaseInfo) GetColumns() []string {
-	columns := []string{
-		"`id`",
-		"`name`",
-		"`mailbox`",
-		"`password`",
-		"`sex`",
-	}
-	return columns
-}

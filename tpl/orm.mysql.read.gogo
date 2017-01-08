@@ -42,7 +42,7 @@ func (m *_{{$obj.Name}}MySQLMgr) FetchBySQL(sql string, args ... interface{}) (r
 	{{- if $field.IsNullablePrimitive }}
 	var {{$field.Name}} sql.{{$field.GetNullSQLType}}
 	{{- else if $field.IsNeedTransform }}
-	var {{$field.Name}} {{$field.GetTransformType.TypeOrigin}}
+	var {{$field.Name}} {{$field.GetTransform.TypeOrigin}}
 	{{- end -}}
 	{{- end }}
 
@@ -70,7 +70,7 @@ func (m *_{{$obj.Name}}MySQLMgr) FetchBySQL(sql string, args ... interface{}) (r
 			{{$field.Name}}.{{$field.NullSQLTypeValue}}
 			{{- end -}}
 		{{- else if $field.IsNeedTransform }}
-		   	result.{{$field.Name}} = {{- printf $field.GetTransformType.ConvertTo $field.Name}}
+		   	result.{{$field.Name}} = {{- printf $field.GetTransform.ConvertTo $field.Name}}
 		{{end -}}
 		{{end}}
 
