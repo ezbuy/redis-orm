@@ -2,29 +2,54 @@
 
 import "github.com/ezbuy/redis-orm/orm"
 
-//! conf.orm
-type Unique interface{
-	Key() string
+type SQL interface{
 	SQLFormat() string
 	SQLParams() []interface{}
 	SQLLimit() int
-}
-
-type Index interface{
-	Unique
 	Offset(n int)
 	Limit(n int)
 }
 
+//! conf.orm
+type Unique interface{
+	SQL
+	Key() string
+	UKRelation() UniqueRelation
+}
+type UniqueRelation interface {
+	FindOne(key string) (string, error)
+}
+
+type Index interface{
+	SQL
+	Key() string
+	IDXRelation() IndexRelation
+}
+type IndexRelation interface {
+	Find(key string) ([]string, error)
+}
+
 type Range interface{
-	Index
+	SQL
+	Key() string
 	IncludeBegin(flag bool)
 	IncludeEnd(flag bool)
+	Begin() int64
+	End() int64
+	RNGRelation() RangeRelation
+}
+type RangeRelation interface {
+	Range(key string, start, end int64) ([]string, error)
 }
 
 type OrderBy interface{
-	Index
+	SQL
+	Key() string
 	Ascend(flag bool)
+	ORDRelation() OrderByRelation
+}
+type OrderByRelation interface {
+	OrderBy(key string, asc bool) ([]string, error)
 }
 
 type Finder interface{

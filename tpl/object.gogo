@@ -78,10 +78,13 @@
 	{{- end}}	
 {{else}}
 	import (
-		"github.com/ezbuy/redis-orm/orm"
+		"fmt"
 		redis "gopkg.in/redis.v5"
+
+		"github.com/ezbuy/redis-orm/orm"
 	)
 	var (
+		_ fmt.Formatter
 		_ orm.VSet
 	)
 	{{template "relation" $obj.Relation}}

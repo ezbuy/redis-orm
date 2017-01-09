@@ -77,12 +77,12 @@ func (obj *User) GetPrimaryName() string {
 
 //! uniques
 
-type MailboxPasswordOfUserUnique struct {
+type MailboxPasswordOfUserUK struct {
 	Mailbox  string
 	Password string
 }
 
-func (u *MailboxPasswordOfUserUnique) Key() string {
+func (u *MailboxPasswordOfUserUK) Key() string {
 	strs := []string{
 		"Mailbox",
 		fmt.Sprint(u.Mailbox),
@@ -92,7 +92,7 @@ func (u *MailboxPasswordOfUserUnique) Key() string {
 	return fmt.Sprintf("unique:%s", strings.Join(strs, ":"))
 }
 
-func (u *MailboxPasswordOfUserUnique) SQLFormat() string {
+func (u *MailboxPasswordOfUserUK) SQLFormat() string {
 	conditions := []string{
 		"mailbox = ?",
 		"password = ?",
@@ -100,26 +100,36 @@ func (u *MailboxPasswordOfUserUnique) SQLFormat() string {
 	return strings.Join(conditions, " AND ")
 }
 
-func (u *MailboxPasswordOfUserUnique) SQLParams() []interface{} {
+func (u *MailboxPasswordOfUserUK) SQLParams() []interface{} {
 	return []interface{}{
 		u.Mailbox,
 		u.Password,
 	}
 }
 
-func (u *MailboxPasswordOfUserUnique) SQLLimit() int {
+func (u *MailboxPasswordOfUserUK) SQLLimit() int {
 	return 1
+}
+
+func (u *MailboxPasswordOfUserUK) Limit(n int) {
+}
+
+func (u *MailboxPasswordOfUserUK) Offset(n int) {
+}
+
+func (u *MailboxPasswordOfUserUK) UKRelation() UniqueRelation {
+	return MailboxPasswordOfUserUKRelationRedisMgr()
 }
 
 //! indexes
 
-type SexOfUserIndex struct {
+type SexOfUserIDX struct {
 	Sex    bool
 	offset int
 	limit  int
 }
 
-func (u *SexOfUserIndex) Key() string {
+func (u *SexOfUserIDX) Key() string {
 	strs := []string{
 		"Sex",
 		fmt.Sprint(u.Sex),
@@ -127,34 +137,121 @@ func (u *SexOfUserIndex) Key() string {
 	return fmt.Sprintf("index:%s", strings.Join(strs, ":"))
 }
 
-func (u *SexOfUserIndex) SQLFormat() string {
+func (u *SexOfUserIDX) SQLFormat() string {
 	conditions := []string{
 		"sex = ?",
 	}
 	return fmt.Sprintf("%s %s", strings.Join(conditions, " AND "), orm.OffsetLimit(u.offset, u.limit))
 }
 
-func (u *SexOfUserIndex) SQLParams() []interface{} {
+func (u *SexOfUserIDX) SQLParams() []interface{} {
 	return []interface{}{
 		u.Sex,
 	}
 }
 
-func (u *SexOfUserIndex) SQLLimit() int {
+func (u *SexOfUserIDX) SQLLimit() int {
 	if u.limit > 0 {
 		return u.limit
 	}
 	return -1
 }
 
-func (u *SexOfUserIndex) Limit(n int) {
+func (u *SexOfUserIDX) Limit(n int) {
 	u.limit = n
 }
 
-func (u *SexOfUserIndex) Offset(n int) {
+func (u *SexOfUserIDX) Offset(n int) {
 	u.offset = n
 }
 
+func (u *SexOfUserIDX) IDXRelation() IndexRelation {
+	return SexOfUserIDXRelationRedisMgr()
+}
+
 //! ranges
+
+type NameStatusOfUserRNG struct {
+	Name         string
+	StatusBegin  int32
+	StatusEnd    int32
+	offset       int
+	limit        int
+	includeBegin bool
+	includeEnd   bool
+}
+
+func (u *NameStatusOfUserRNG) Key() string {
+	strs := []string{
+		"Name",
+		fmt.Sprint(u.Name),
+		"Status",
+	}
+	return fmt.Sprintf("range:%s", strings.Join(strs, ":"))
+}
+
+func (u *NameStatusOfUserRNG) beginOp() string {
+	if u.includeBegin {
+		return ">="
+	}
+	return ">"
+}
+func (u *NameStatusOfUserRNG) endOp() string {
+	if u.includeBegin {
+		return "<="
+	}
+	return "<"
+}
+
+func (u *NameStatusOfUserRNG) SQLFormat() string {
+	conditions := []string{}
+	conditions = append(conditions, "name = ?")
+	conditions = append(conditions, fmt.Sprintf("status %s ?", u.beginOp()))
+	conditions = append(conditions, fmt.Sprintf("status %s ?", u.endOp()))
+	return fmt.Sprintf("%s %s", strings.Join(conditions, " AND "), orm.OffsetLimit(u.offset, u.limit))
+}
+
+func (u *NameStatusOfUserRNG) SQLParams() []interface{} {
+	return []interface{}{
+		u.Name,
+		u.StatusBegin,
+		u.StatusEnd,
+	}
+}
+
+func (u *NameStatusOfUserRNG) SQLLimit() int {
+	if u.limit > 0 {
+		return u.limit
+	}
+	return -1
+}
+
+func (u *NameStatusOfUserRNG) Limit(n int) {
+	u.limit = n
+}
+
+func (u *NameStatusOfUserRNG) Offset(n int) {
+	u.offset = n
+}
+
+func (u *NameStatusOfUserRNG) Begin() int64 {
+	return 0
+}
+
+func (u *NameStatusOfUserRNG) End() int64 {
+	return 0
+}
+
+func (u *NameStatusOfUserRNG) IncludeBegin(f bool) {
+	u.includeBegin = f
+}
+
+func (u *NameStatusOfUserRNG) IncludeEnd(f bool) {
+	u.includeEnd = f
+}
+
+func (u *NameStatusOfUserRNG) ORDRelation() RangeRelation {
+	return NameStatusOfUserRNGRelationRedisMgr()
+}
 
 //! orders

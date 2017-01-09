@@ -36,7 +36,7 @@ func TestPeopleObject(t *testing.T) {
 	user1.HeadUrl = "bbb.png"
 	assert.Equal(t, tx.Save(user1), err)
 
-	unique := &MailboxPasswordOfUserUnique{
+	unique := &MailboxPasswordOfUserUK{
 		Mailbox:  "user01@sss.fff",
 		Password: "123456",
 	}
@@ -75,7 +75,7 @@ func TestPeopleObject(t *testing.T) {
 
 	blogTx.Close()
 
-	index := &UserIdOfBlogIndex{
+	index := &UserIdOfBlogIDX{
 		UserId: user1.Id,
 	}
 

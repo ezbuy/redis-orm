@@ -1,6 +1,8 @@
 {{define "object.range"}}
 {{$rg := .}}
-type {{$rg.Name}}Range struct{
+{{$obj := .Obj}}
+{{$primaryField := .Obj.PrimaryField}}
+type {{$rg.Name}} struct{
 	{{- range $j, $field := $rg.Fields}}
 		{{- if eq (add $j 1) (len $rg.Fields)}}
 		{{$field.Name}}Begin {{$field.GetType}}
@@ -14,7 +16,7 @@ type {{$rg.Name}}Range struct{
 	includeBegin bool
 	includeEnd bool
 }
-func (u *{{$rg.Name}}Range) Key() string {
+func (u *{{$rg.Name}}) Key() string {
 	strs := []string{
 		{{- range $j, $field := $rg.Fields}}
 			{{- if eq (add $j 1) (len $rg.Fields)}}
@@ -28,20 +30,20 @@ func (u *{{$rg.Name}}Range) Key() string {
 	return fmt.Sprintf("range:%s", strings.Join(strs, ":"))
 }
 
-func (u *{{$rg.Name}}Range) beginOp() string {
+func (u *{{$rg.Name}}) beginOp() string {
 	if u.includeBegin {
 		return ">="
 	}
 	return ">"
 }
-func (u *{{$rg.Name}}Range) endOp() string {
+func (u *{{$rg.Name}}) endOp() string {
 	if u.includeBegin {
 		return "<="
 	}
 	return "<"
 }
 
-func (u *{{$rg.Name}}Range) SQLFormat() string {
+func (u *{{$rg.Name}}) SQLFormat() string {
 	conditions := []string{}
 		{{- range $j, $field := $rg.Fields}}
 			{{- if eq (add $j 1) (len $rg.Fields)}}
@@ -54,7 +56,7 @@ func (u *{{$rg.Name}}Range) SQLFormat() string {
 	return fmt.Sprintf("%s %s", strings.Join(conditions, " AND "), orm.OffsetLimit(u.offset, u.limit))
 }
 
-func (u *{{$rg.Name}}Range) SQLParams() []interface{} {
+func (u *{{$rg.Name}}) SQLParams() []interface{} {
 	return []interface{}{
 		{{- range $j, $field := $rg.Fields}}
 			{{- if eq (add $j 1) (len $rg.Fields)}}
@@ -67,26 +69,44 @@ func (u *{{$rg.Name}}Range) SQLParams() []interface{} {
 	}
 }
 
-func (u *{{$rg.Name}}Range) SQLLimit() int {
+func (u *{{$rg.Name}}) SQLLimit() int {
 	if u.limit > 0 {
 		return u.limit	
 	}
 	return -1
 }
 
-func (u *{{$rg.Name}}Range) Limit(n int) {
+func (u *{{$rg.Name}}) Limit(n int) {
 	u.limit = n
 }
 
-func (u *{{$rg.Name}}Range) Offset(n int) {
+func (u *{{$rg.Name}}) Offset(n int) {
 	u.offset = n
 }
 
-func (u *{{$rg.Name}}Range) IncludeBegin(f bool) {
+func (u *{{$rg.Name}}) Begin() int64 {
+	return 0
+}
+
+func (u *{{$rg.Name}}) End() int64 {
+	return 0
+}
+
+
+func (u *{{$rg.Name}}) IncludeBegin(f bool) {
 	u.includeBegin = f
 }
 
-func (u *{{$rg.Name}}Range) IncludeEnd(f bool) {
+func (u *{{$rg.Name}}) IncludeEnd(f bool) {
 	u.includeEnd = f
+}
+
+{{$relation := $rg.GetRelation "zset" $primaryField.GetType $obj.Name}}
+func (u *{{$rg.Name}}) ORDRelation() RangeRelation {
+	{{- if $rg.Obj.DbContains "redis"}}
+	return {{$relation.Name}}RedisMgr()
+	{{- else}}
+	return nil
+	{{- end}}
 }
 {{end}}

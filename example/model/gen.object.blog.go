@@ -57,13 +57,13 @@ func (obj *Blog) GetColumns() []string {
 
 //! indexes
 
-type UserIdOfBlogIndex struct {
+type UserIdOfBlogIDX struct {
 	UserId int32
 	offset int
 	limit  int
 }
 
-func (u *UserIdOfBlogIndex) Key() string {
+func (u *UserIdOfBlogIDX) Key() string {
 	strs := []string{
 		"UserId",
 		fmt.Sprint(u.UserId),
@@ -71,32 +71,36 @@ func (u *UserIdOfBlogIndex) Key() string {
 	return fmt.Sprintf("index:%s", strings.Join(strs, ":"))
 }
 
-func (u *UserIdOfBlogIndex) SQLFormat() string {
+func (u *UserIdOfBlogIDX) SQLFormat() string {
 	conditions := []string{
 		"user_id = ?",
 	}
 	return fmt.Sprintf("%s %s", strings.Join(conditions, " AND "), orm.OffsetLimit(u.offset, u.limit))
 }
 
-func (u *UserIdOfBlogIndex) SQLParams() []interface{} {
+func (u *UserIdOfBlogIDX) SQLParams() []interface{} {
 	return []interface{}{
 		u.UserId,
 	}
 }
 
-func (u *UserIdOfBlogIndex) SQLLimit() int {
+func (u *UserIdOfBlogIDX) SQLLimit() int {
 	if u.limit > 0 {
 		return u.limit
 	}
 	return -1
 }
 
-func (u *UserIdOfBlogIndex) Limit(n int) {
+func (u *UserIdOfBlogIDX) Limit(n int) {
 	u.limit = n
 }
 
-func (u *UserIdOfBlogIndex) Offset(n int) {
+func (u *UserIdOfBlogIDX) Offset(n int) {
 	u.offset = n
+}
+
+func (u *UserIdOfBlogIDX) IDXRelation() IndexRelation {
+	return nil
 }
 
 //! ranges

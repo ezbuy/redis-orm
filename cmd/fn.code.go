@@ -54,7 +54,9 @@ func GenerateCode() {
 		i = i + 1
 		if model != "" {
 			for _, obj := range objs {
-				obj.Tag = fmt.Sprint(i)
+				if obj.Tag == "" {
+					obj.Tag = fmt.Sprint(i)
+				}
 				if strings.ToLower(obj.Name) == strings.ToLower(model) {
 					metaObjs[obj.Name] = obj
 					for _, db := range obj.Dbs {

@@ -17,8 +17,12 @@ func NewIndex(obj *MetaObject) *Index {
 	return &Index{Obj: obj}
 }
 
-func (idx *Index) build() error {
-	idx.Name = fmt.Sprintf("%sOf%s", strings.Join(idx.FieldNames, ""), idx.Obj.Name)
+func (idx *Index) LastField() *Field {
+	return idx.Fields[len(idx.Fields)-1]
+}
+
+func (idx *Index) build(suffix string) error {
+	idx.Name = fmt.Sprintf("%sOf%s%s", strings.Join(idx.FieldNames, ""), idx.Obj.Name, suffix)
 	for _, name := range idx.FieldNames {
 		f := idx.Obj.FieldByName(name)
 		if f == nil {

@@ -3,27 +3,73 @@
 {{$primaryField := $obj.PrimaryField}}
 //! redis model read
 func (m *_{{$obj.Name}}RedisMgr) FindOne(unique Unique) (string, error) {
+	if relation := unique.UKRelation(); relation != nil {
+		return relation.FindOne(unique.Key())
+	}
 	return "", nil
 }
 
 func (m *_{{$obj.Name}}RedisMgr) Find(index Index) ([]string, error) {
+	if relation := index.IDXRelation(); relation != nil {
+		return relation.Find(index.Key())
+	}
 	return nil, nil
 }
 
 func (m *_{{$obj.Name}}RedisMgr) Range(scope Range) ([]string, error) {
+	if relation := scope.RNGRelation(); relation != nil {
+		return relation.Range(scope.Key(), scope.Begin(), scope.End())
+	}
 	return nil, nil
 }
 
 func (m *_{{$obj.Name}}RedisMgr) OrderBy(sort OrderBy) ([]string, error) {
+	if relation := sort.ORDRelation(); relation != nil {
+		return relation.OrderBy(sort.Key(), true)
+	}
 	return nil, nil
 }
 
 func (m *_{{$obj.Name}}RedisMgr) Fetch({{$primaryField.Name | camel2name}} string) (*{{$obj.Name}}, error) {
-	return nil, nil
+	obj := &{{$obj.Name}}{}
+	pipe := m.BeginPipeline()
+	{{- range $i, $field := $obj.Fields}}
+	pipe.HGet(keyOfObject(obj, fmt.Sprint({{$primaryField.GetTransformValue "obj."}})), "{{$field.Name}}")
+	{{- end}}
+	cmds, err := pipe.Exec();
+	if err != nil {
+		return nil, err
+	}
+	{{- range $i, $field := $obj.Fields}}
+		str{{$i}}, err := cmds[{{$i}}].(*redis.StringCmd).Result()
+		if err != nil {
+			return nil, err
+		}
+		{{- if $field.IsNeedTransform}}
+			var val{{$i}} {{$field.GetTransform.TypeOrigin}}
+			if err := m.StringScan(str{{$i}}, &val{{$i}}); err != nil {
+				return nil, err
+			}
+			obj.{{$field.Name}} = {{- printf $field.GetTransform.ConvertTo (printf "val%d" $i)}}
+		{{- else}}
+		if err := m.StringScan(str{{$i}}, &obj.{{$field.Name}}); err != nil {
+			return nil, err
+		}
+		{{- end}}
+	{{- end}}
+	return obj, nil
 }
 
 func (m *_{{$obj.Name}}RedisMgr) FetchBy{{$primaryField.Name}}s({{$primaryField.Name | camel2name}}s []string) ([]*{{$obj.Name}}, error) {
-	return nil, nil
+	objs := make([]*{{$obj.Name}}, len({{$primaryField.Name | camel2name}}s))
+	for _, id := range {{$primaryField.Name | camel2name}}s {
+		obj, err := m.Fetch(id)
+		if err != nil {
+			return objs, err
+		}
+		objs = append(objs, obj)
+	}
+	return objs, nil
 }
 
 {{end}}

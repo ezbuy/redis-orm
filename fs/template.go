@@ -117,6 +117,7 @@ func init() {
 		"tpl/orm.redis.read.gogo",
 		"tpl/orm.redis.sync.gogo",
 		"tpl/orm.redis.write.gogo",
+		"tpl/relation.functions.gogo",
 		"tpl/relation.geo.gogo",
 		"tpl/relation.gogo",
 		"tpl/relation.list.gogo",

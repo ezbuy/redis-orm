@@ -2,6 +2,7 @@ package parser
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -20,8 +21,8 @@ type MetaObject struct {
 	DbTable string
 	DbView  string
 	//! fields
-	Fields       []*Field
-	FieldNameMap map[string]*Field
+	fields       []*Field
+	fieldNameMap map[string]*Field
 	//! indexes
 	Uniques []*Index
 	Indexes []*Index
@@ -37,7 +38,7 @@ func NewMetaObject(packageName string) *MetaObject {
 	return &MetaObject{
 		Package:      packageName,
 		GoPackage:    packageName,
-		FieldNameMap: make(map[string]*Field),
+		fieldNameMap: make(map[string]*Field),
 		Uniques:      []*Index{},
 		Indexes:      []*Index{},
 		Ranges:       []*Index{},
@@ -46,14 +47,14 @@ func NewMetaObject(packageName string) *MetaObject {
 }
 
 func (o *MetaObject) FieldByName(name string) *Field {
-	if f, ok := o.FieldNameMap[name]; ok {
+	if f, ok := o.fieldNameMap[name]; ok {
 		return f
 	}
 	return nil
 }
 
 func (o *MetaObject) PrimaryField() *Field {
-	for _, f := range o.Fields {
+	for _, f := range o.Fields() {
 		if f.IsPrimary() {
 			return f
 		}
@@ -78,6 +79,13 @@ func (o *MetaObject) DbSource() string {
 		return o.DbView
 	}
 	return ""
+}
+
+func (o *MetaObject) Fields() []*Field {
+	if o.Relation != nil {
+		return o.Relation.Fields
+	}
+	return o.fields
 }
 
 func (o *MetaObject) Read(name string, data map[string]interface{}) error {
@@ -107,6 +115,9 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 
 	for key, val := range data {
 		switch key {
+		case "tag":
+			tag := val.(int)
+			o.Tag = fmt.Sprint(tag)
 		case "dbname":
 			o.DbName = val.(string)
 		case "dbtable":
@@ -117,7 +128,7 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 			o.ImportSQL = val.(string)
 		case "fields":
 			fieldData := val.([]interface{})
-			o.Fields = make([]*Field, len(fieldData))
+			o.fields = make([]*Field, len(fieldData))
 			for i, field := range fieldData {
 				f := NewField()
 				f.Obj = o
@@ -125,8 +136,8 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 				if err != nil {
 					return errors.New(o.Name + " obj has " + err.Error())
 				}
-				o.Fields[i] = f
-				o.FieldNameMap[f.Name] = f
+				o.fields[i] = f
+				o.fieldNameMap[f.Name] = f
 			}
 		case "uniques":
 			for _, i := range val.([]interface{}) {
@@ -175,22 +186,22 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 	}
 
 	for _, unique := range o.Uniques {
-		if err := unique.build(); err != nil {
+		if err := unique.build("UK"); err != nil {
 			return err
 		}
 	}
 	for _, index := range o.Indexes {
-		if err := index.build(); err != nil {
+		if err := index.build("IDX"); err != nil {
 			return err
 		}
 	}
 	for _, rg := range o.Ranges {
-		if err := rg.build(); err != nil {
+		if err := rg.build("RNG"); err != nil {
 			return err
 		}
 	}
 	for _, order := range o.Orders {
-		if err := order.build(); err != nil {
+		if err := order.build("ORD"); err != nil {
 			return err
 		}
 	}
