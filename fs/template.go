@@ -22,7 +22,6 @@ func generate_templates(obj *parser.MetaObject) []string {
 		tpls = append(tpls, "relation")
 	} else {
 		tpls = append(tpls, "object")
-		tpls = append(tpls, "orm")
 	}
 	return tpls
 }
@@ -30,7 +29,6 @@ func generate_templates(obj *parser.MetaObject) []string {
 func ExecuteMetaObjectTemplate(output string, obj *parser.MetaObject) error {
 	for _, tpl := range generate_templates(obj) {
 		filename := filepath.Join(output, strings.Join([]string{"gen", tpl, camel2sep(obj.Name, "."), "go"}, "."))
-		fmt.Println("filename =>", filename)
 		fd, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 		if err != nil {
 			return err
@@ -48,7 +46,6 @@ func ExecuteMetaObjectTemplate(output string, obj *parser.MetaObject) error {
 
 func ExecuteConfigTemplate(output, db string, packageName string) error {
 	filename := filepath.Join(output, strings.Join([]string{"gen", "conf", db, "go"}, "."))
-	fmt.Println("filename =>", filename)
 	fd, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
@@ -110,7 +107,6 @@ func init() {
 		"tpl/object.redis.write.gogo",
 		"tpl/object.relation.gogo",
 		"tpl/object.unqiue.gogo",
-		"tpl/orm.gogo",
 		"tpl/relation.functions.gogo",
 		"tpl/relation.geo.gogo",
 		"tpl/relation.gogo",

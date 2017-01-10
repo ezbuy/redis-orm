@@ -27,6 +27,15 @@ type Blog struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
+type _BlogMgr struct {
+}
+
+var BlogMgr *_BlogMgr
+
+func (m *_BlogMgr) NewBlog() *Blog {
+	return &Blog{}
+}
+
 //! object function
 
 func (obj *Blog) GetNameSpace() string {
@@ -108,6 +117,9 @@ func (u *UserIdOfBlogIDX) IDXRelation() IndexRelation {
 //! ranges
 
 //! orders
+func (m *_BlogMgr) MySQL() *ReferenceResult {
+	return NewReferenceResult(BlogMySQLMgr())
+}
 
 type _BlogMySQLMgr struct {
 	*orm.MySQLStore

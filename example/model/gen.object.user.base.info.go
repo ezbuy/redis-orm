@@ -24,6 +24,15 @@ type UserBaseInfo struct {
 	Sex      bool   `db:"sex"`
 }
 
+type _UserBaseInfoMgr struct {
+}
+
+var UserBaseInfoMgr *_UserBaseInfoMgr
+
+func (m *_UserBaseInfoMgr) NewUserBaseInfo() *UserBaseInfo {
+	return &UserBaseInfo{}
+}
+
 //! object function
 
 func (obj *UserBaseInfo) GetNameSpace() string {
@@ -146,6 +155,9 @@ func (u *NameOfUserBaseInfoIDX) IDXRelation() IndexRelation {
 //! ranges
 
 //! orders
+func (m *_UserBaseInfoMgr) MySQL() *ReferenceResult {
+	return NewReferenceResult(UserBaseInfoMySQLMgr())
+}
 
 type _UserBaseInfoMySQLMgr struct {
 	*orm.MySQLStore

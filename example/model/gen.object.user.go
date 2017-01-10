@@ -32,6 +32,15 @@ type User struct {
 	UpdatedAt   time.Time `db:"updated_at" json:"updated_at"`
 }
 
+type _UserMgr struct {
+}
+
+var UserMgr *_UserMgr
+
+func (m *_UserMgr) NewUser() *User {
+	return &User{}
+}
+
 //! object function
 
 func (obj *User) GetNameSpace() string {
@@ -258,6 +267,9 @@ func (u *NameStatusOfUserRNG) ORDRelation() RangeRelation {
 }
 
 //! orders
+func (m *_UserMgr) MySQL() *ReferenceResult {
+	return NewReferenceResult(UserMySQLMgr())
+}
 
 type _UserMySQLMgr struct {
 	*orm.MySQLStore
@@ -644,6 +656,10 @@ func (tx *_UserMySQLTx) FetchBySQL(sql string, args ...interface{}) (results []*
 		return nil, fmt.Errorf("User fetch result error: %v", err)
 	}
 	return
+}
+
+func (m *_UserMgr) Redis() *ReferenceResult {
+	return NewReferenceResult(UserRedisMgr())
 }
 
 type _UserRedisMgr struct {
