@@ -1,0 +1,4 @@
+{{define "object.mssql.read"}}
+{{$obj := .}}
+//! object.mssql.read
+{{end}}

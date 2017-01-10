@@ -23,7 +23,7 @@ func (u *{{$order.Name}}) Key() string {
 			{{- end}}
 		{{- end}}
 	}
-	return fmt.Sprintf("orderby:%s", strings.Join(strs, ":"))
+	return fmt.Sprintf("%s", strings.Join(strs, ":"))
 }
 
 func (u *{{$order.Name}}) sortOp() string {

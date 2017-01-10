@@ -1,20 +1,26 @@
 {{define "object"}}package {{.GoPackage}}
 {{$obj := .}}
+{{$relation := $obj.Relation}}
 {{$primaryField := $obj.PrimaryField}}
-{{if not $obj.Relation}}
-	import (
-		"fmt"
-		"time"
-		"strings"
-		"github.com/ezbuy/redis-orm/orm"
-	)
-	var (
-		_ time.Time
-		_ fmt.Formatter
-		_ strings.Reader
-		_ orm.VSet
-	)
+import (
+	"fmt"
+	"time"
+	"strings"
+	"database/sql"
+	"github.com/ezbuy/redis-orm/orm"
+	{{- if $obj.DbContains "redis"}}
+	redis "gopkg.in/redis.v5"
+	{{- end}}
+)
+var (
+	_ sql.DB
+	_ time.Time
+	_ fmt.Formatter
+	_ strings.Reader
+	_ orm.VSet
+)
 
+{{if not $relation}}	
 	{{if eq $obj.Db "mysql"}}
 		type {{.Name}} struct {
 			{{- range $field := .Fields}}
@@ -55,6 +61,15 @@
 			{{- end}}
 		}
 	{{end}}
+
+	type _{{$obj.Name}}Mgr struct {
+	}
+	var {{$obj.Name}}Mgr *_{{$obj.Name}}Mgr
+
+	func (m *_{{$obj.Name}}Mgr) New{{$obj.Name}}() *{{$obj.Name}} {
+		return &{{$obj.Name}}{}
+	}
+
 	//! object function
 	{{template "object.functions" $obj}}
 	//! uniques
@@ -75,19 +90,42 @@
 	//! orders
 	{{- range $i, $order := $obj.Orders}}
 	{{template "object.order.by" $order}}
-	{{- end}}	
-{{else}}
-	import (
-		"fmt"
-		redis "gopkg.in/redis.v5"
+	{{- end}}
 
-		"github.com/ezbuy/redis-orm/orm"
-	)
-	var (
-		_ fmt.Formatter
-		_ orm.VSet
-	)
-	{{template "relation" $obj.Relation}}
+	{{- if $obj.DbContains "mysql"}}
+	func (m *_{{$obj.Name}}Mgr) MySQL() *ReferenceResult {
+		return NewReferenceResult({{$obj.Name}}MySQLMgr())
+	}
+	{{template "object.mysql" $obj}}
+	{{- end}}
+
+	{{- if $obj.DbContains "mssql"}}
+	func (m *_{{$obj.Name}}Mgr) MsSQL() *ReferenceResult {
+		return NewReferenceResult({{$obj.Name}}MsSQLMgr())
+	}
+	{{template "object.mssql" $obj}}
+	{{- end}}
+
+	{{- if $obj.DbContains "redis"}}
+	func (m *_{{$obj.Name}}Mgr) Redis() *ReferenceResult {
+		return NewReferenceResult({{$obj.Name}}RedisMgr())
+	}
+	{{template "object.redis" $obj}}
+	{{- end}}
+
+	{{- if $obj.DbContains "mongo"}}
+	func (m *_{{$obj.Name}}Mgr) Mongo() *ReferenceResult {
+		return NewReferenceResult({{$obj.Name}}MongoMgr())
+	}
+	{{template "object.mongo" $obj}}
+	{{- end}}
+
+	{{- if $obj.DbContains "elastic"}}
+	func (m *_{{$obj.Name}}Mgr) Elastic() *ReferenceResult {
+		return NewReferenceResult({{$obj.Name}}ElasticMgr())
+	}
+	{{template "object.elastic" $obj}}
+	{{- end}}	
 {{end}}
 
 

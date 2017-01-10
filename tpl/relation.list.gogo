@@ -2,93 +2,93 @@
 {{$relation := .}}
 {{$primaryField := $relation.PrimaryField}}
 //! redis relation list
-func (m *_{{$relation.Name}}RedisMgr) ListLPush(obj *{{$relation.Name}}) error {
-	return m.LPush(listOfClass(obj.GetClassName(), obj.Key), obj.Value).Err()
+func (m *_{{$relation.Name}}RedisMgr) ListLPush(relation *{{$relation.Name}}) error {
+	return m.LPush(listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), relation.Value).Err()
 }
 
-func (m *_{{$relation.Name}}RedisMgr) ListRPush(obj *{{$relation.Name}}) error {
-	return m.RPush(listOfClass(obj.GetClassName(), obj.Key), obj.Value).Err()
+func (m *_{{$relation.Name}}RedisMgr) ListRPush(relation *{{$relation.Name}}) error {
+	return m.RPush(listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), relation.Value).Err()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) ListLPop(key string) (*{{$relation.Name}}, error) {
-	str, err := m.LPop(listOfClass("{{$relation.Name}}", key)).Result()
+	str, err := m.LPop(listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Result()
 	if err != nil {
 		return nil, err
 	}
 
-	obj := m.New{{$relation.Name}}(key)
+	relation := m.New{{$relation.Name}}(key)
 	{{- if $relation.ValueField.IsNeedTransform}}
 		var val {{$relation.ValueField.GetTransform.TypeOrigin}}
 		if err := m.StringScan(str, &val); err != nil {
 			return nil, err
 		}
-		obj.{{$relation.ValueField.Name}} = {{- printf $relation.ValueField.GetTransform.ConvertTo "val"}}
+		relation.{{$relation.ValueField.Name}} = {{- printf $relation.ValueField.GetTransform.ConvertTo "val"}}
 	{{- else}}
-		if err := m.StringScan(str, &obj.Value); err != nil {
+		if err := m.StringScan(str, &relation.Value); err != nil {
 			return nil, err
 		}
 	{{- end}}
 
-	return obj, nil
+	return relation, nil
 }
 
 func (m *_{{$relation.Name}}RedisMgr) ListRPop(key string) (*{{$relation.Name}}, error) {
-	str, err := m.RPop(listOfClass("{{$relation.Name}}", key)).Result()
+	str, err := m.RPop(listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Result()
 	if err != nil {
 		return nil, err
 	}
 
-	obj := m.New{{$relation.Name}}(key)
+	relation := m.New{{$relation.Name}}(key)
 	{{- if $relation.ValueField.IsNeedTransform}}
 		var val {{$relation.ValueField.GetTransform.TypeOrigin}}
 		if err := m.StringScan(str, &val); err != nil {
 			return nil, err
 		}
-		obj.{{$relation.ValueField.Name}} = {{- printf $relation.ValueField.GetTransform.ConvertTo "val"}}
+		relation.{{$relation.ValueField.Name}} = {{- printf $relation.ValueField.GetTransform.ConvertTo "val"}}
 	{{- else}}
-		if err := m.StringScan(str, &obj.Value); err != nil {
+		if err := m.StringScan(str, &relation.Value); err != nil {
 			return nil, err
 		}
 	{{- end}}
 
-	return obj, nil
+	return relation, nil
 }
 
 func (m *_{{$relation.Name}}RedisMgr) ListLRange(key string, start, stop int64) ([]*{{$relation.Name}}, error) {
-	strs, err := m.LRange(listOfClass("{{$relation.Name}}", key), start, stop).Result()
+	strs, err := m.LRange(listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key), start, stop).Result()
 	if err != nil {
 		return nil, err
 	}
 
-	objs := make([]*{{$relation.Name}}, len(strs))
+	relations := make([]*{{$relation.Name}}, len(strs))
 	for _, str := range strs {
-		obj := m.New{{$relation.Name}}(key)
+		relation := m.New{{$relation.Name}}(key)
 		{{- if $relation.ValueField.IsNeedTransform}}
 			var val {{$relation.ValueField.GetTransform.TypeOrigin}}
 			if err := m.StringScan(str, &val); err != nil {
 				return nil, err
 			}
-			obj.{{$relation.ValueField.Name}} = {{- printf $relation.ValueField.GetTransform.ConvertTo "val"}}
+			relation.{{$relation.ValueField.Name}} = {{- printf $relation.ValueField.GetTransform.ConvertTo "val"}}
 		{{- else}}
-		if err := m.StringScan(str, &obj.Value); err != nil {
+		if err := m.StringScan(str, &relation.Value); err != nil {
 			return nil, err
 		}
 		{{- end}}
-		objs = append(objs, obj)
+		relations = append(relations, relation)
 	}
-	return objs, nil
+	return relations, nil
 }
 
-func (m *_{{$relation.Name}}RedisMgr) ListLRem(obj *{{$relation.Name}}) error {
-	return m.LRem(listOfClass(obj.GetClassName(), obj.Key), 0, obj.Value).Err()
+func (m *_{{$relation.Name}}RedisMgr) ListLRem(relation *{{$relation.Name}}) error {
+	return m.LRem(listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), 0, relation.Value).Err()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) ListLLen(key string) (int64, error) {
-	return m.LLen(listOfClass("{{$relation.Name}}", key)).Result()
+	return m.LLen(listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Result()
 }
 
-func (m *_{{$relation.Name}}RedisMgr) ListLDel() error {
-	return nil
+func (m *_{{$relation.Name}}RedisMgr) ListLDel(key string) error {
+	return m.Del(listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Err()
 }
 
 {{end}}

@@ -16,7 +16,7 @@ func (u *{{$unique.Name}}) Key() string {
 		fmt.Sprint(u.{{$field.Name}}),
 		{{- end}}
 	}
-	return fmt.Sprintf("unique:%s", strings.Join(strs, ":"))
+	return fmt.Sprintf("%s", strings.Join(strs, ":"))
 }
 
 func (u *{{$unique.Name}}) SQLFormat() string {

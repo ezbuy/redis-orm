@@ -3,11 +3,11 @@
 {{$primaryField := $relation.PrimaryField}}
 //! redis relation pair
 func (m *_{{$relation.Name}}RedisMgr) PairAdd(obj *{{$relation.Name}}) error {
-	return m.Set(pairOfClass(obj.GetClassName(), obj.Key), obj.Value, 0).Err()
+	return m.Set(pairOfClass("{{$relation.Obj.Name}}", obj.GetClassName(), obj.Key), obj.Value, 0).Err()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) PairGet(key string) (*{{$relation.Name}}, error) {
-	str, err := m.Get(pairOfClass("{{$relation.Name}}", key)).Result()
+	str, err := m.Get(pairOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -28,11 +28,11 @@ func (m *_{{$relation.Name}}RedisMgr) PairGet(key string) (*{{$relation.Name}}, 
 }
 
 func (m *_{{$relation.Name}}RedisMgr) PairRem(key string) error {
-	return m.Del(pairOfClass("{{$relation.Name}}", key)).Err()
+	return m.Del(pairOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Err()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) FindOne(key string) (string, error) {
-	return m.Get(pairOfClass("{{$relation.Name}}", key)).Result()
+	return m.Get(pairOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Result()
 }
 
 {{end}}

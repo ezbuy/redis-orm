@@ -1,20 +1,6 @@
-{{define "orm.mysql.read"}}
+{{define "object.mysql.read"}}
 {{$obj := .}}
 {{$primaryField := $obj.PrimaryField}}
-import (
-	"fmt"
-	"strings"
-	"database/sql"
-	"github.com/ezbuy/redis-orm/orm"
-)
-
-var (
-	_ sql.DB
-	_ fmt.Formatter
-	_ strings.Reader
-	_ orm.VSet
-)
-
 type _{{$obj.Name}}MySQLMgr struct {
 	*orm.MySQLStore
 }
@@ -32,7 +18,7 @@ func New{{$obj.Name}}MySQLMgr(cf *MySQLConfig) (*_{{$obj.Name}}MySQLMgr, error) 
 }
 
 func (m *_{{$obj.Name}}MySQLMgr) FetchBySQL(sql string, args ... interface{}) (results []interface{}, err error) {
-	rows, err := m.Query(sql, args...)
+	rows, err := m.Query(sql, args...)	
 	if err != nil {
 		return nil, fmt.Errorf("{{$obj.Name}} fetch error: %v", err)
 	}
@@ -107,7 +93,7 @@ func (m *_{{$obj.Name}}MySQLMgr) FetchBy{{$primaryField.Name}}s({{$primaryField.
 	if err != nil {
 		return nil, err
 	}
-	results := make([]*{{$obj.Name}}, len(objs))
+	results := []*{{$obj.Name}}{}
 	for _, obj := range objs {
 		results = append(results, obj.(*{{$obj.Name}}))
 	}

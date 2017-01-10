@@ -18,19 +18,10 @@ var RedisOrmTemplate *template.Template
 
 func generate_templates(obj *parser.MetaObject) []string {
 	tpls := []string{}
-	tpls = append(tpls, "orm")
-	tpls = append(tpls, "object")
-	for _, db := range obj.Dbs {
-		switch db {
-		case "redis":
-			tpls = append(tpls, "orm.redis")
-		case "mysql":
-			tpls = append(tpls, "orm.mysql")
-		case "mssql":
-			tpls = append(tpls, "orm.mssql")
-		case "mongo":
-			tpls = append(tpls, "orm.mongo")
-		}
+	if obj.Relation != nil {
+		tpls = append(tpls, "relation")
+	} else {
+		tpls = append(tpls, "object")
 	}
 	return tpls
 }
@@ -38,7 +29,6 @@ func generate_templates(obj *parser.MetaObject) []string {
 func ExecuteMetaObjectTemplate(output string, obj *parser.MetaObject) error {
 	for _, tpl := range generate_templates(obj) {
 		filename := filepath.Join(output, strings.Join([]string{"gen", tpl, camel2sep(obj.Name, "."), "go"}, "."))
-		fmt.Println("filename =>", filename)
 		fd, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 		if err != nil {
 			return err
@@ -56,7 +46,6 @@ func ExecuteMetaObjectTemplate(output string, obj *parser.MetaObject) error {
 
 func ExecuteConfigTemplate(output, db string, packageName string) error {
 	filename := filepath.Join(output, strings.Join([]string{"gen", "conf", db, "go"}, "."))
-	fmt.Println("filename =>", filename)
 	fd, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
@@ -99,24 +88,25 @@ func init() {
 		"tpl/conf.mysql.gogo",
 		"tpl/conf.orm.gogo",
 		"tpl/conf.redis.gogo",
+		"tpl/object.elastic.gogo",
 		"tpl/object.functions.gogo",
 		"tpl/object.gogo",
 		"tpl/object.index.gogo",
+		"tpl/object.mongo.gogo",
+		"tpl/object.mssql.gogo",
+		"tpl/object.mssql.read.gogo",
+		"tpl/object.mssql.write.gogo",
+		"tpl/object.mysql.gogo",
+		"tpl/object.mysql.read.gogo",
+		"tpl/object.mysql.write.gogo",
 		"tpl/object.order.by.gogo",
 		"tpl/object.range.gogo",
+		"tpl/object.redis.gogo",
+		"tpl/object.redis.read.gogo",
+		"tpl/object.redis.sync.gogo",
+		"tpl/object.redis.write.gogo",
+		"tpl/object.relation.gogo",
 		"tpl/object.unqiue.gogo",
-		"tpl/orm.gogo",
-		"tpl/orm.mongo.gogo",
-		"tpl/orm.mssql.gogo",
-		"tpl/orm.mssql.read.gogo",
-		"tpl/orm.mssql.write.gogo",
-		"tpl/orm.mysql.gogo",
-		"tpl/orm.mysql.read.gogo",
-		"tpl/orm.mysql.write.gogo",
-		"tpl/orm.redis.gogo",
-		"tpl/orm.redis.read.gogo",
-		"tpl/orm.redis.sync.gogo",
-		"tpl/orm.redis.write.gogo",
 		"tpl/relation.functions.gogo",
 		"tpl/relation.geo.gogo",
 		"tpl/relation.gogo",

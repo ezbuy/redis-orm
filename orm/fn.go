@@ -1,7 +1,9 @@
 package orm
 
 import (
+	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -61,7 +63,26 @@ func NewStringSlice(len int, val string) []string {
 	return s
 }
 
-func ToFloat64(val interface{}) float64 {
-	//! TODO
-	return val.(float64)
+func ToFloat64(value interface{}) (float64, error) {
+	switch value.(type) {
+	case string:
+		v, _ := value.(string)
+		return strconv.ParseFloat(v, 64)
+	case int:
+		v, _ := value.(int)
+		return float64(v), nil
+	case int32:
+		v, _ := value.(int32)
+		return float64(v), nil
+	case int64:
+		v, _ := value.(int64)
+		return float64(v), nil
+	case float32:
+		v, _ := value.(float32)
+		return float64(v), nil
+	case float64:
+		v, _ := value.(float64)
+		return v, nil
+	}
+	return float64(0), errors.New("unsupport type to float64")
 }

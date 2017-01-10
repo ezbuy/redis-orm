@@ -1,4 +1,4 @@
-{{define "orm.redis.read"}}
+{{define "object.redis.read"}}
 {{$obj := .}}
 {{$primaryField := $obj.PrimaryField}}
 //! redis model read
@@ -31,28 +31,25 @@ func (m *_{{$obj.Name}}RedisMgr) OrderBy(sort OrderBy) ([]string, error) {
 }
 
 func (m *_{{$obj.Name}}RedisMgr) Fetch({{$primaryField.Name | camel2name}} string) (*{{$obj.Name}}, error) {
-	obj := &{{$obj.Name}}{}
-	pipe := m.BeginPipeline()
-	{{- range $i, $field := $obj.Fields}}
-	pipe.HGet(keyOfObject(obj, fmt.Sprint({{$primaryField.GetTransformValue "obj."}})), "{{$field.Name}}")
-	{{- end}}
-	cmds, err := pipe.Exec();
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	
+	strs, err := m.HMGet(keyOfObject(obj, {{$primaryField.Name | camel2name}})
+	{{- range $i, $field := $obj.Fields -}}	
+			  ,"{{$field.Name}}"
+	{{- end -}}).Result()
 	if err != nil {
 		return nil, err
 	}
-	{{- range $i, $field := $obj.Fields}}
-		str{{$i}}, err := cmds[{{$i}}].(*redis.StringCmd).Result()
-		if err != nil {
-			return nil, err
-		}
+
+	{{- range $i, $field := $obj.Fields}}		
 		{{- if $field.IsNeedTransform}}
 			var val{{$i}} {{$field.GetTransform.TypeOrigin}}
-			if err := m.StringScan(str{{$i}}, &val{{$i}}); err != nil {
+			if err := m.StringScan(strs[{{$i}}].(string), &val{{$i}}); err != nil {
 				return nil, err
 			}
 			obj.{{$field.Name}} = {{- printf $field.GetTransform.ConvertTo (printf "val%d" $i)}}
 		{{- else}}
-		if err := m.StringScan(str{{$i}}, &obj.{{$field.Name}}); err != nil {
+		if err := m.StringScan(strs[{{$i}}].(string), &obj.{{$field.Name}}); err != nil {
 			return nil, err
 		}
 		{{- end}}
@@ -61,7 +58,7 @@ func (m *_{{$obj.Name}}RedisMgr) Fetch({{$primaryField.Name | camel2name}} strin
 }
 
 func (m *_{{$obj.Name}}RedisMgr) FetchBy{{$primaryField.Name}}s({{$primaryField.Name | camel2name}}s []string) ([]*{{$obj.Name}}, error) {
-	objs := make([]*{{$obj.Name}}, len({{$primaryField.Name | camel2name}}s))
+	objs := []*{{$obj.Name}}{}
 	for _, id := range {{$primaryField.Name | camel2name}}s {
 		obj, err := m.Fetch(id)
 		if err != nil {

@@ -2,41 +2,45 @@
 {{$relation := .}}
 {{$primaryField := $relation.PrimaryField}}
 //! redis relation pair
-func (m *_{{$relation.Name}}RedisMgr) SetAdd(obj *{{$relation.Name}}) error {
-	return m.SAdd(setOfClass(obj.GetClassName(), obj.Key), obj.Value).Err()
+func (m *_{{$relation.Name}}RedisMgr) SetAdd(relation *{{$relation.Name}}) error {
+	return m.SAdd(setOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), relation.Value).Err()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) SetGet(key string) ([]*{{$relation.Name}}, error) {
-	strs, err := m.SMembers(setOfClass("{{$relation.Name}}", key)).Result()
+	strs, err := m.SMembers(setOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Result()
 	if err != nil {
 		return nil, err
 	}
 
-	objs := make([]*{{$relation.Name}}, len(strs))
+	relations := make([]*{{$relation.Name}}, len(strs))
 	for _, str := range strs {
-		obj := m.New{{$relation.Name}}(key)
+		relation := m.New{{$relation.Name}}(key)
 		{{- if $relation.ValueField.IsNeedTransform}}
 			var val {{$relation.ValueField.GetTransform.TypeOrigin}}
 			if err := m.StringScan(str, &val); err != nil {
 				return nil, err
 			}
-			obj.{{$relation.ValueField.Name}} = {{- printf $relation.ValueField.GetTransform.ConvertTo "val"}}
+			relation.{{$relation.ValueField.Name}} = {{- printf $relation.ValueField.GetTransform.ConvertTo "val"}}
 		{{- else}}
-		if err := m.StringScan(str, &obj.Value); err != nil {
+		if err := m.StringScan(str, &relation.Value); err != nil {
 			return nil, err
 		}
 		{{- end}}
-		objs = append(objs, obj)
+		relations = append(relations, relation)
 	}
-	return objs, nil
+	return relations, nil
 }
 
-func (m *_{{$relation.Name}}RedisMgr) SetRem(obj *{{$relation.Name}}) error {
-	return m.SRem(setOfClass(obj.GetClassName(), obj.Key), obj.Value).Err()
+func (m *_{{$relation.Name}}RedisMgr) SetRem(relation *{{$relation.Name}}) error {
+	return m.SRem(setOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), relation.Value).Err()
+}
+
+func (m *_{{$relation.Name}}RedisMgr) SetDel(key string) error {
+	return m.Del(setOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Err()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) Find(key string) ([]string, error) {
-	return m.SMembers(setOfClass("{{$relation.Name}}", key)).Result()
+	return m.SMembers(setOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Result()
 }
 
 {{end}}

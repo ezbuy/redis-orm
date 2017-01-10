@@ -1,0 +1,60 @@
+{{define "object.relation"}}
+{{$relation := .}}
+{{$primaryField := $relation.PrimaryField}}
+//! relation
+type {{$relation.Name}} struct {
+	{{- range $i, $field := $relation.Fields}}
+	{{$field.Name}}  {{$field.GetType}} {{$field.GetTag}} 
+	{{- end}}
+}
+
+{{template "relation.functions" .}}
+
+type _{{$relation.Name}}RedisMgr struct {
+	*orm.RedisStore
+}
+
+func {{$relation.Name}}RedisMgr(stores ...*orm.RedisStore) *_{{$relation.Name}}RedisMgr {	
+	if len(stores) > 0 {
+		return &_{{$relation.Name}}RedisMgr{stores[0]}
+	}
+	return &_{{$relation.Name}}RedisMgr{_redis_store}
+}
+
+//! pipeline write
+type _{{$relation.Name}}RedisPipeline struct {
+	*redis.Pipeline
+	Err error
+}
+
+func (m *_{{$relation.Name}}RedisMgr) BeginPipeline() *_{{$relation.Name}}RedisPipeline {
+	return &_{{$relation.Name}}RedisPipeline{m.Pipeline(), nil}
+}
+
+func (m *_{{$relation.Name}}RedisMgr) New{{$relation.Name}}(key string) *{{$relation.Name}} {
+	return &{{$relation.Name}}{
+		Key: key,
+	}
+}
+
+{{if eq $relation.StoreType "pair"}}
+	{{template "relation.pair" .}}
+{{end}}
+
+{{if eq $relation.StoreType "set"}}
+	{{template "relation.set" .}}
+{{end}}
+
+{{if eq $relation.StoreType "zset"}}
+	{{template "relation.zset" .}}
+{{end}}
+
+{{if eq $relation.StoreType "geo"}}
+	{{template "relation.geo" .}}
+{{end}}
+
+{{if eq $relation.StoreType "list"}}
+	{{template "relation.list" .}}
+{{end}}
+
+{{end}}

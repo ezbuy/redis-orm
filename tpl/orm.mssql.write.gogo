@@ -1,7 +1,0 @@
-{{define "orm.mssql.write"}}package {{.GoPackage}}
-{{$obj := .}}
-//! orm.mssql.write
-
-
-
-{{end}}

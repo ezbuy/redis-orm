@@ -29,14 +29,12 @@ func GenerateCode() {
 	if packageName == "" {
 		_, packageName = path.Split(outputDir)
 	}
-	fmt.Println("package name", packageName)
 
 	yamls, err := fs.GetDirectoryFilesBySuffix(inputDir, ".yaml")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	fmt.Println("yamls =>", yamls)
 
 	model := viper.GetString("code_model")
 	metaObjs := map[string]*parser.MetaObject{}
@@ -77,15 +75,11 @@ func GenerateCode() {
 	}
 
 GeneratePoint:
-	for model, metaObj := range metaObjs {
-		//for _, template := metaObj.
-
-		fmt.Println("metaObjs => ", outputDir, model, metaObj)
+	for _, metaObj := range metaObjs {
 		fs.ExecuteMetaObjectTemplate(outputDir, metaObj)
 	}
 
 	for conf := range confTpls {
-		fmt.Println("conf => ", outputDir, conf)
 		fs.ExecuteConfigTemplate(outputDir, conf, packageName)
 	}
 

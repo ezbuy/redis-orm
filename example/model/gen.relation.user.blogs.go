@@ -2,13 +2,16 @@ package model
 
 import (
 	"fmt"
-	redis "gopkg.in/redis.v5"
-
 	"github.com/ezbuy/redis-orm/orm"
+	redis "gopkg.in/redis.v5"
+	"strings"
+	"time"
 )
 
 var (
+	_ time.Time
 	_ fmt.Formatter
+	_ strings.Reader
 	_ orm.VSet
 )
 
@@ -64,8 +67,8 @@ func (m *_UserBlogsRedisMgr) NewUserBlogs(key string) *UserBlogs {
 }
 
 //! redis relation zset
-func (m *_UserBlogsRedisMgr) ZSetAdd(obj *UserBlogs) error {
-	return m.ZAdd(zsetOfClass(obj.GetClassName(), obj.Key), redis.Z{Score: obj.Score, Member: obj.Value}).Err()
+func (m *_UserBlogsRedisMgr) ZSetAdd(relation *UserBlogs) error {
+	return m.ZAdd(zsetOfClass("UserBlogs", "UserBlogs", relation.Key), redis.Z{Score: relation.Score, Member: relation.Value}).Err()
 }
 
 func (m *_UserBlogsRedisMgr) ZSetRange(key string, min, max int64) ([]*UserBlogs, error) {
@@ -74,26 +77,30 @@ func (m *_UserBlogsRedisMgr) ZSetRange(key string, min, max int64) ([]*UserBlogs
 		return nil, err
 	}
 
-	objs := make([]*UserBlogs, len(strs))
+	relations := make([]*UserBlogs, len(strs))
 	for _, str := range strs {
-		obj := m.NewUserBlogs(key)
-		if err := m.StringScan(str, &obj.Value); err != nil {
+		relation := m.NewUserBlogs(key)
+		if err := m.StringScan(str, &relation.Value); err != nil {
 			return nil, err
 		}
-		objs = append(objs, obj)
+		relations = append(relations, relation)
 	}
-	return objs, nil
+	return relations, nil
 }
 
-func (m *_UserBlogsRedisMgr) ZSetRem(obj *UserBlogs) error {
-	return m.ZRem(zsetOfClass(obj.GetClassName(), obj.Key), redis.Z{Score: obj.Score, Member: obj.Value}).Err()
+func (m *_UserBlogsRedisMgr) ZSetRem(relation *UserBlogs) error {
+	return m.ZRem(zsetOfClass("UserBlogs", "UserBlogs", relation.Key), redis.Z{Score: relation.Score, Member: relation.Value}).Err()
+}
+
+func (m *_UserBlogsRedisMgr) ZSetDel(key string) error {
+	return m.Del(setOfClass("UserBlogs", "UserBlogs", key)).Err()
 }
 
 func (m *_UserBlogsRedisMgr) Range(key string, min, max int64) ([]string, error) {
-	return m.ZRange(zsetOfClass("UserBlogs", key), min, max).Result()
+	return m.ZRange(zsetOfClass("UserBlogs", "UserBlogs", key), min, max).Result()
 }
 
 func (m *_UserBlogsRedisMgr) OrderBy(key string, asc bool) ([]string, error) {
 	//! TODO revert
-	return m.ZRange(zsetOfClass("UserBlogs", key), 0, -1).Result()
+	return m.ZRange(zsetOfClass("UserBlogs", "UserBlogs", key), 0, -1).Result()
 }

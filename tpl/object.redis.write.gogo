@@ -1,4 +1,4 @@
-{{define "orm.redis.write"}}
+{{define "object.redis.write"}}
 {{$obj := .}}
 {{$primaryField := $obj.PrimaryField}}
 
@@ -58,7 +58,11 @@ func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
 	}
 	rg_mgr_{{$i}} := {{$relation.Name}}RedisMgr(m.RedisStore)
 	rg_rel_{{$i}} := rg_mgr_{{$i}}.New{{$relation.Name}}(strings.Join(rg_key_{{$i}}, ":"))
-	rg_rel_{{$i}}.Score = orm.ToFloat64({{$rg.LastField.GetTransformValue "obj."}})
+	score, err := orm.ToFloat64({{$rg.LastField.GetTransformValue "obj."}})
+	if err != nil {
+		return err
+	}
+	rg_rel_{{$i}}.Score = score
 	rg_rel_{{$i}}.Value = {{$primaryField.GetTransformValue "obj."}}
 	if err := rg_mgr_{{$i}}.ZSetRem(rg_rel_{{$i}}); err != nil {
 		return err
@@ -149,7 +153,11 @@ func (m *_{{$obj.Name}}RedisMgr) Save(obj *{{$obj.Name}}) error {
 	}
 	rg_mgr_{{$i}} := {{$relation.Name}}RedisMgr(m.RedisStore)
 	rg_rel_{{$i}} := rg_mgr_{{$i}}.New{{$relation.Name}}(strings.Join(rg_key_{{$i}}, ":"))
-	rg_rel_{{$i}}.Score = orm.ToFloat64({{$rg.LastField.GetTransformValue "obj."}})
+	score, err := orm.ToFloat64({{$rg.LastField.GetTransformValue "obj."}})
+	if err != nil {
+		return err
+	}
+	rg_rel_{{$i}}.Score = score
 	rg_rel_{{$i}}.Value = {{$primaryField.GetTransformValue "obj."}}
 	if err := rg_mgr_{{$i}}.ZSetAdd(rg_rel_{{$i}}); err != nil {
 		return err
@@ -181,6 +189,24 @@ func (m *_{{$obj.Name}}RedisMgr) Save(obj *{{$obj.Name}}) error {
 }
 
 func (m *_{{$obj.Name}}RedisMgr) Clear() error {
+	if strs, err := m.Keys(pairOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
+		m.Del(strs...)
+	}
+	if strs, err := m.Keys(hashOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
+		m.Del(strs...)
+	}
+	if strs, err := m.Keys(setOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
+		m.Del(strs...)
+	}
+	if strs, err := m.Keys(zsetOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
+		m.Del(strs...)
+	}
+	if strs, err := m.Keys(geoOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
+		m.Del(strs...)
+	}
+	if strs, err := m.Keys(listOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
+		m.Del(strs...)
+	}
 	return nil
 }
 

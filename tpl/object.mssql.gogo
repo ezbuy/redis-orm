@@ -1,0 +1,10 @@
+{{define "object.mssql"}}
+{{$obj := .}}
+//! object.mssql
+{{template "object.mssql.read" .}}
+
+{{- if ne $obj.Table ""}}
+{{template "object.mssql.write" .}}
+{{- end}}
+
+{{end}}

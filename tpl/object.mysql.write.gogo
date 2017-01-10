@@ -1,7 +1,7 @@
-{{define "orm.mysql.write"}}
+{{define "object.mysql.write"}}
 {{$obj := .}}
 {{$primaryField := $obj.PrimaryField}}
-//! orm.mysql.write
+//! object.mysql.write
 ///////////////////////////
 //! 	how to use tx
 //!

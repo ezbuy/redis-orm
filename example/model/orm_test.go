@@ -8,7 +8,7 @@ import (
 	"github.com/bmizerany/assert"
 )
 
-func TestPeopleObject(t *testing.T) {
+func TestMySQL(t *testing.T) {
 	MySQLSetup(&MySQLConfig{
 		Host:     "localhost",
 		Port:     3306,
@@ -82,4 +82,60 @@ func TestPeopleObject(t *testing.T) {
 	vals, err := BlogMgr.MySQL().Find(index).Result()
 	assert.Equal(t, nil, err)
 	assert.Equal(t, 2, len(vals))
+
+	RedisSetUp(&RedisConfig{
+		Host:     "localhost",
+		Port:     6379,
+		Password: "",
+	})
+
+	assert.Equal(t, UserRedisMgr().Load(UserMySQLMgr()), nil)
+
+	index2 := &SexOfUserIDX{
+		Sex: false,
+	}
+
+	vals21, err := UserMySQLMgr().Find(index2)
+	assert.Equal(t, nil, err)
+
+	vals22, err := UserRedisMgr().Find(index2)
+	assert.Equal(t, nil, err)
+
+	assert.Equal(t, vals21, vals22)
+
+	objs1, err := UserMySQLMgr().FetchByIds(vals21)
+	assert.Equal(t, nil, err)
+	fmt.Println("objs1 count =>", len(objs1))
+	for _, obj := range objs1 {
+		fmt.Println("user => ", obj)
+	}
+
+	objs2, err := UserRedisMgr().FetchByIds(vals22)
+	assert.Equal(t, nil, err)
+
+	fmt.Println("objs2 count =>", len(objs2))
+	for _, obj := range objs2 {
+		fmt.Println("user => ", obj)
+	}
+}
+
+func TestRedis(t *testing.T) {
+	// RedisSetUp(&RedisConfig{
+	// 	Host:     "localhost",
+	// 	Port:     6379,
+	// 	Password: "",
+	// })
+
+	// err := UserRedisMgr().Load(UserMySQLMgr())
+	// assert.Equal(t, nil, err)
+
+	// unique := &MailboxPasswordOfUserUK{
+	// 	Mailbox:  "user01@sss.fff",
+	// 	Password: "123456",
+	// }
+
+	// id, err := UserRedisMgr().FindOne(unique)
+	// assert.Equal(t, nil, err)
+
+	// log.Println("id =>", id)
 }

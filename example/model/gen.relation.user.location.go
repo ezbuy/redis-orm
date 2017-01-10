@@ -2,13 +2,16 @@ package model
 
 import (
 	"fmt"
-	redis "gopkg.in/redis.v5"
-
 	"github.com/ezbuy/redis-orm/orm"
+	redis "gopkg.in/redis.v5"
+	"strings"
+	"time"
 )
 
 var (
+	_ time.Time
 	_ fmt.Formatter
+	_ strings.Reader
 	_ orm.VSet
 )
 
@@ -65,33 +68,37 @@ func (m *_UserLocationRedisMgr) NewUserLocation(key string) *UserLocation {
 }
 
 //! redis relation pair
-func (m *_UserLocationRedisMgr) LocationAdd(obj *UserLocation) error {
-	return m.GeoAdd(geoOfClass(obj.GetClassName(), obj.Key), &redis.GeoLocation{
-		Longitude: obj.Longitude,
-		Latitude:  obj.Latitude,
-		Name:      fmt.Sprint(obj.Value),
+func (m *_UserLocationRedisMgr) LocationAdd(relation *UserLocation) error {
+	return m.GeoAdd(geoOfClass("UserLocation", "UserLocation", relation.Key), &redis.GeoLocation{
+		Longitude: relation.Longitude,
+		Latitude:  relation.Latitude,
+		Name:      fmt.Sprint(relation.Value),
 	}).Err()
 }
 
 func (m *_UserLocationRedisMgr) LocationRadius(key string, longitude float64, latitude float64, query *redis.GeoRadiusQuery) ([]*UserLocation, error) {
-	locations, err := m.GeoRadius(geoOfClass("UserLocation", key), longitude, latitude, query).Result()
+	locations, err := m.GeoRadius(geoOfClass("UserLocation", "UserLocation", key), longitude, latitude, query).Result()
 	if err != nil {
 		return nil, err
 	}
 
-	objs := make([]*UserLocation, len(locations))
+	relations := []*UserLocation{}
 	for _, location := range locations {
-		obj := m.NewUserLocation(key)
-		obj.Longitude = location.Longitude
-		obj.Latitude = location.Latitude
-		if err := m.StringScan(location.Name, &obj.Value); err != nil {
+		relation := m.NewUserLocation(key)
+		relation.Longitude = location.Longitude
+		relation.Latitude = location.Latitude
+		if err := m.StringScan(location.Name, &relation.Value); err != nil {
 			return nil, err
 		}
-		objs = append(objs, obj)
+		relations = append(relations, relation)
 	}
-	return objs, nil
+	return relations, nil
 }
 
-func (m *_UserLocationRedisMgr) LocationRem(obj *UserLocation) error {
-	return m.ZRem(geoOfClass(obj.GetClassName(), obj.Key), fmt.Sprint(obj.Value)).Err()
+func (m *_UserLocationRedisMgr) LocationRem(relation *UserLocation) error {
+	return m.ZRem(geoOfClass("UserLocation", "UserLocation", relation.Key), fmt.Sprint(relation.Value)).Err()
+}
+
+func (m *_UserLocationRedisMgr) LocationDel(key string) error {
+	return m.Del(geoOfClass("UserLocation", "UserLocation", key)).Err()
 }
