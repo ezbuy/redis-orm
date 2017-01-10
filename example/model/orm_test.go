@@ -8,7 +8,10 @@ import (
 	"github.com/bmizerany/assert"
 )
 
-func TestPeopleObject(t *testing.T) {
+func TestRedis(t *testing.T) {
+}
+
+func TestMySQL(t *testing.T) {
 	MySQLSetup(&MySQLConfig{
 		Host:     "localhost",
 		Port:     3306,

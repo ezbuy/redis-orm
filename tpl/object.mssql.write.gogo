@@ -1,0 +1,4 @@
+{{define "object.mssql.write"}}
+{{$obj := .}}
+//! object.mssql.write
+{{end}}

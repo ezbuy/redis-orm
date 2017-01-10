@@ -1,0 +1,4 @@
+{{define "orm.mongo"}}
+{{$obj := .}}
+//! orm.mongo
+{{end}}

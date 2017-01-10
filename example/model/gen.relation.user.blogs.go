@@ -2,13 +2,16 @@ package model
 
 import (
 	"fmt"
-	redis "gopkg.in/redis.v5"
-
 	"github.com/ezbuy/redis-orm/orm"
+	redis "gopkg.in/redis.v5"
+	"strings"
+	"time"
 )
 
 var (
+	_ time.Time
 	_ fmt.Formatter
+	_ strings.Reader
 	_ orm.VSet
 )
 

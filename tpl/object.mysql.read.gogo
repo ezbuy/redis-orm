@@ -1,20 +1,6 @@
-{{define "orm.mysql.read"}}
+{{define "object.mysql.read"}}
 {{$obj := .}}
 {{$primaryField := $obj.PrimaryField}}
-import (
-	"fmt"
-	"strings"
-	"database/sql"
-	"github.com/ezbuy/redis-orm/orm"
-)
-
-var (
-	_ sql.DB
-	_ fmt.Formatter
-	_ strings.Reader
-	_ orm.VSet
-)
-
 type _{{$obj.Name}}MySQLMgr struct {
 	*orm.MySQLStore
 }

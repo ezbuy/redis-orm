@@ -1,19 +1,6 @@
-{{define "orm.redis"}}package {{.GoPackage}}
+{{define "object.redis"}}
 {{$obj := .}}
 {{$primaryField := $obj.PrimaryField}}
-{{- if not $obj.Relation}}
-	import (
-		"fmt"
-		"strings"
-		"github.com/ezbuy/redis-orm/orm"
-		redis "gopkg.in/redis.v5"
-	)
-
-	var (
-		_ fmt.Formatter
-		_ orm.VSet
-		_ strings.Reader
-	)
 
 	type _{{$obj.Name}}RedisMgr struct {
 		*orm.RedisStore
@@ -41,29 +28,29 @@
 		return &_{{$obj.Name}}RedisPipeline{m.Pipeline(), nil}
 	}
 
-	{{template "orm.redis.sync" $obj}}
-	{{template "orm.redis.read" $obj}}
-	{{template "orm.redis.write" $obj}}
+	{{template "object.redis.sync" $obj}}
+	{{template "object.redis.read" $obj}}
+	{{template "object.redis.write" $obj}}
 
 	//! uniques
 	{{- range $i, $unique := $obj.Uniques}}
-	{{template "relation" ($unique.GetRelation "pair" $primaryField.GetType $obj.Name)}}
+	{{template "object.relation" ($unique.GetRelation "pair" $primaryField.GetType $obj.Name)}}
 	{{- end}}
 
 	//! indexes
 	{{- range $i, $index := $obj.Indexes}}
-	{{template "relation" ($index.GetRelation "set" $primaryField.GetType $obj.Name)}}
+	{{template "object.relation" ($index.GetRelation "set" $primaryField.GetType $obj.Name)}}
 	{{- end}}
 
 	//! ranges
 	{{- range $i, $rg := $obj.Ranges}}
-	{{template "relation" ($rg.GetRelation "zset" $primaryField.GetType $obj.Name)}}
+	{{template "object.relation" ($rg.GetRelation "zset" $primaryField.GetType $obj.Name)}}
 	{{- end}}
 
 	//! orders
 	{{- range $i, $order := $obj.Orders}}
-	{{template "relation" ($order.GetRelation "zset" $primaryField.GetType $obj.Name)}}
+	{{template "object.relation" ($order.GetRelation "zset" $primaryField.GetType $obj.Name)}}
 	{{- end}}
-{{- end}}
+
 	
 {{end}}

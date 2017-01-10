@@ -1,4 +1,4 @@
-{{define "orm.redis.write"}}
+{{define "object.redis.write"}}
 {{$obj := .}}
 {{$primaryField := $obj.PrimaryField}}
 

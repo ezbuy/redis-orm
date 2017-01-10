@@ -1,4 +1,4 @@
-{{define "orm.redis.read"}}
+{{define "object.redis.read"}}
 {{$obj := .}}
 {{$primaryField := $obj.PrimaryField}}
 //! redis model read
