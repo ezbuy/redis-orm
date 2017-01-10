@@ -2,10 +2,9 @@ package model
 
 import (
 	"fmt"
+	"github.com/ezbuy/redis-orm/orm"
 	"strings"
 	"time"
-
-	"github.com/ezbuy/redis-orm/orm"
 )
 
 var (
@@ -50,12 +49,12 @@ func (obj *UserBaseInfo) GetColumns() []string {
 
 //! uniques
 
-type MailboxPasswordOfUserBaseInfoUnique struct {
+type MailboxPasswordOfUserBaseInfoUK struct {
 	Mailbox  string
 	Password string
 }
 
-func (u *MailboxPasswordOfUserBaseInfoUnique) Key() string {
+func (u *MailboxPasswordOfUserBaseInfoUK) Key() string {
 	strs := []string{
 		"Mailbox",
 		fmt.Sprint(u.Mailbox),
@@ -65,7 +64,7 @@ func (u *MailboxPasswordOfUserBaseInfoUnique) Key() string {
 	return fmt.Sprintf("unique:%s", strings.Join(strs, ":"))
 }
 
-func (u *MailboxPasswordOfUserBaseInfoUnique) SQLFormat() string {
+func (u *MailboxPasswordOfUserBaseInfoUK) SQLFormat() string {
 	conditions := []string{
 		"mailbox = ?",
 		"password = ?",
@@ -73,26 +72,36 @@ func (u *MailboxPasswordOfUserBaseInfoUnique) SQLFormat() string {
 	return strings.Join(conditions, " AND ")
 }
 
-func (u *MailboxPasswordOfUserBaseInfoUnique) SQLParams() []interface{} {
+func (u *MailboxPasswordOfUserBaseInfoUK) SQLParams() []interface{} {
 	return []interface{}{
 		u.Mailbox,
 		u.Password,
 	}
 }
 
-func (u *MailboxPasswordOfUserBaseInfoUnique) SQLLimit() int {
+func (u *MailboxPasswordOfUserBaseInfoUK) SQLLimit() int {
 	return 1
+}
+
+func (u *MailboxPasswordOfUserBaseInfoUK) Limit(n int) {
+}
+
+func (u *MailboxPasswordOfUserBaseInfoUK) Offset(n int) {
+}
+
+func (u *MailboxPasswordOfUserBaseInfoUK) UKRelation() UniqueRelation {
+	return nil
 }
 
 //! indexes
 
-type NameOfUserBaseInfoIndex struct {
+type NameOfUserBaseInfoIDX struct {
 	Name   string
 	offset int
 	limit  int
 }
 
-func (u *NameOfUserBaseInfoIndex) Key() string {
+func (u *NameOfUserBaseInfoIDX) Key() string {
 	strs := []string{
 		"Name",
 		fmt.Sprint(u.Name),
@@ -100,32 +109,36 @@ func (u *NameOfUserBaseInfoIndex) Key() string {
 	return fmt.Sprintf("index:%s", strings.Join(strs, ":"))
 }
 
-func (u *NameOfUserBaseInfoIndex) SQLFormat() string {
+func (u *NameOfUserBaseInfoIDX) SQLFormat() string {
 	conditions := []string{
 		"name = ?",
 	}
 	return fmt.Sprintf("%s %s", strings.Join(conditions, " AND "), orm.OffsetLimit(u.offset, u.limit))
 }
 
-func (u *NameOfUserBaseInfoIndex) SQLParams() []interface{} {
+func (u *NameOfUserBaseInfoIDX) SQLParams() []interface{} {
 	return []interface{}{
 		u.Name,
 	}
 }
 
-func (u *NameOfUserBaseInfoIndex) SQLLimit() int {
+func (u *NameOfUserBaseInfoIDX) SQLLimit() int {
 	if u.limit > 0 {
 		return u.limit
 	}
 	return -1
 }
 
-func (u *NameOfUserBaseInfoIndex) Limit(n int) {
+func (u *NameOfUserBaseInfoIDX) Limit(n int) {
 	u.limit = n
 }
 
-func (u *NameOfUserBaseInfoIndex) Offset(n int) {
+func (u *NameOfUserBaseInfoIDX) Offset(n int) {
 	u.offset = n
+}
+
+func (u *NameOfUserBaseInfoIDX) IDXRelation() IndexRelation {
+	return nil
 }
 
 //! ranges

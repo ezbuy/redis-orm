@@ -1,12 +1,15 @@
 {{define "object.unique"}}
 {{$unique := .}}
-type {{$unique.Name}}Unique struct{
+{{$obj := .Obj}}
+{{$primaryField := .Obj.PrimaryField}}
+
+type {{$unique.Name}} struct{
 	{{- range $j, $field := $unique.Fields}}
 	{{$field.Name}} {{$field.GetType}}
 	{{- end}}
 }
 
-func (u *{{$unique.Name}}Unique) Key() string {
+func (u *{{$unique.Name}}) Key() string {
 	strs := []string{
 		{{- range $j, $field := $unique.Fields}}
 		"{{$field.Name}}",
@@ -16,7 +19,7 @@ func (u *{{$unique.Name}}Unique) Key() string {
 	return fmt.Sprintf("unique:%s", strings.Join(strs, ":"))
 }
 
-func (u *{{$unique.Name}}Unique) SQLFormat() string {
+func (u *{{$unique.Name}}) SQLFormat() string {
 	conditions := []string{
 		{{- range $j, $field := $unique.Fields}}
 		"{{$field.Name | camel2name}} = ?",
@@ -25,7 +28,7 @@ func (u *{{$unique.Name}}Unique) SQLFormat() string {
 	return strings.Join(conditions, " AND ")
 }
 
-func (u *{{$unique.Name}}Unique) SQLParams() []interface{} {
+func (u *{{$unique.Name}}) SQLParams() []interface{} {
 	return []interface{}{
 		{{- range $j, $field := $unique.Fields}}
 		u.{{$field.Name}},
@@ -33,7 +36,23 @@ func (u *{{$unique.Name}}Unique) SQLParams() []interface{} {
 	}
 }
 
-func (u *{{$unique.Name}}Unique) SQLLimit() int {
+func (u *{{$unique.Name}}) SQLLimit() int {
 	return 1
 }
+
+func (u *{{$unique.Name}}) Limit(n int) {
+}
+
+func (u *{{$unique.Name}}) Offset(n int) {
+}
+
+{{$relation := $unique.GetRelation "pair" $primaryField.GetType $obj.Name}}
+func (u *{{$unique.Name}}) UKRelation() UniqueRelation {
+	{{- if $unique.Obj.DbContains "redis"}}
+	return {{$relation.Name}}RedisMgr()
+	{{- else}}
+	return nil
+	{{- end}}
+}
+
 {{end}}

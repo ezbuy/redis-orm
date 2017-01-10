@@ -3,8 +3,16 @@
 {{$primaryField := $obj.PrimaryField}}
 {{- if not $obj.Relation}}
 	import (
+		"fmt"
+		"strings"
 		"github.com/ezbuy/redis-orm/orm"
 		redis "gopkg.in/redis.v5"
+	)
+
+	var (
+		_ fmt.Formatter
+		_ orm.VSet
+		_ strings.Reader
 	)
 
 	type _{{$obj.Name}}RedisMgr struct {

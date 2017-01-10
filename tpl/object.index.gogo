@@ -1,13 +1,15 @@
 {{define "object.index"}}
 {{$index := .}}
-type {{$index.Name}}Index struct{
+{{$obj := .Obj}}
+{{$primaryField := .Obj.PrimaryField}}
+type {{$index.Name}} struct{
 	{{- range $j, $field := $index.Fields}}
 	{{$field.Name}} {{$field.GetType}}
 	{{- end}}
 	offset int
 	limit int
 }
-func (u *{{$index.Name}}Index) Key() string {
+func (u *{{$index.Name}}) Key() string {
 	strs := []string{
 		{{- range $j, $field := $index.Fields}}
 		"{{$field.Name}}",
@@ -17,7 +19,7 @@ func (u *{{$index.Name}}Index) Key() string {
 	return fmt.Sprintf("index:%s", strings.Join(strs, ":"))
 }
 
-func (u *{{$index.Name}}Index) SQLFormat() string {
+func (u *{{$index.Name}}) SQLFormat() string {
 	conditions := []string{
 		{{- range $j, $field := $index.Fields}}
 		"{{$field.Name | camel2name}} = ?",
@@ -26,7 +28,7 @@ func (u *{{$index.Name}}Index) SQLFormat() string {
 	return fmt.Sprintf("%s %s", strings.Join(conditions, " AND "), orm.OffsetLimit(u.offset, u.limit))
 }
 
-func (u *{{$index.Name}}Index) SQLParams() []interface{} {
+func (u *{{$index.Name}}) SQLParams() []interface{} {
 	return []interface{}{
 		{{- range $j, $field := $index.Fields}}
 		u.{{$field.Name}},
@@ -34,18 +36,28 @@ func (u *{{$index.Name}}Index) SQLParams() []interface{} {
 	}
 }
 
-func (u *{{$index.Name}}Index) SQLLimit() int {
+func (u *{{$index.Name}}) SQLLimit() int {
 	if u.limit > 0 {
 		return u.limit	
 	}
 	return -1
 }
 
-func (u *{{$index.Name}}Index) Limit(n int) {
+func (u *{{$index.Name}}) Limit(n int) {
 	u.limit = n
 }
 
-func (u *{{$index.Name}}Index) Offset(n int) {
+func (u *{{$index.Name}}) Offset(n int) {
 	u.offset = n
 }
+
+{{$relation := $index.GetRelation "pair" $primaryField.GetType $obj.Name}}
+func (u *{{$index.Name}}) IDXRelation() IndexRelation {
+	{{- if $index.Obj.DbContains "redis"}}
+	return {{$relation.Name}}RedisMgr()
+	{{- else}}
+	return nil
+	{{- end}}
+}
+
 {{end}}

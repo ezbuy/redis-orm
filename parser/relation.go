@@ -8,7 +8,8 @@ type Relation struct {
 	ValueType string
 	ModelType string
 	//! fields
-	Fields []*Field
+	Fields     []*Field
+	ValueField *Field
 	//! owner
 	Obj *MetaObject
 }
@@ -29,6 +30,10 @@ func (r *Relation) PrimaryField() *Field {
 	return nil
 }
 
+func (r *Relation) DB() string {
+	return r.Obj.Tag
+}
+
 func (r *Relation) build() error {
 	switch r.StoreType {
 	case "pair", "set", "list":
@@ -45,7 +50,7 @@ func (r *Relation) build() error {
 		f2.Name = "Value"
 		f2.Type = r.ValueType
 		r.Fields[1] = f2
-
+		r.ValueField = f2
 	case "zset":
 		r.Fields = make([]*Field, 3)
 		f1 := NewField()
@@ -59,13 +64,14 @@ func (r *Relation) build() error {
 		f2.Obj = r.Obj
 		f2.Name = "Score"
 		f2.Type = "float64"
-		r.Fields[0] = f2
+		r.Fields[1] = f2
 
 		f3 := NewField()
 		f3.Obj = r.Obj
 		f3.Name = "Value"
 		f3.Type = r.ValueType
-		r.Fields[0] = f3
+		r.Fields[2] = f3
+		r.ValueField = f3
 	case "geo":
 		r.Fields = make([]*Field, 4)
 		f1 := NewField()
@@ -79,19 +85,20 @@ func (r *Relation) build() error {
 		f2.Obj = r.Obj
 		f2.Name = "Longitude"
 		f2.Type = "float64"
-		r.Fields[0] = f2
+		r.Fields[1] = f2
 
 		f3 := NewField()
 		f3.Obj = r.Obj
 		f3.Name = "Latitude"
 		f3.Type = "float64"
-		r.Fields[0] = f3
+		r.Fields[2] = f3
 
 		f4 := NewField()
 		f4.Obj = r.Obj
 		f4.Name = "Value"
 		f4.Type = r.ValueType
-		r.Fields[0] = f4
+		r.Fields[3] = f4
+		r.ValueField = f4
 	default:
 		return errors.New("unsupport `store` for relation")
 	}

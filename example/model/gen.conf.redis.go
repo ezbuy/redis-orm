@@ -52,49 +52,67 @@ func keyOfObject(obj Object, keys ...string) string {
 }
 
 func keyOfClass(obj Object, keys ...string) string {
-	suffix := strings.Join(keys, ":")
-	if suffix != "" {
-		return fmt.Sprintf("%s:%s:%s", obj.GetStoreType(), obj.GetClassName(), suffix)
+	switch obj.GetStoreType() {
+	case PAIR:
+		return pairOfClass(obj.GetClassName(), keys...)
+	case HASH:
+		return hashOfClass(obj.GetClassName(), keys...)
+	case SET:
+		return setOfClass(obj.GetClassName(), keys...)
+	case ZSET:
+		return zsetOfClass(obj.GetClassName(), keys...)
+	case GEO:
+		return geoOfClass(obj.GetClassName(), keys...)
+	case LIST:
+		return listOfClass(obj.GetClassName(), keys...)
 	}
-	return fmt.Sprintf("%s:%s", obj.GetStoreType(), obj.GetClassName())
+	return ""
 }
 
-func pairOfClass(obj Object, keys ...string) string {
+func pairOfClass(class string, keys ...string) string {
 	suffix := strings.Join(keys, ":")
 	if suffix != "" {
-		return fmt.Sprintf("%s:%s:%s", PAIR, obj.GetClassName(), suffix)
+		return fmt.Sprintf("%s:%s:%s", PAIR, class, suffix)
 	}
-	return fmt.Sprintf("%s:%s", PAIR, obj.GetClassName())
+	return fmt.Sprintf("%s:%s", PAIR, class)
 }
 
-func setOfClass(obj Object, keys ...string) string {
+func hashOfClass(class string, keys ...string) string {
 	suffix := strings.Join(keys, ":")
 	if suffix != "" {
-		return fmt.Sprintf("%s:%s:%s", SET, obj.GetClassName(), suffix)
+		return fmt.Sprintf("%s:%s:%s", HASH, class, suffix)
 	}
-	return fmt.Sprintf("%s:%s", SET, obj.GetClassName())
+	return fmt.Sprintf("%s:%s", HASH, class)
 }
 
-func zsetOfClass(obj Object, keys ...string) string {
+func setOfClass(class string, keys ...string) string {
 	suffix := strings.Join(keys, ":")
 	if suffix != "" {
-		return fmt.Sprintf("%s:%s:%s", ZSET, obj.GetClassName(), suffix)
+		return fmt.Sprintf("%s:%s:%s", SET, class, suffix)
 	}
-	return fmt.Sprintf("%s:%s", ZSET, obj.GetClassName())
+	return fmt.Sprintf("%s:%s", SET, class)
 }
 
-func geoOfClass(obj Object, keys ...string) string {
+func zsetOfClass(class string, keys ...string) string {
 	suffix := strings.Join(keys, ":")
 	if suffix != "" {
-		return fmt.Sprintf("%s:%s:%s", GEO, obj.GetClassName(), suffix)
+		return fmt.Sprintf("%s:%s:%s", ZSET, class, suffix)
 	}
-	return fmt.Sprintf("%s:%s", GEO, obj.GetClassName())
+	return fmt.Sprintf("%s:%s", ZSET, class)
 }
 
-func listOfClass(obj Object, keys ...string) string {
+func geoOfClass(class string, keys ...string) string {
 	suffix := strings.Join(keys, ":")
 	if suffix != "" {
-		return fmt.Sprintf("%s:%s:%s", LIST, obj.GetClassName(), suffix)
+		return fmt.Sprintf("%s:%s:%s", GEO, class, suffix)
 	}
-	return fmt.Sprintf("%s:%s", LIST, obj.GetClassName())
+	return fmt.Sprintf("%s:%s", GEO, class)
+}
+
+func listOfClass(class string, keys ...string) string {
+	suffix := strings.Join(keys, ":")
+	if suffix != "" {
+		return fmt.Sprintf("%s:%s:%s", LIST, class, suffix)
+	}
+	return fmt.Sprintf("%s:%s", LIST, class)
 }

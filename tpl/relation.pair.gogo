@@ -2,42 +2,37 @@
 {{$relation := .}}
 {{$primaryField := $relation.PrimaryField}}
 //! redis relation pair
-type _{{$relation.Name}}RedisMgr struct {
-	*orm.RedisStore
+func (m *_{{$relation.Name}}RedisMgr) PairAdd(obj *{{$relation.Name}}) error {
+	return m.Set(pairOfClass(obj.GetClassName(), obj.Key), obj.Value, 0).Err()
 }
 
-func {{$relation.Name}}RedisMgr() *_{{$relation.Name}}RedisMgr {	
-	return &_{{$relation.Name}}RedisMgr{_redis_store}
-}
-
-func New{{$relation.Name}}RedisMgr(cf *RedisConfig) (*_{{$relation.Name}}RedisMgr, error) {
-	store, err := orm.NewRedisStore(cf.Host, cf.Port, cf.Password, 0)
+func (m *_{{$relation.Name}}RedisMgr) PairGet(key string) (*{{$relation.Name}}, error) {
+	str, err := m.Get(pairOfClass("{{$relation.Name}}", key)).Result()
 	if err != nil {
 		return nil, err
 	}
-	return &_{{$relation.Name}}RedisMgr{store}, nil
+
+	obj := m.New{{$relation.Name}}(key)
+	{{- if $relation.ValueField.IsNeedTransform}}
+		var val {{$relation.ValueField.GetTransform.TypeOrigin}}
+		if err := m.StringScan(str, &val); err != nil {
+			return nil, err
+		}
+		obj.{{$relation.ValueField.Name}} = {{- printf $relation.ValueField.GetTransform.ConvertTo "val"}}
+	{{- else}}
+		if err := m.StringScan(str, &obj.Value); err != nil {
+			return nil, err
+		}
+	{{- end}}
+	return obj, nil
 }
 
-//! pipeline write
-type _{{$relation.Name}}RedisPipeline struct {
-	*redis.Pipeline
-	Err error
+func (m *_{{$relation.Name}}RedisMgr) PairRem(key string) error {
+	return m.Del(pairOfClass("{{$relation.Name}}", key)).Err()
 }
 
-func (m *_{{$relation.Name}}RedisMgr) BeginPipeline() *_{{$relation.Name}}RedisPipeline {
-	return &_{{$relation.Name}}RedisPipeline{m.Pipeline(), nil}
-}
-
-func (m *_{{$relation.Name}}RedisMgr) PSet(obj *{{$relation.Name}}) error {
-	return nil
-}
-
-func (m *_{{$relation.Name}}RedisMgr) PGet(obj *{{$relation.Name}}) error {
-	return nil
-}
-
-func (m *_{{$relation.Name}}RedisMgr) PRem(obj *{{$relation.Name}}) error {
-	return nil
+func (m *_{{$relation.Name}}RedisMgr) FindOne(key string) (string, error) {
+	return m.Get(pairOfClass("{{$relation.Name}}", key)).Result()
 }
 
 {{end}}

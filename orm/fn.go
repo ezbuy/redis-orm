@@ -60,3 +60,8 @@ func NewStringSlice(len int, val string) []string {
 	}
 	return s
 }
+
+func ToFloat64(val interface{}) float64 {
+	//! TODO
+	return val.(float64)
+}

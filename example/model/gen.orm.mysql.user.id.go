@@ -14,33 +14,32 @@ var (
 	_ orm.VSet
 )
 
-type _UserBlogsMySQLMgr struct {
+type _UserIdMySQLMgr struct {
 	*orm.MySQLStore
 }
 
-func UserBlogsMySQLMgr() *_UserBlogsMySQLMgr {
-	return &_UserBlogsMySQLMgr{_mysql_store}
+func UserIdMySQLMgr() *_UserIdMySQLMgr {
+	return &_UserIdMySQLMgr{_mysql_store}
 }
 
-func NewUserBlogsMySQLMgr(cf *MySQLConfig) (*_UserBlogsMySQLMgr, error) {
+func NewUserIdMySQLMgr(cf *MySQLConfig) (*_UserIdMySQLMgr, error) {
 	store, err := orm.NewMySQLStore(cf.Host, cf.Port, cf.Database, cf.UserName, cf.Password)
 	if err != nil {
 		return nil, err
 	}
-	return &_UserBlogsMySQLMgr{store}, nil
+	return &_UserIdMySQLMgr{store}, nil
 }
 
-func (m *_UserBlogsMySQLMgr) FetchBySQL(sql string, args ...interface{}) (results []interface{}, err error) {
+func (m *_UserIdMySQLMgr) FetchBySQL(sql string, args ...interface{}) (results []interface{}, err error) {
 	rows, err := m.Query(sql, args...)
 	if err != nil {
-		return nil, fmt.Errorf("UserBlogs fetch error: %v", err)
+		return nil, fmt.Errorf("UserId fetch error: %v", err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var result UserBlogs
+		var result UserId
 		err = rows.Scan(&(result.Key),
-			&(result.Score),
 			&(result.Value),
 		)
 		if err != nil {
@@ -50,7 +49,7 @@ func (m *_UserBlogsMySQLMgr) FetchBySQL(sql string, args ...interface{}) (result
 		results = append(results, &result)
 	}
 	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("UserBlogs fetch result error: %v", err)
+		return nil, fmt.Errorf("UserId fetch result error: %v", err)
 	}
 	return
 }

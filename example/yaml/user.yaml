@@ -18,6 +18,7 @@ User:
     - CreatedAt: timestamp
     - UpdatedAt: timestamp
   uniques: [[Mailbox, Password]]
+  ranges: [[Name, Status]]
   importSQL: "SELECT `id`,`name`,`mailbox`,`sex`,`longitude`,`latitude`,`description`,`password`,`head_url`,`status`,`created_at`, `updated_at` FROM users"
 
 UserBaseInfo:
@@ -34,3 +35,18 @@ UserBaseInfo:
     - Sex: bool
   uniques: [[Mailbox, Password]]
   importSQL: "SELECT `id`,`name`,`mailbox`,`sex` FROM users"
+
+UserLocation:
+  dbs: [redis, mysql]
+  relation:
+    storetype: geo
+    valuetype: int32
+    modeltype: User
+  importSQL: "SELECT 'all',`longitude`,`latitude`,`id` FROM users"  
+
+UserId:
+  dbs: [redis, mysql]
+  relation:
+    storetype: list
+    valuetype: int32
+    modeltype: User
