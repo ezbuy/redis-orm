@@ -101,7 +101,7 @@ func (u *MailboxPasswordOfUserUK) Key() string {
 		"Password",
 		fmt.Sprint(u.Password),
 	}
-	return fmt.Sprintf("unique:%s", strings.Join(strs, ":"))
+	return fmt.Sprintf("%s", strings.Join(strs, ":"))
 }
 
 func (u *MailboxPasswordOfUserUK) SQLFormat() string {
@@ -146,7 +146,7 @@ func (u *SexOfUserIDX) Key() string {
 		"Sex",
 		fmt.Sprint(u.Sex),
 	}
-	return fmt.Sprintf("index:%s", strings.Join(strs, ":"))
+	return fmt.Sprintf("%s", strings.Join(strs, ":"))
 }
 
 func (u *SexOfUserIDX) SQLFormat() string {
@@ -199,7 +199,7 @@ func (u *NameStatusOfUserRNG) Key() string {
 		fmt.Sprint(u.Name),
 		"Status",
 	}
-	return fmt.Sprintf("range:%s", strings.Join(strs, ":"))
+	return fmt.Sprintf("%s", strings.Join(strs, ":"))
 }
 
 func (u *NameStatusOfUserRNG) beginOp() string {
@@ -349,7 +349,7 @@ func (m *_UserMySQLMgr) FetchByIds(ids []string) ([]*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	results := make([]*User, len(objs))
+	results := []*User{}
 	for _, obj := range objs {
 		results = append(results, obj.(*User))
 	}
@@ -695,11 +695,10 @@ func (m *_UserRedisMgr) Load(db DBFetcher) error {
 	}
 	return m.AddBySQL(db, "SELECT `id`,`name`,`mailbox`,`sex`,`longitude`,`latitude`,`description`,`password`,`head_url`,`status`,`created_at`, `updated_at` FROM users")
 
-	return nil
 }
 
 func (m *_UserRedisMgr) AddBySQL(db DBFetcher, sql string, args ...interface{}) error {
-	objs, err := db.FetchBySQL(sql, args)
+	objs, err := db.FetchBySQL(sql, args...)
 	if err != nil {
 		return err
 	}
@@ -713,7 +712,7 @@ func (m *_UserRedisMgr) AddBySQL(db DBFetcher, sql string, args ...interface{}) 
 	return nil
 }
 func (m *_UserRedisMgr) DelBySQL(db DBFetcher, sql string, args ...interface{}) error {
-	objs, err := db.FetchBySQL(sql, args)
+	objs, err := db.FetchBySQL(sql, args...)
 	if err != nil {
 		return err
 	}
@@ -756,109 +755,49 @@ func (m *_UserRedisMgr) OrderBy(sort OrderBy) ([]string, error) {
 }
 
 func (m *_UserRedisMgr) Fetch(id string) (*User, error) {
-	obj := &User{}
-	pipe := m.BeginPipeline()
-	pipe.HGet(keyOfObject(obj, fmt.Sprint(obj.Id)), "Id")
-	pipe.HGet(keyOfObject(obj, fmt.Sprint(obj.Id)), "Name")
-	pipe.HGet(keyOfObject(obj, fmt.Sprint(obj.Id)), "Mailbox")
-	pipe.HGet(keyOfObject(obj, fmt.Sprint(obj.Id)), "Sex")
-	pipe.HGet(keyOfObject(obj, fmt.Sprint(obj.Id)), "Longitude")
-	pipe.HGet(keyOfObject(obj, fmt.Sprint(obj.Id)), "Latitude")
-	pipe.HGet(keyOfObject(obj, fmt.Sprint(obj.Id)), "Description")
-	pipe.HGet(keyOfObject(obj, fmt.Sprint(obj.Id)), "Password")
-	pipe.HGet(keyOfObject(obj, fmt.Sprint(obj.Id)), "HeadUrl")
-	pipe.HGet(keyOfObject(obj, fmt.Sprint(obj.Id)), "Status")
-	pipe.HGet(keyOfObject(obj, fmt.Sprint(obj.Id)), "CreatedAt")
-	pipe.HGet(keyOfObject(obj, fmt.Sprint(obj.Id)), "UpdatedAt")
-	cmds, err := pipe.Exec()
+	obj := UserMgr.NewUser()
+
+	strs, err := m.HMGet(keyOfObject(obj, id), "Id", "Name", "Mailbox", "Sex", "Longitude", "Latitude", "Description", "Password", "HeadUrl", "Status", "CreatedAt", "UpdatedAt").Result()
 	if err != nil {
 		return nil, err
 	}
-	str0, err := cmds[0].(*redis.StringCmd).Result()
-	if err != nil {
+	if err := m.StringScan(strs[0].(string), &obj.Id); err != nil {
 		return nil, err
 	}
-	if err := m.StringScan(str0, &obj.Id); err != nil {
+	if err := m.StringScan(strs[1].(string), &obj.Name); err != nil {
 		return nil, err
 	}
-	str1, err := cmds[1].(*redis.StringCmd).Result()
-	if err != nil {
+	if err := m.StringScan(strs[2].(string), &obj.Mailbox); err != nil {
 		return nil, err
 	}
-	if err := m.StringScan(str1, &obj.Name); err != nil {
+	if err := m.StringScan(strs[3].(string), &obj.Sex); err != nil {
 		return nil, err
 	}
-	str2, err := cmds[2].(*redis.StringCmd).Result()
-	if err != nil {
+	if err := m.StringScan(strs[4].(string), &obj.Longitude); err != nil {
 		return nil, err
 	}
-	if err := m.StringScan(str2, &obj.Mailbox); err != nil {
+	if err := m.StringScan(strs[5].(string), &obj.Latitude); err != nil {
 		return nil, err
 	}
-	str3, err := cmds[3].(*redis.StringCmd).Result()
-	if err != nil {
+	if err := m.StringScan(strs[6].(string), &obj.Description); err != nil {
 		return nil, err
 	}
-	if err := m.StringScan(str3, &obj.Sex); err != nil {
+	if err := m.StringScan(strs[7].(string), &obj.Password); err != nil {
 		return nil, err
 	}
-	str4, err := cmds[4].(*redis.StringCmd).Result()
-	if err != nil {
+	if err := m.StringScan(strs[8].(string), &obj.HeadUrl); err != nil {
 		return nil, err
 	}
-	if err := m.StringScan(str4, &obj.Longitude); err != nil {
-		return nil, err
-	}
-	str5, err := cmds[5].(*redis.StringCmd).Result()
-	if err != nil {
-		return nil, err
-	}
-	if err := m.StringScan(str5, &obj.Latitude); err != nil {
-		return nil, err
-	}
-	str6, err := cmds[6].(*redis.StringCmd).Result()
-	if err != nil {
-		return nil, err
-	}
-	if err := m.StringScan(str6, &obj.Description); err != nil {
-		return nil, err
-	}
-	str7, err := cmds[7].(*redis.StringCmd).Result()
-	if err != nil {
-		return nil, err
-	}
-	if err := m.StringScan(str7, &obj.Password); err != nil {
-		return nil, err
-	}
-	str8, err := cmds[8].(*redis.StringCmd).Result()
-	if err != nil {
-		return nil, err
-	}
-	if err := m.StringScan(str8, &obj.HeadUrl); err != nil {
-		return nil, err
-	}
-	str9, err := cmds[9].(*redis.StringCmd).Result()
-	if err != nil {
-		return nil, err
-	}
-	if err := m.StringScan(str9, &obj.Status); err != nil {
-		return nil, err
-	}
-	str10, err := cmds[10].(*redis.StringCmd).Result()
-	if err != nil {
+	if err := m.StringScan(strs[9].(string), &obj.Status); err != nil {
 		return nil, err
 	}
 	var val10 string
-	if err := m.StringScan(str10, &val10); err != nil {
+	if err := m.StringScan(strs[10].(string), &val10); err != nil {
 		return nil, err
 	}
 	obj.CreatedAt = orm.TimeParse(val10)
-	str11, err := cmds[11].(*redis.StringCmd).Result()
-	if err != nil {
-		return nil, err
-	}
 	var val11 string
-	if err := m.StringScan(str11, &val11); err != nil {
+	if err := m.StringScan(strs[11].(string), &val11); err != nil {
 		return nil, err
 	}
 	obj.UpdatedAt = orm.TimeParse(val11)
@@ -866,7 +805,7 @@ func (m *_UserRedisMgr) Fetch(id string) (*User, error) {
 }
 
 func (m *_UserRedisMgr) FetchByIds(ids []string) ([]*User, error) {
-	objs := make([]*User, len(ids))
+	objs := []*User{}
 	for _, id := range ids {
 		obj, err := m.Fetch(id)
 		if err != nil {
@@ -918,7 +857,11 @@ func (m *_UserRedisMgr) Delete(obj *User) error {
 	}
 	rg_mgr_0 := NameStatusOfUserRNGRelationRedisMgr(m.RedisStore)
 	rg_rel_0 := rg_mgr_0.NewNameStatusOfUserRNGRelation(strings.Join(rg_key_0, ":"))
-	rg_rel_0.Score = orm.ToFloat64(obj.Status)
+	score, err := orm.ToFloat64(obj.Status)
+	if err != nil {
+		return err
+	}
+	rg_rel_0.Score = score
 	rg_rel_0.Value = obj.Id
 	if err := rg_mgr_0.ZSetRem(rg_rel_0); err != nil {
 		return err
@@ -982,7 +925,11 @@ func (m *_UserRedisMgr) Save(obj *User) error {
 	}
 	rg_mgr_0 := NameStatusOfUserRNGRelationRedisMgr(m.RedisStore)
 	rg_rel_0 := rg_mgr_0.NewNameStatusOfUserRNGRelation(strings.Join(rg_key_0, ":"))
-	rg_rel_0.Score = orm.ToFloat64(obj.Status)
+	score, err := orm.ToFloat64(obj.Status)
+	if err != nil {
+		return err
+	}
+	rg_rel_0.Score = score
 	rg_rel_0.Value = obj.Id
 	if err := rg_mgr_0.ZSetAdd(rg_rel_0); err != nil {
 		return err
@@ -993,6 +940,24 @@ func (m *_UserRedisMgr) Save(obj *User) error {
 }
 
 func (m *_UserRedisMgr) Clear() error {
+	if strs, err := m.Keys(pairOfClass("User", "*")).Result(); err == nil {
+		m.Del(strs...)
+	}
+	if strs, err := m.Keys(hashOfClass("User", "*")).Result(); err == nil {
+		m.Del(strs...)
+	}
+	if strs, err := m.Keys(setOfClass("User", "*")).Result(); err == nil {
+		m.Del(strs...)
+	}
+	if strs, err := m.Keys(zsetOfClass("User", "*")).Result(); err == nil {
+		m.Del(strs...)
+	}
+	if strs, err := m.Keys(geoOfClass("User", "*")).Result(); err == nil {
+		m.Del(strs...)
+	}
+	if strs, err := m.Keys(listOfClass("User", "*")).Result(); err == nil {
+		m.Del(strs...)
+	}
 	return nil
 }
 
@@ -1050,11 +1015,11 @@ func (m *_MailboxPasswordOfUserUKRelationRedisMgr) NewMailboxPasswordOfUserUKRel
 
 //! redis relation pair
 func (m *_MailboxPasswordOfUserUKRelationRedisMgr) PairAdd(obj *MailboxPasswordOfUserUKRelation) error {
-	return m.Set(pairOfClass(obj.GetClassName(), obj.Key), obj.Value, 0).Err()
+	return m.Set(pairOfClass("User", obj.GetClassName(), obj.Key), obj.Value, 0).Err()
 }
 
 func (m *_MailboxPasswordOfUserUKRelationRedisMgr) PairGet(key string) (*MailboxPasswordOfUserUKRelation, error) {
-	str, err := m.Get(pairOfClass("MailboxPasswordOfUserUKRelation", key)).Result()
+	str, err := m.Get(pairOfClass("User", "MailboxPasswordOfUserUKRelation", key)).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -1067,11 +1032,11 @@ func (m *_MailboxPasswordOfUserUKRelationRedisMgr) PairGet(key string) (*Mailbox
 }
 
 func (m *_MailboxPasswordOfUserUKRelationRedisMgr) PairRem(key string) error {
-	return m.Del(pairOfClass("MailboxPasswordOfUserUKRelation", key)).Err()
+	return m.Del(pairOfClass("User", "MailboxPasswordOfUserUKRelation", key)).Err()
 }
 
 func (m *_MailboxPasswordOfUserUKRelationRedisMgr) FindOne(key string) (string, error) {
-	return m.Get(pairOfClass("MailboxPasswordOfUserUKRelation", key)).Result()
+	return m.Get(pairOfClass("User", "MailboxPasswordOfUserUKRelation", key)).Result()
 }
 
 //! indexes
@@ -1127,33 +1092,37 @@ func (m *_SexOfUserIDXRelationRedisMgr) NewSexOfUserIDXRelation(key string) *Sex
 }
 
 //! redis relation pair
-func (m *_SexOfUserIDXRelationRedisMgr) SetAdd(obj *SexOfUserIDXRelation) error {
-	return m.SAdd(setOfClass(obj.GetClassName(), obj.Key), obj.Value).Err()
+func (m *_SexOfUserIDXRelationRedisMgr) SetAdd(relation *SexOfUserIDXRelation) error {
+	return m.SAdd(setOfClass("User", "SexOfUserIDXRelation", relation.Key), relation.Value).Err()
 }
 
 func (m *_SexOfUserIDXRelationRedisMgr) SetGet(key string) ([]*SexOfUserIDXRelation, error) {
-	strs, err := m.SMembers(setOfClass("SexOfUserIDXRelation", key)).Result()
+	strs, err := m.SMembers(setOfClass("User", "SexOfUserIDXRelation", key)).Result()
 	if err != nil {
 		return nil, err
 	}
 
-	objs := make([]*SexOfUserIDXRelation, len(strs))
+	relations := make([]*SexOfUserIDXRelation, len(strs))
 	for _, str := range strs {
-		obj := m.NewSexOfUserIDXRelation(key)
-		if err := m.StringScan(str, &obj.Value); err != nil {
+		relation := m.NewSexOfUserIDXRelation(key)
+		if err := m.StringScan(str, &relation.Value); err != nil {
 			return nil, err
 		}
-		objs = append(objs, obj)
+		relations = append(relations, relation)
 	}
-	return objs, nil
+	return relations, nil
 }
 
-func (m *_SexOfUserIDXRelationRedisMgr) SetRem(obj *SexOfUserIDXRelation) error {
-	return m.SRem(setOfClass(obj.GetClassName(), obj.Key), obj.Value).Err()
+func (m *_SexOfUserIDXRelationRedisMgr) SetRem(relation *SexOfUserIDXRelation) error {
+	return m.SRem(setOfClass("User", "SexOfUserIDXRelation", relation.Key), relation.Value).Err()
+}
+
+func (m *_SexOfUserIDXRelationRedisMgr) SetDel(key string) error {
+	return m.Del(setOfClass("User", "SexOfUserIDXRelation", key)).Err()
 }
 
 func (m *_SexOfUserIDXRelationRedisMgr) Find(key string) ([]string, error) {
-	return m.SMembers(setOfClass("SexOfUserIDXRelation", key)).Result()
+	return m.SMembers(setOfClass("User", "SexOfUserIDXRelation", key)).Result()
 }
 
 //! ranges
@@ -1210,8 +1179,8 @@ func (m *_NameStatusOfUserRNGRelationRedisMgr) NewNameStatusOfUserRNGRelation(ke
 }
 
 //! redis relation zset
-func (m *_NameStatusOfUserRNGRelationRedisMgr) ZSetAdd(obj *NameStatusOfUserRNGRelation) error {
-	return m.ZAdd(zsetOfClass(obj.GetClassName(), obj.Key), redis.Z{Score: obj.Score, Member: obj.Value}).Err()
+func (m *_NameStatusOfUserRNGRelationRedisMgr) ZSetAdd(relation *NameStatusOfUserRNGRelation) error {
+	return m.ZAdd(zsetOfClass("User", "NameStatusOfUserRNGRelation", relation.Key), redis.Z{Score: relation.Score, Member: relation.Value}).Err()
 }
 
 func (m *_NameStatusOfUserRNGRelationRedisMgr) ZSetRange(key string, min, max int64) ([]*NameStatusOfUserRNGRelation, error) {
@@ -1220,28 +1189,32 @@ func (m *_NameStatusOfUserRNGRelationRedisMgr) ZSetRange(key string, min, max in
 		return nil, err
 	}
 
-	objs := make([]*NameStatusOfUserRNGRelation, len(strs))
+	relations := make([]*NameStatusOfUserRNGRelation, len(strs))
 	for _, str := range strs {
-		obj := m.NewNameStatusOfUserRNGRelation(key)
-		if err := m.StringScan(str, &obj.Value); err != nil {
+		relation := m.NewNameStatusOfUserRNGRelation(key)
+		if err := m.StringScan(str, &relation.Value); err != nil {
 			return nil, err
 		}
-		objs = append(objs, obj)
+		relations = append(relations, relation)
 	}
-	return objs, nil
+	return relations, nil
 }
 
-func (m *_NameStatusOfUserRNGRelationRedisMgr) ZSetRem(obj *NameStatusOfUserRNGRelation) error {
-	return m.ZRem(zsetOfClass(obj.GetClassName(), obj.Key), redis.Z{Score: obj.Score, Member: obj.Value}).Err()
+func (m *_NameStatusOfUserRNGRelationRedisMgr) ZSetRem(relation *NameStatusOfUserRNGRelation) error {
+	return m.ZRem(zsetOfClass("User", "NameStatusOfUserRNGRelation", relation.Key), redis.Z{Score: relation.Score, Member: relation.Value}).Err()
+}
+
+func (m *_NameStatusOfUserRNGRelationRedisMgr) ZSetDel(key string) error {
+	return m.Del(setOfClass("User", "NameStatusOfUserRNGRelation", key)).Err()
 }
 
 func (m *_NameStatusOfUserRNGRelationRedisMgr) Range(key string, min, max int64) ([]string, error) {
-	return m.ZRange(zsetOfClass("NameStatusOfUserRNGRelation", key), min, max).Result()
+	return m.ZRange(zsetOfClass("User", "NameStatusOfUserRNGRelation", key), min, max).Result()
 }
 
 func (m *_NameStatusOfUserRNGRelationRedisMgr) OrderBy(key string, asc bool) ([]string, error) {
 	//! TODO revert
-	return m.ZRange(zsetOfClass("NameStatusOfUserRNGRelation", key), 0, -1).Result()
+	return m.ZRange(zsetOfClass("User", "NameStatusOfUserRNGRelation", key), 0, -1).Result()
 }
 
 //! orders

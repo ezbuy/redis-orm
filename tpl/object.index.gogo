@@ -16,7 +16,7 @@ func (u *{{$index.Name}}) Key() string {
 		fmt.Sprint(u.{{$field.Name}}),
 		{{- end}}
 	}
-	return fmt.Sprintf("index:%s", strings.Join(strs, ":"))
+	return fmt.Sprintf("%s", strings.Join(strs, ":"))
 }
 
 func (u *{{$index.Name}}) SQLFormat() string {

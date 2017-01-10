@@ -2,43 +2,47 @@
 {{$relation := .}}
 {{$primaryField := $relation.PrimaryField}}
 //! redis relation pair
-func (m *_{{$relation.Name}}RedisMgr) LocationAdd(obj *{{$relation.Name}}) error {	
-	return m.GeoAdd(geoOfClass(obj.GetClassName(), obj.Key), &redis.GeoLocation{
-		Longitude: obj.Longitude,
-		Latitude:  obj.Latitude,
-		Name:      fmt.Sprint(obj.Value),
+func (m *_{{$relation.Name}}RedisMgr) LocationAdd(relation *{{$relation.Name}}) error {	
+	return m.GeoAdd(geoOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), &redis.GeoLocation{
+		Longitude: relation.Longitude,
+		Latitude:  relation.Latitude,
+		Name:      fmt.Sprint(relation.Value),
 	}).Err()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) LocationRadius(key string, longitude float64, latitude float64, query *redis.GeoRadiusQuery) ([]*{{$relation.Name}}, error) {
-	locations, err := m.GeoRadius(geoOfClass("{{$relation.Name}}", key), longitude, latitude, query).Result()
+	locations, err := m.GeoRadius(geoOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key), longitude, latitude, query).Result()
 	if err != nil {
 		return nil, err
 	}
 
-	objs := make([]*{{$relation.Name}}, len(locations))
+	relations := []*{{$relation.Name}}{}
 	for _, location := range locations {
-		obj := m.New{{$relation.Name}}(key)
-		obj.Longitude = location.Longitude
-		obj.Latitude = location.Latitude
+		relation := m.New{{$relation.Name}}(key)
+		relation.Longitude = location.Longitude
+		relation.Latitude = location.Latitude
 		{{- if $relation.ValueField.IsNeedTransform}}
 			var val {{$relation.ValueField.GetTransform.TypeOrigin}}
 			if err := m.StringScan(location.Name, &val); err != nil {
 				return nil, err
 			}
-			obj.{{$relation.ValueField.Name}} = {{- printf $relation.ValueField.GetTransform.ConvertTo "val"}}
+			relation.{{$relation.ValueField.Name}} = {{- printf $relation.ValueField.GetTransform.ConvertTo "val"}}
 		{{- else}}
-		if err := m.StringScan(location.Name, &obj.Value); err != nil {
+		if err := m.StringScan(location.Name, &relation.Value); err != nil {
 			return nil, err
 		}
 		{{- end}}
-		objs = append(objs, obj)
+		relations = append(relations, relation)
 	}
-	return objs, nil
+	return relations, nil
 }
 
-func (m *_{{$relation.Name}}RedisMgr) LocationRem(obj *{{$relation.Name}}) error {
-	return m.ZRem(geoOfClass(obj.GetClassName(), obj.Key), fmt.Sprint(obj.Value)).Err()
+func (m *_{{$relation.Name}}RedisMgr) LocationRem(relation *{{$relation.Name}}) error {
+	return m.ZRem(geoOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), fmt.Sprint(relation.Value)).Err()
+}
+
+func (m *_{{$relation.Name}}RedisMgr) LocationDel(key string) error {
+	return m.Del(geoOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Err()
 }
 
 {{end}}

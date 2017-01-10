@@ -72,7 +72,7 @@ func (u *MailboxPasswordOfUserBaseInfoUK) Key() string {
 		"Password",
 		fmt.Sprint(u.Password),
 	}
-	return fmt.Sprintf("unique:%s", strings.Join(strs, ":"))
+	return fmt.Sprintf("%s", strings.Join(strs, ":"))
 }
 
 func (u *MailboxPasswordOfUserBaseInfoUK) SQLFormat() string {
@@ -117,7 +117,7 @@ func (u *NameOfUserBaseInfoIDX) Key() string {
 		"Name",
 		fmt.Sprint(u.Name),
 	}
-	return fmt.Sprintf("index:%s", strings.Join(strs, ":"))
+	return fmt.Sprintf("%s", strings.Join(strs, ":"))
 }
 
 func (u *NameOfUserBaseInfoIDX) SQLFormat() string {
@@ -225,7 +225,7 @@ func (m *_UserBaseInfoMySQLMgr) FetchByIds(ids []string) ([]*UserBaseInfo, error
 	if err != nil {
 		return nil, err
 	}
-	results := make([]*UserBaseInfo, len(objs))
+	results := []*UserBaseInfo{}
 	for _, obj := range objs {
 		results = append(results, obj.(*UserBaseInfo))
 	}

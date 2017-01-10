@@ -66,67 +66,67 @@ func (m *_UserIdRedisMgr) NewUserId(key string) *UserId {
 }
 
 //! redis relation list
-func (m *_UserIdRedisMgr) ListLPush(obj *UserId) error {
-	return m.LPush(listOfClass(obj.GetClassName(), obj.Key), obj.Value).Err()
+func (m *_UserIdRedisMgr) ListLPush(relation *UserId) error {
+	return m.LPush(listOfClass("UserId", "UserId", relation.Key), relation.Value).Err()
 }
 
-func (m *_UserIdRedisMgr) ListRPush(obj *UserId) error {
-	return m.RPush(listOfClass(obj.GetClassName(), obj.Key), obj.Value).Err()
+func (m *_UserIdRedisMgr) ListRPush(relation *UserId) error {
+	return m.RPush(listOfClass("UserId", "UserId", relation.Key), relation.Value).Err()
 }
 
 func (m *_UserIdRedisMgr) ListLPop(key string) (*UserId, error) {
-	str, err := m.LPop(listOfClass("UserId", key)).Result()
+	str, err := m.LPop(listOfClass("UserId", "UserId", key)).Result()
 	if err != nil {
 		return nil, err
 	}
 
-	obj := m.NewUserId(key)
-	if err := m.StringScan(str, &obj.Value); err != nil {
+	relation := m.NewUserId(key)
+	if err := m.StringScan(str, &relation.Value); err != nil {
 		return nil, err
 	}
 
-	return obj, nil
+	return relation, nil
 }
 
 func (m *_UserIdRedisMgr) ListRPop(key string) (*UserId, error) {
-	str, err := m.RPop(listOfClass("UserId", key)).Result()
+	str, err := m.RPop(listOfClass("UserId", "UserId", key)).Result()
 	if err != nil {
 		return nil, err
 	}
 
-	obj := m.NewUserId(key)
-	if err := m.StringScan(str, &obj.Value); err != nil {
+	relation := m.NewUserId(key)
+	if err := m.StringScan(str, &relation.Value); err != nil {
 		return nil, err
 	}
 
-	return obj, nil
+	return relation, nil
 }
 
 func (m *_UserIdRedisMgr) ListLRange(key string, start, stop int64) ([]*UserId, error) {
-	strs, err := m.LRange(listOfClass("UserId", key), start, stop).Result()
+	strs, err := m.LRange(listOfClass("UserId", "UserId", key), start, stop).Result()
 	if err != nil {
 		return nil, err
 	}
 
-	objs := make([]*UserId, len(strs))
+	relations := make([]*UserId, len(strs))
 	for _, str := range strs {
-		obj := m.NewUserId(key)
-		if err := m.StringScan(str, &obj.Value); err != nil {
+		relation := m.NewUserId(key)
+		if err := m.StringScan(str, &relation.Value); err != nil {
 			return nil, err
 		}
-		objs = append(objs, obj)
+		relations = append(relations, relation)
 	}
-	return objs, nil
+	return relations, nil
 }
 
-func (m *_UserIdRedisMgr) ListLRem(obj *UserId) error {
-	return m.LRem(listOfClass(obj.GetClassName(), obj.Key), 0, obj.Value).Err()
+func (m *_UserIdRedisMgr) ListLRem(relation *UserId) error {
+	return m.LRem(listOfClass("UserId", "UserId", relation.Key), 0, relation.Value).Err()
 }
 
 func (m *_UserIdRedisMgr) ListLLen(key string) (int64, error) {
-	return m.LLen(listOfClass("UserId", key)).Result()
+	return m.LLen(listOfClass("UserId", "UserId", key)).Result()
 }
 
-func (m *_UserIdRedisMgr) ListLDel() error {
-	return nil
+func (m *_UserIdRedisMgr) ListLDel(key string) error {
+	return m.Del(listOfClass("UserId", "UserId", key)).Err()
 }

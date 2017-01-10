@@ -79,7 +79,7 @@ func (u *UserIdOfBlogIDX) Key() string {
 		"UserId",
 		fmt.Sprint(u.UserId),
 	}
-	return fmt.Sprintf("index:%s", strings.Join(strs, ":"))
+	return fmt.Sprintf("%s", strings.Join(strs, ":"))
 }
 
 func (u *UserIdOfBlogIDX) SQLFormat() string {
@@ -195,7 +195,7 @@ func (m *_BlogMySQLMgr) FetchByIds(ids []string) ([]*Blog, error) {
 	if err != nil {
 		return nil, err
 	}
-	results := make([]*Blog, len(objs))
+	results := []*Blog{}
 	for _, obj := range objs {
 		results = append(results, obj.(*Blog))
 	}
