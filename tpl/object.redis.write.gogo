@@ -58,35 +58,13 @@ func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
 	}
 	rg_mgr_{{$i}} := {{$relation.Name}}RedisMgr(m.RedisStore)
 	rg_rel_{{$i}} := rg_mgr_{{$i}}.New{{$relation.Name}}(strings.Join(rg_key_{{$i}}, ":"))
-	score, err := orm.ToFloat64({{$rg.LastField.GetTransformValue "obj."}})
+	score_rg_{{$i}}, err := orm.ToFloat64({{$rg.LastField.GetTransformValue "obj."}})
 	if err != nil {
 		return err
 	}
-	rg_rel_{{$i}}.Score = score
+	rg_rel_{{$i}}.Score = score_rg_{{$i}}
 	rg_rel_{{$i}}.Value = {{$primaryField.GetTransformValue "obj."}}
 	if err := rg_mgr_{{$i}}.ZSetRem(rg_rel_{{$i}}); err != nil {
-		return err
-	}
-	{{- end}}
-
-	//! orders
-	{{- range $i, $order := $obj.Orders}}
-	{{- $relation := ($order.GetRelation "zset" $primaryField.GetType $obj.Name)}}
-	order_key_{{$i}} := []string{
-		{{- range $j, $field:= $order.Fields}}
-			{{- if eq (len $order.Fields) (add $j 1)}}
-				"{{$field.Name}}",
-			{{- else}}
-				"{{$field.Name}}",
-				fmt.Sprint({{$field.GetTransformValue "obj."}}),
-			{{- end}}		
-		{{- end}}
-	}
-	order_mgr_{{$i}} := {{$relation.Name}}RedisMgr(m.RedisStore)
-	order_rel_{{$i}} := order_mgr_{{$i}}.New{{$relation.Name}}(strings.Join(order_key_{{$i}}, ":"))
-	order_rel_{{$i}}.Score = orm.ToFloat64({{$order.LastField.GetTransformValue "obj."}})
-	order_rel_{{$i}}.Value = {{$primaryField.GetTransformValue "obj."}}
-	if err := order_mgr_{{$i}}.ZSetRem(order_rel_{{$i}}); err != nil {
 		return err
 	}
 	{{- end}}
@@ -153,38 +131,17 @@ func (m *_{{$obj.Name}}RedisMgr) Save(obj *{{$obj.Name}}) error {
 	}
 	rg_mgr_{{$i}} := {{$relation.Name}}RedisMgr(m.RedisStore)
 	rg_rel_{{$i}} := rg_mgr_{{$i}}.New{{$relation.Name}}(strings.Join(rg_key_{{$i}}, ":"))
-	score, err := orm.ToFloat64({{$rg.LastField.GetTransformValue "obj."}})
+	score_rg_{{$i}}, err := orm.ToFloat64({{$rg.LastField.GetTransformValue "obj."}})
 	if err != nil {
 		return err
 	}
-	rg_rel_{{$i}}.Score = score
+	rg_rel_{{$i}}.Score = score_rg_{{$i}}
 	rg_rel_{{$i}}.Value = {{$primaryField.GetTransformValue "obj."}}
 	if err := rg_mgr_{{$i}}.ZSetAdd(rg_rel_{{$i}}); err != nil {
 		return err
 	}
 	{{- end}}
 
-	//! orders
-	{{- range $i, $order := $obj.Orders}}
-	{{- $relation := ($order.GetRelation "zset" $primaryField.GetType $obj.Name)}}
-	order_key_{{$i}} := []string{
-		{{- range $j, $field:= $order.Fields}}
-			{{- if eq (len $order.Fields) (add $j 1)}}
-				"{{$field.Name}}",
-			{{- else}}
-				"{{$field.Name}}",
-				fmt.Sprint({{$field.GetTransformValue "obj."}}),
-			{{- end}}		
-		{{- end}}
-	}
-	order_mgr_{{$i}} := {{$relation.Name}}RedisMgr(m.RedisStore)
-	order_rel_{{$i}} := order_mgr_{{$i}}.New{{$relation.Name}}(strings.Join(order_key_{{$i}}, ":"))
-	order_rel_{{$i}}.Score = orm.ToFloat64({{$order.LastField.GetTransformValue "obj."}})
-	order_rel_{{$i}}.Value = {{$primaryField.GetTransformValue "obj."}}
-	if err := order_mgr_{{$i}}.ZSetAdd(order_rel_{{$i}}); err != nil {
-		return err
-	}
-	{{- end}}
 	return nil
 }
 

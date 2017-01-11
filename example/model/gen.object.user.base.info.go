@@ -153,8 +153,6 @@ func (u *NameOfUserBaseInfoIDX) IDXRelation() IndexRelation {
 }
 
 //! ranges
-
-//! orders
 func (m *_UserBaseInfoMgr) MySQL() *ReferenceResult {
 	return NewReferenceResult(UserBaseInfoMySQLMgr())
 }
@@ -251,8 +249,9 @@ func (m *_UserBaseInfoMySQLMgr) Range(scope Range) ([]string, error) {
 	return m.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (m *_UserBaseInfoMySQLMgr) OrderBy(sort OrderBy) ([]string, error) {
-	return m.queryLimit(sort.SQLFormat(), sort.SQLLimit(), sort.SQLParams()...)
+func (m *_UserBaseInfoMySQLMgr) RevertRange(scope Range) ([]string, error) {
+	scope.Revert(true)
+	return m.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
 }
 
 func (m *_UserBaseInfoMySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []string, err error) {

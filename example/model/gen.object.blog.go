@@ -115,8 +115,6 @@ func (u *UserIdOfBlogIDX) IDXRelation() IndexRelation {
 }
 
 //! ranges
-
-//! orders
 func (m *_BlogMgr) MySQL() *ReferenceResult {
 	return NewReferenceResult(BlogMySQLMgr())
 }
@@ -221,8 +219,9 @@ func (m *_BlogMySQLMgr) Range(scope Range) ([]string, error) {
 	return m.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (m *_BlogMySQLMgr) OrderBy(sort OrderBy) ([]string, error) {
-	return m.queryLimit(sort.SQLFormat(), sort.SQLLimit(), sort.SQLParams()...)
+func (m *_BlogMySQLMgr) RevertRange(scope Range) ([]string, error) {
+	scope.Revert(true)
+	return m.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
 }
 
 func (m *_BlogMySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []string, err error) {
@@ -274,7 +273,7 @@ func (m *_BlogMySQLMgr) queryLimit(where string, limit int, args ...interface{})
 
 //! tx write
 type _BlogMySQLTx struct {
-	*sql.Tx
+	*orm.MySQLTx
 	Err          error
 	RowsAffected int64
 }
@@ -284,7 +283,7 @@ func (m *_BlogMySQLMgr) BeginTx() (*_BlogMySQLTx, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &_BlogMySQLTx{tx, nil, 0}, nil
+	return &_BlogMySQLTx{orm.NewMySQLTx(tx), nil, 0}, nil
 }
 
 func (tx *_BlogMySQLTx) Create(obj *Blog) error {
@@ -396,8 +395,9 @@ func (tx *_BlogMySQLTx) Range(scope Range) ([]string, error) {
 	return tx.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (tx *_BlogMySQLTx) OrderBy(sort OrderBy) ([]string, error) {
-	return tx.queryLimit(sort.SQLFormat(), sort.SQLLimit(), sort.SQLParams()...)
+func (tx *_BlogMySQLTx) RevertRange(scope Range) ([]string, error) {
+	scope.Revert(true)
+	return tx.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
 }
 
 func (tx *_BlogMySQLTx) queryLimit(where string, limit int, args ...interface{}) (results []string, err error) {

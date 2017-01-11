@@ -119,8 +119,9 @@ func (m *_{{$obj.Name}}MySQLMgr) Range(scope Range) ([]string, error) {
 	return m.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (m *_{{$obj.Name}}MySQLMgr) OrderBy(sort OrderBy) ([]string, error) {
-	return m.queryLimit(sort.SQLFormat(), sort.SQLLimit(), sort.SQLParams()...)
+func (m *_{{$obj.Name}}MySQLMgr) RevertRange(scope Range) ([]string, error) {
+	scope.Revert(true)
+	return m.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
 }
 
 func (m *_{{$obj.Name}}MySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []string, err error){

@@ -23,9 +23,10 @@ func (m *_{{$obj.Name}}RedisMgr) Range(scope Range) ([]string, error) {
 	return nil, nil
 }
 
-func (m *_{{$obj.Name}}RedisMgr) OrderBy(sort OrderBy) ([]string, error) {
-	if relation := sort.ORDRelation(); relation != nil {
-		return relation.OrderBy(sort.Key(), true)
+func (m *_{{$obj.Name}}RedisMgr) RevertRange(scope Range) ([]string, error) {
+	if relation := scope.RNGRelation(); relation != nil {
+		scope.Revert(true)
+		return relation.Range(scope.Key(), scope.Begin(), scope.End())
 	}
 	return nil, nil
 }

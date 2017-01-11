@@ -2,11 +2,10 @@ package model
 
 import (
 	"fmt"
-	"strings"
-	"time"
-
 	"github.com/ezbuy/redis-orm/orm"
 	redis "gopkg.in/redis.v5"
+	"strings"
+	"time"
 )
 
 var (

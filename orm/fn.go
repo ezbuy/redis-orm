@@ -86,3 +86,13 @@ func ToFloat64(value interface{}) (float64, error) {
 	}
 	return float64(0), errors.New("unsupport type to float64")
 }
+
+func SQLOrderBy(field string, revert bool) string {
+	if field != "" {
+		if revert {
+			return fmt.Sprintf("ORDER BY `%s` DESC", field)
+		}
+		return fmt.Sprintf("ORDER BY `%s` ASC", field)
+	}
+	return ""
+}

@@ -87,11 +87,6 @@ var (
 	{{template "object.range" $rg}}
 	{{- end}}
 
-	//! orders
-	{{- range $i, $order := $obj.Orders}}
-	{{template "object.order.by" $order}}
-	{{- end}}
-
 	{{- if $obj.DbContains "mysql"}}
 	func (m *_{{$obj.Name}}Mgr) MySQL() *ReferenceResult {
 		return NewReferenceResult({{$obj.Name}}MySQLMgr())

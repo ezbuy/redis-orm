@@ -5,10 +5,17 @@
 
 type {{$order.Name}} struct{
 	{{- range $j, $field := $order.Fields}}
+		{{- if eq (add $j 1) (len $order.Fields)}}
+		{{$field.Name}}Begin {{$field.GetType}}
+		{{$field.Name}}End {{$field.GetType}}
+		{{- else}}
 		{{$field.Name}} {{$field.GetType}}
+		{{- end}}
 	{{- end}}
 	offset int
 	limit int
+	includeBegin bool
+	includeEnd bool
 	ascend bool
 }
 
@@ -31,6 +38,20 @@ func (u *{{$order.Name}}) sortOp() string {
 		return "ASC"
 	}
 	return "DESC"
+}
+
+func (u *{{$order.Name}}) beginOp() string {
+	if u.includeBegin {
+		return ">="
+	}
+	return ">"
+}
+
+func (u *{{$order.Name}}) endOp() string {
+	if u.includeBegin {
+		return "<="
+	}
+	return "<"
 }
 
 func (u *{{$order.Name}}) SQLFormat() string {
@@ -74,7 +95,7 @@ func (u *{{$order.Name}}) Ascend(f bool) {
 }
 
 {{$relation := $order.GetRelation "zset" $primaryField.GetType $obj.Name}}
-func (u *{{$order.Name}}) ORDRelation() IndexRelation {
+func (u *{{$order.Name}}) ORDRelation() OrderByRelation {
 	{{- if $order.Obj.DbContains "redis"}}
 	return {{$relation.Name}}RedisMgr()
 	{{- else}}

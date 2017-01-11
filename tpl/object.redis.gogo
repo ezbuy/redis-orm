@@ -47,10 +47,5 @@
 	{{template "object.relation" ($rg.GetRelation "zset" $primaryField.GetType $obj.Name)}}
 	{{- end}}
 
-	//! orders
-	{{- range $i, $order := $obj.Orders}}
-	{{template "object.relation" ($order.GetRelation "zset" $primaryField.GetType $obj.Name)}}
-	{{- end}}
-
 	
 {{end}}

@@ -88,6 +88,23 @@ func (m *_UserBlogsRedisMgr) ZSetRange(key string, min, max int64) ([]*UserBlogs
 	return relations, nil
 }
 
+func (m *_UserBlogsRedisMgr) ZSetRevertRange(key string, min, max int64) ([]*UserBlogs, error) {
+	strs, err := m.ZRevRange(zsetOfClass("UserBlogs", key), min, max).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	relations := make([]*UserBlogs, len(strs))
+	for _, str := range strs {
+		relation := m.NewUserBlogs(key)
+		if err := m.StringScan(str, &relation.Value); err != nil {
+			return nil, err
+		}
+		relations = append(relations, relation)
+	}
+	return relations, nil
+}
+
 func (m *_UserBlogsRedisMgr) ZSetRem(relation *UserBlogs) error {
 	return m.ZRem(zsetOfClass("UserBlogs", "UserBlogs", relation.Key), redis.Z{Score: relation.Score, Member: relation.Value}).Err()
 }
@@ -100,9 +117,8 @@ func (m *_UserBlogsRedisMgr) Range(key string, min, max int64) ([]string, error)
 	return m.ZRange(zsetOfClass("UserBlogs", "UserBlogs", key), min, max).Result()
 }
 
-func (m *_UserBlogsRedisMgr) OrderBy(key string, asc bool) ([]string, error) {
-	//! TODO revert
-	return m.ZRange(zsetOfClass("UserBlogs", "UserBlogs", key), 0, -1).Result()
+func (m *_UserBlogsRedisMgr) RevertRange(key string, min, max int64) ([]string, error) {
+	return m.ZRevRange(zsetOfClass("UserBlogs", "UserBlogs", key), min, max).Result()
 }
 
 func (m *_UserBlogsRedisMgr) Clear() error {

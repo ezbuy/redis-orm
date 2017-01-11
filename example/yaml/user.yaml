@@ -9,6 +9,8 @@ User:
     - Mailbox: string
     - Sex: bool
       flags: [index]
+    - Age: int32
+      flags: [range, order]
     - Longitude: float64
     - Latitude: float64
     - Description: string
@@ -18,8 +20,7 @@ User:
     - CreatedAt: timestamp
     - UpdatedAt: timestamp
   uniques: [[Mailbox, Password]]
-  ranges: [[Name, Status]]
-  importSQL: "SELECT `id`,`name`,`mailbox`,`sex`,`longitude`,`latitude`,`description`,`password`,`head_url`,`status`,`created_at`, `updated_at` FROM users"
+  importSQL: "SELECT `id`,`name`,`mailbox`,`sex`, `age`, `longitude`,`latitude`,`description`,`password`,`head_url`,`status`,`created_at`, `updated_at` FROM users"
 
 UserBaseInfo:
   dbs: [mysql]

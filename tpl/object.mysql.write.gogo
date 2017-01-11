@@ -18,7 +18,7 @@
 
 //! tx write
 type _{{$obj.Name}}MySQLTx struct {
-	*sql.Tx
+	*orm.MySQLTx
 	Err error
 	RowsAffected int64
 }
@@ -28,7 +28,7 @@ func (m *_{{$obj.Name}}MySQLMgr) BeginTx() (*_{{$obj.Name}}MySQLTx, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &_{{$obj.Name}}MySQLTx{tx, nil, 0}, nil
+	return &_{{$obj.Name}}MySQLTx{orm.NewMySQLTx(tx), nil, 0}, nil
 }
 
 func (tx *_{{$obj.Name}}MySQLTx) Create(obj *{{$obj.Name}}) error {
@@ -170,8 +170,9 @@ func (tx *_{{$obj.Name}}MySQLTx) Range(scope Range) ([]string, error) {
 	return tx.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (tx *_{{$obj.Name}}MySQLTx) OrderBy(sort OrderBy) ([]string, error) {
-	return tx.queryLimit(sort.SQLFormat(), sort.SQLLimit(), sort.SQLParams()...)
+func (tx *_{{$obj.Name}}MySQLTx) RevertRange(scope Range) ([]string, error) {
+	scope.Revert(true)
+	return tx.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
 }
 
 func (tx *_{{$obj.Name}}MySQLTx) queryLimit(where string, limit int, args ...interface{}) (results []string, err error){
