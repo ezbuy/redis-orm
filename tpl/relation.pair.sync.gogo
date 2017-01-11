@@ -1,0 +1,45 @@
+{{define "relation.pair.sync"}}
+{{$relation := .}}
+{{$obj := .Obj}}
+{{$primaryField := .Obj.PrimaryField}}
+
+func (m *_{{$relation.Name}}RedisMgr) Load(db DBFetcher) error {
+	{{if ne $obj.ImportSQL ""}}
+	if err := m.Clear(); err != nil {
+		return err
+	}
+	return m.AddBySQL(db, "{{$obj.ImportSQL}}")
+	{{else}}
+	return fmt.Errorf("yaml importSQL unset.")
+	{{end}}
+}
+
+func (m *_{{$relation.Name}}RedisMgr) AddBySQL(db DBFetcher, sql string, args ...interface{}) error {
+	objs, err := db.FetchBySQL(sql, args...)
+	if err != nil {
+		return err
+	}
+
+	for _, obj := range objs {
+		if err := m.PairAdd(obj.(*{{$relation.Name}})); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+func (m *_{{$relation.Name}}RedisMgr) DelBySQL(db DBFetcher, sql string, args ...interface{}) error {
+	objs, err := db.FetchBySQL(sql, args...)
+	if err != nil {
+		return err
+	}
+
+	for _, obj := range objs {
+		if err := m.PairRem(fmt.Sprint(obj.(*{{$relation.Name}}).{{$primaryField.Name}})); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+{{end}}
