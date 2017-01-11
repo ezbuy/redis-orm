@@ -48,5 +48,12 @@ func (m *_{{$relation.Name}}RedisMgr) OrderBy(key string, asc bool) ([]string, e
 	return m.ZRange(zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key), 0, -1).Result()
 }
 
+func (m *_{{$relation.Name}}RedisMgr) Clear() error {
+	strs, err := m.Keys(zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", "*")).Result()
+	if err != nil {
+		return err
+	}
+	return m.Del(strs...).Err()
+}
 {{end}}
 

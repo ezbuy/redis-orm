@@ -1039,6 +1039,14 @@ func (m *_MailboxPasswordOfUserUKRelationRedisMgr) FindOne(key string) (string, 
 	return m.Get(pairOfClass("User", "MailboxPasswordOfUserUKRelation", key)).Result()
 }
 
+func (m *_MailboxPasswordOfUserUKRelationRedisMgr) Clear() error {
+	strs, err := m.Keys(pairOfClass("User", "MailboxPasswordOfUserUKRelation", "*")).Result()
+	if err != nil {
+		return err
+	}
+	return m.Del(strs...).Err()
+}
+
 //! indexes
 
 //! relation
@@ -1123,6 +1131,14 @@ func (m *_SexOfUserIDXRelationRedisMgr) SetDel(key string) error {
 
 func (m *_SexOfUserIDXRelationRedisMgr) Find(key string) ([]string, error) {
 	return m.SMembers(setOfClass("User", "SexOfUserIDXRelation", key)).Result()
+}
+
+func (m *_SexOfUserIDXRelationRedisMgr) Clear() error {
+	strs, err := m.Keys(setOfClass("User", "SexOfUserIDXRelation", "*")).Result()
+	if err != nil {
+		return err
+	}
+	return m.Del(strs...).Err()
 }
 
 //! ranges
@@ -1215,6 +1231,14 @@ func (m *_NameStatusOfUserRNGRelationRedisMgr) Range(key string, min, max int64)
 func (m *_NameStatusOfUserRNGRelationRedisMgr) OrderBy(key string, asc bool) ([]string, error) {
 	//! TODO revert
 	return m.ZRange(zsetOfClass("User", "NameStatusOfUserRNGRelation", key), 0, -1).Result()
+}
+
+func (m *_NameStatusOfUserRNGRelationRedisMgr) Clear() error {
+	strs, err := m.Keys(zsetOfClass("User", "NameStatusOfUserRNGRelation", "*")).Result()
+	if err != nil {
+		return err
+	}
+	return m.Del(strs...).Err()
 }
 
 //! orders

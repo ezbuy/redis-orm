@@ -35,4 +35,12 @@ func (m *_{{$relation.Name}}RedisMgr) FindOne(key string) (string, error) {
 	return m.Get(pairOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Result()
 }
 
+func (m *_{{$relation.Name}}RedisMgr) Clear() error {
+	strs, err := m.Keys(pairOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", "*")).Result()
+	if err != nil {
+		return err
+	}
+	return m.Del(strs...).Err()
+}
+
 {{end}}

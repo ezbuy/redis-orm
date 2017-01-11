@@ -2,10 +2,11 @@ package model
 
 import (
 	"fmt"
-	"github.com/ezbuy/redis-orm/orm"
-	redis "gopkg.in/redis.v5"
 	"strings"
 	"time"
+
+	"github.com/ezbuy/redis-orm/orm"
+	redis "gopkg.in/redis.v5"
 )
 
 var (
@@ -129,4 +130,86 @@ func (m *_UserIdRedisMgr) ListLLen(key string) (int64, error) {
 
 func (m *_UserIdRedisMgr) ListLDel(key string) error {
 	return m.Del(listOfClass("UserId", "UserId", key)).Err()
+}
+
+func (m *_UserIdRedisMgr) Clear() error {
+	strs, err := m.Keys(listOfClass("UserId", "UserId", "*")).Result()
+	if err != nil {
+		return err
+	}
+	return m.Del(strs...).Err()
+}
+
+func (m *_UserIdRedisMgr) Load(db DBFetcher) error {
+
+	return fmt.Errorf("yaml importSQL unset.")
+
+}
+
+func (m *_UserIdRedisMgr) AddBySQL(db DBFetcher, sql string, args ...interface{}) error {
+	objs, err := db.FetchBySQL(sql, args...)
+	if err != nil {
+		return err
+	}
+
+	for _, obj := range objs {
+		if err := m.ListLPush(obj.(*UserId)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+func (m *_UserIdRedisMgr) DelBySQL(db DBFetcher, sql string, args ...interface{}) error {
+	objs, err := db.FetchBySQL(sql, args...)
+	if err != nil {
+		return err
+	}
+
+	for _, obj := range objs {
+		if err := m.ListLRem(obj.(*UserId)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+type _UserIdMySQLMgr struct {
+	*orm.MySQLStore
+}
+
+func UserIdMySQLMgr() *_UserIdMySQLMgr {
+	return &_UserIdMySQLMgr{_mysql_store}
+}
+
+func NewUserIdMySQLMgr(cf *MySQLConfig) (*_UserIdMySQLMgr, error) {
+	store, err := orm.NewMySQLStore(cf.Host, cf.Port, cf.Database, cf.UserName, cf.Password)
+	if err != nil {
+		return nil, err
+	}
+	return &_UserIdMySQLMgr{store}, nil
+}
+
+func (m *_UserIdMySQLMgr) FetchBySQL(sql string, args ...interface{}) (results []interface{}, err error) {
+	rows, err := m.Query(sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("UserId fetch error: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var result UserId
+		err = rows.Scan(&(result.Key),
+			&(result.Value),
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		results = append(results, &result)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("UserId fetch result error: %v", err)
+	}
+	return
 }

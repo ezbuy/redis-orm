@@ -104,3 +104,89 @@ func (m *_UserBlogsRedisMgr) OrderBy(key string, asc bool) ([]string, error) {
 	//! TODO revert
 	return m.ZRange(zsetOfClass("UserBlogs", "UserBlogs", key), 0, -1).Result()
 }
+
+func (m *_UserBlogsRedisMgr) Clear() error {
+	strs, err := m.Keys(zsetOfClass("UserBlogs", "UserBlogs", "*")).Result()
+	if err != nil {
+		return err
+	}
+	return m.Del(strs...).Err()
+}
+
+func (m *_UserBlogsRedisMgr) Load(db DBFetcher) error {
+
+	if err := m.Clear(); err != nil {
+		return err
+	}
+	return m.AddBySQL(db, "SELECT `id`,`name`,`mailbox`,`sex` FROM users")
+
+}
+
+func (m *_UserBlogsRedisMgr) AddBySQL(db DBFetcher, sql string, args ...interface{}) error {
+	objs, err := db.FetchBySQL(sql, args...)
+	if err != nil {
+		return err
+	}
+
+	for _, obj := range objs {
+		if err := m.ZSetAdd(obj.(*UserBlogs)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+func (m *_UserBlogsRedisMgr) DelBySQL(db DBFetcher, sql string, args ...interface{}) error {
+	objs, err := db.FetchBySQL(sql, args...)
+	if err != nil {
+		return err
+	}
+
+	for _, obj := range objs {
+		if err := m.ZSetRem(obj.(*UserBlogs)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+type _UserBlogsMySQLMgr struct {
+	*orm.MySQLStore
+}
+
+func UserBlogsMySQLMgr() *_UserBlogsMySQLMgr {
+	return &_UserBlogsMySQLMgr{_mysql_store}
+}
+
+func NewUserBlogsMySQLMgr(cf *MySQLConfig) (*_UserBlogsMySQLMgr, error) {
+	store, err := orm.NewMySQLStore(cf.Host, cf.Port, cf.Database, cf.UserName, cf.Password)
+	if err != nil {
+		return nil, err
+	}
+	return &_UserBlogsMySQLMgr{store}, nil
+}
+
+func (m *_UserBlogsMySQLMgr) FetchBySQL(sql string, args ...interface{}) (results []interface{}, err error) {
+	rows, err := m.Query(sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("UserBlogs fetch error: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var result UserBlogs
+		err = rows.Scan(&(result.Key),
+			&(result.Score),
+			&(result.Value),
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		results = append(results, &result)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("UserBlogs fetch result error: %v", err)
+	}
+	return
+}

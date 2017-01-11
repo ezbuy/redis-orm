@@ -45,5 +45,13 @@ func (m *_{{$relation.Name}}RedisMgr) LocationDel(key string) error {
 	return m.Del(geoOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Err()
 }
 
+func (m *_{{$relation.Name}}RedisMgr) Clear() error {
+	strs, err := m.Keys(geoOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", "*")).Result()
+	if err != nil {
+		return err
+	}
+	return m.Del(strs...).Err()
+}
+
 {{end}}
 

@@ -43,4 +43,12 @@ func (m *_{{$relation.Name}}RedisMgr) Find(key string) ([]string, error) {
 	return m.SMembers(setOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Result()
 }
 
+func (m *_{{$relation.Name}}RedisMgr) Clear() error {
+	strs, err := m.Keys(setOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", "*")).Result()
+	if err != nil {
+		return err
+	}
+	return m.Del(strs...).Err()
+}
+
 {{end}}
