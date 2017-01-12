@@ -120,31 +120,31 @@ enviroment:
       Slowest Time: 0.000s
       Average Time: 0.000s ± 0.000s
     fetch.runtime:
-      Fastest Time: 0.013s
-      Slowest Time: 0.046s
-      Average Time: 0.018s ± 0.002s
+      Fastest Time: 0.002s
+      Slowest Time: 0.004s
+      Average Time: 0.002s ± 0.000s
 
 *redis-orm.mysql.bench*
   
     Ran 1000 samples:
     unique.runtime:
       Fastest Time: 0.002s
-      Slowest Time: 0.138s
-      Average Time: 0.003s ± 0.009s
+      Slowest Time: 0.106s
+      Average Time: 0.003s ± 0.005s
     index.runtime:
       Fastest Time: 0.002s
-      Slowest Time: 0.017s
-      Average Time: 0.002s ± 0.001s
+      Slowest Time: 0.106s
+      Average Time: 0.003s ± 0.005s
     range.runtime:
       Fastest Time: 0.002s
-      Slowest Time: 0.142s
-      Average Time: 0.003s ± 0.008s
+      Slowest Time: 0.105s
+      Average Time: 0.002s ± 0.005s
     range.revert.runtime:
       Fastest Time: 0.002s
       Slowest Time: 0.105s
-      Average Time: 0.003s ± 0.007s
+      Average Time: 0.002s ± 0.006s
     fetch.runtime:
       Fastest Time: 0.004s
-      Slowest Time: 0.157s
-      Average Time: 0.006s ± 0.010s	
+      Slowest Time: 0.150s
+      Average Time: 0.006s ± 0.009s
 

@@ -34,18 +34,24 @@ func (m *_{{$obj.Name}}RedisMgr) RevertRange(scope Range) ([]string, error) {
 func (m *_{{$obj.Name}}RedisMgr) Fetch({{$primaryField.Name | camel2name}} string) (*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	
-	b, err := m.Exists(keyOfObject(obj, {{$primaryField.Name | camel2name}})).Result()
+	pipe := m.BeginPipeline()
+	pipe.Exists(keyOfObject(obj, {{$primaryField.Name | camel2name}}))
+	pipe.HMGet(keyOfObject(obj, {{$primaryField.Name | camel2name}})
+	{{- range $i, $field := $obj.Fields -}}	
+			  ,"{{$field.Name}}"
+	{{- end -}})
+	cmds, err := pipe.Exec()
 	if err != nil {
 		return nil, err
 	}
-	if !b {
-		return nil, fmt.Errorf("{{$obj.Name}} {{$primaryField.Name}}:(%s) not exist", {{$primaryField.Name | camel2name}})
+
+	if b, err := cmds[0].(*redis.BoolCmd).Result(); err == nil {
+		if !b {
+			return nil, fmt.Errorf("{{$obj.Name}} {{$primaryField.Name}}:(%s) not exist", {{$primaryField.Name | camel2name}})
+		}
 	}
 
-	strs, err := m.HMGet(keyOfObject(obj, {{$primaryField.Name | camel2name}})
-	{{- range $i, $field := $obj.Fields -}}	
-			  ,"{{$field.Name}}"
-	{{- end -}}).Result()
+	strs, err := cmds[1].(*redis.SliceCmd).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -68,11 +74,45 @@ func (m *_{{$obj.Name}}RedisMgr) Fetch({{$primaryField.Name | camel2name}} strin
 
 func (m *_{{$obj.Name}}RedisMgr) FetchBy{{$primaryField.Name}}s({{$primaryField.Name | camel2name}}s []string) ([]*{{$obj.Name}}, error) {
 	objs := make([]*{{$obj.Name}}, 0, len({{$primaryField.Name | camel2name}}s))
-	for _, id := range {{$primaryField.Name | camel2name}}s {
-		obj, err := m.Fetch(id)
-		if err != nil {
-			return objs, err
+	pipe := m.BeginPipeline()
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	for _, id := range {{$primaryField.Name | camel2name}}s {		
+		pipe.Exists(keyOfObject(obj, id))
+		pipe.HMGet(keyOfObject(obj, id)
+		{{- range $i, $field := $obj.Fields -}}	
+			  ,"{{$field.Name}}"
+		{{- end -}})
+	}
+	cmds, err := pipe.Exec()
+	if err != nil {
+		return nil, err
+	}
+	for i := 0; i < len({{$primaryField.Name | camel2name}}s); i++ {
+		if b, err := cmds[2*i].(*redis.BoolCmd).Result(); err == nil {
+			if !b {
+				return nil, fmt.Errorf("{{$obj.Name}} {{$primaryField.Name}}:(%s) not exist", {{$primaryField.Name | camel2name}}s[i])
+			}
 		}
+
+		strs, err := cmds[2*i+1].(*redis.SliceCmd).Result()
+		if err != nil {
+			return nil, err
+		}
+
+		obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+		{{- range $i, $field := $obj.Fields}}		
+			{{- if $field.IsNeedTransform}}
+				var val{{$i}} {{$field.GetTransform.TypeOrigin}}
+				if err := m.StringScan(strs[{{$i}}].(string), &val{{$i}}); err != nil {
+					return nil, err
+				}
+				obj.{{$field.Name}} = {{- printf $field.GetTransform.ConvertTo (printf "val%d" $i)}}
+			{{- else}}
+			if err := m.StringScan(strs[{{$i}}].(string), &obj.{{$field.Name}}); err != nil {
+				return nil, err
+			}
+			{{- end}}
+		{{- end}}
 		objs = append(objs, obj)
 	}
 	return objs, nil
