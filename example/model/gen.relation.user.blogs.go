@@ -106,7 +106,7 @@ func (m *_UserBlogsRedisMgr) ZSetRevertRange(key string, min, max int64) ([]*Use
 }
 
 func (m *_UserBlogsRedisMgr) ZSetRem(relation *UserBlogs) error {
-	return m.ZRem(zsetOfClass("UserBlogs", "UserBlogs", relation.Key), redis.Z{Score: relation.Score, Member: relation.Value}).Err()
+	return m.ZRem(zsetOfClass("UserBlogs", "UserBlogs", relation.Key), relation.Value).Err()
 }
 
 func (m *_UserBlogsRedisMgr) ZSetDel(key string) error {

@@ -4,7 +4,7 @@ User:
   dbtable: users
   fields:
     - Id: int32
-      flags: [primary]
+      flags: [primary, range]
     - Name: string
     - Mailbox: string
     - Sex: bool

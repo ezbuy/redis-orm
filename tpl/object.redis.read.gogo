@@ -26,7 +26,7 @@ func (m *_{{$obj.Name}}RedisMgr) Range(scope Range) ([]string, error) {
 func (m *_{{$obj.Name}}RedisMgr) RevertRange(scope Range) ([]string, error) {
 	if relation := scope.RNGRelation(); relation != nil {
 		scope.Revert(true)
-		return relation.Range(scope.Key(), scope.Begin(), scope.End())
+		return relation.RevertRange(scope.Key(), scope.Begin(), scope.End())
 	}
 	return nil, nil
 }
@@ -34,6 +34,14 @@ func (m *_{{$obj.Name}}RedisMgr) RevertRange(scope Range) ([]string, error) {
 func (m *_{{$obj.Name}}RedisMgr) Fetch({{$primaryField.Name | camel2name}} string) (*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	
+	b, err := m.Exists(keyOfObject(obj, {{$primaryField.Name | camel2name}})).Result()
+	if err != nil {
+		return nil, err
+	}
+	if !b {
+		return nil, fmt.Errorf("{{$obj.Name}} {{$primaryField.Name}}:(%s) not exist", {{$primaryField.Name | camel2name}})
+	}
+
 	strs, err := m.HMGet(keyOfObject(obj, {{$primaryField.Name | camel2name}})
 	{{- range $i, $field := $obj.Fields -}}	
 			  ,"{{$field.Name}}"

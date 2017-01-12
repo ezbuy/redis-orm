@@ -96,11 +96,29 @@ func (u *{{$rg.Name}}) Offset(n int) {
 }
 
 func (u *{{$rg.Name}}) Begin() int64 {
-	return 0
+	start := u.{{$rg.LastField.Name}}Begin
+	if start == -1 || start == 0 {
+		start = 0
+	}
+	if start > 0 {
+		if !u.includeBegin {
+			start = start + 1
+		}
+	}	
+	return start
 }
 
 func (u *{{$rg.Name}}) End() int64 {
-	return 0
+	stop := u.{{$rg.LastField.Name}}End
+	if stop == 0 || stop == -1 {
+		stop = -1
+	}
+	if stop > 0 {
+		if !u.includeBegin {
+			stop = stop - 1
+		}
+	}
+	return stop
 }
 
 func (u *{{$rg.Name}}) Revert(b bool) {

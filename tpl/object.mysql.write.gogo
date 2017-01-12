@@ -19,8 +19,8 @@
 //! tx write
 type _{{$obj.Name}}MySQLTx struct {
 	*orm.MySQLTx
-	Err error
-	RowsAffected int64
+	err error
+	rowsAffected int64
 }
 
 func (m *_{{$obj.Name}}MySQLMgr) BeginTx() (*_{{$obj.Name}}MySQLTx, error) {
@@ -31,50 +31,94 @@ func (m *_{{$obj.Name}}MySQLMgr) BeginTx() (*_{{$obj.Name}}MySQLTx, error) {
 	return &_{{$obj.Name}}MySQLTx{orm.NewMySQLTx(tx), nil, 0}, nil
 }
 
+func (tx *_{{$obj.Name}}MySQLTx) BatchCreate(objs []*{{$obj.Name}}) error {
+	if len(objs) == 0 {
+		return nil
+	}
+
+	params := make([]string, 0, len(objs))
+	values := make([]interface{}, 0, len(objs)*{{len $obj.Fields}})
+	for _, obj := range objs {
+		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice({{len $obj.Fields}}, "?"), ",")))
+		{{- range $i, $field := $obj.Fields -}}
+			{{if $field.IsPrimary}}
+				{{- if $field.IsAutoIncrement}}
+				values = append(values, 0)
+				{{- else}}
+				values = append(values, {{$field.GetTransformValue "obj."}})	
+				{{- end}}			
+			{{else}}
+			values = append(values, {{$field.GetTransformValue "obj."}})
+			{{end}}			
+		{{- end -}}
+	}
+	query := fmt.Sprintf("INSERT INTO `{{$obj.DbTable}}`(%s) VALUES %s", strings.Join(objs[0].GetColumns(), ","), strings.Join(params, ","))
+	result, err := tx.Exec(query, values...)
+	if err != nil {
+		tx.err = err
+		return err
+	}
+	tx.rowsAffected, tx.err = result.RowsAffected()
+	return tx.err
+}
+
+func (tx *_{{$obj.Name}}MySQLTx) BatchDelete(objs []*{{$obj.Name}}) error {
+	if len(objs) == 0 {
+		return nil
+	}
+
+	ids := []string{}
+	for _, obj := range objs {
+		ids = append(ids, fmt.Sprint(obj.{{$primaryField.Name}}))
+	}
+	return tx.DeleteBy{{$primaryField.Name}}s(ids)
+}
+
+// argument example:
+// set:"a=?, b=?"
+// where:"c=? and d=?"
+// params:[]interface{}{"a", "b", "c", "d"}...
+func (tx *_{{$obj.Name}}MySQLTx) UpdateBySQL(set, where string, args ...interface{}) error {
+	query := fmt.Sprintf("UPDATE `{{$obj.DbTable}}` SET %s", set)
+	if where != "" {
+		query = fmt.Sprintf("UPDATE `{{$obj.DbTable}}` SET %s WHERE %s", set, where)
+	}
+	result, err := tx.Exec(query, args)
+	if err != nil {
+		tx.err = err
+		return err
+	}
+	tx.rowsAffected, tx.err = result.RowsAffected()
+	return tx.err
+}
+
 func (tx *_{{$obj.Name}}MySQLTx) Create(obj *{{$obj.Name}}) error {
-	{{- if $primaryField.IsAutoIncrement}}
-		params := orm.NewStringSlice({{len $obj.Fields}}, "?")
-		q := fmt.Sprintf("INSERT INTO `{{$obj.DbTable}}`(%s) VALUES(%s)", 
-			strings.Join(obj.GetColumns(), ","), 
-			strings.Join(params, ","))
+	params := orm.NewStringSlice({{len $obj.Fields}}, "?")
+	q := fmt.Sprintf("INSERT INTO `{{$obj.DbTable}}`(%s) VALUES(%s)", 
+		strings.Join(obj.GetColumns(), ","), 
+		strings.Join(params, ","))
 
-		result, err := tx.Exec(q 
+	result, err := tx.Exec(q 
 		{{- range $i, $field := $obj.Fields -}}
+			{{- if $field.IsAutoIncrement -}}
+			, 0
+			{{- else -}}
 			, {{$field.GetTransformValue "obj."}}
+			{{- end -}}			
 		{{- end -}}
-		)
-		if err != nil {
-			tx.Err = err
-			return err
-		}
-		lastInsertId, err := result.LastInsertId()
-		if err != nil {
-			tx.Err = err
-			return err
-		}
-		obj.{{$primaryField.Name}} = {{$primaryField.GetType}}(lastInsertId)
-		tx.RowsAffected, tx.Err = result.RowsAffected()
-		return tx.Err
-	{{- else}}
-		params := orm.NewStringSlice({{sub (len $obj.Fields) 1}}, "?")
-		q := fmt.Sprintf("INSERT INTO `{{$obj.DbTable}}`(%s) VALUES(0, %s)", 
-			strings.Join(obj.GetColumns(), ","), 
-			strings.Join(params, ","))
-
-		result, err := tx.Exec(q 
-		{{- range $i, $field := $obj.Fields -}}
-			{{- if not $field.IsPrimary -}}
-			, {{$field.GetTransformValue "obj."}}
-			{{- end -}}
-		{{- end -}}
-		)
-		if err != nil {
-			tx.Err = err
-			return err
-		}
-		tx.RowsAffected, tx.Err = result.RowsAffected()
-		return tx.Err
-	{{- end}}
+	)
+	if err != nil {
+		tx.err = err
+		return err
+	}
+	lastInsertId, err := result.LastInsertId()
+	if err != nil {
+		tx.err = err
+		return err
+	}
+	obj.{{$primaryField.Name}} = {{$primaryField.GetType}}(lastInsertId)
+	tx.rowsAffected, tx.err = result.RowsAffected()
+	return tx.err
 }
 
 func (tx *_{{$obj.Name}}MySQLTx) Update(obj *{{$obj.Name}}) error {
@@ -95,11 +139,11 @@ func (tx *_{{$obj.Name}}MySQLTx) Update(obj *{{$obj.Name}}) error {
 		{{- end -}}
 		, {{$primaryField.GetTransformValue "obj."}})
 	if err != nil {
-		tx.Err = err
+		tx.err = err
 		return err
 	}
-	tx.RowsAffected, tx.Err = result.RowsAffected()
-	return tx.Err
+	tx.rowsAffected, tx.err = result.RowsAffected()
+	return tx.err
 }
 
 func (tx *_{{$obj.Name}}MySQLTx) Save(obj *{{$obj.Name}}) error {
@@ -107,7 +151,7 @@ func (tx *_{{$obj.Name}}MySQLTx) Save(obj *{{$obj.Name}}) error {
 	if err != nil {
 		return err
 	}	
-	if tx.RowsAffected > 0 {
+	if tx.rowsAffected > 0 {
 		return nil
 	}
 	return tx.Create(obj)
@@ -117,32 +161,32 @@ func (tx *_{{$obj.Name}}MySQLTx) Delete(obj *{{$obj.Name}}) error {
 	q := fmt.Sprintf("DELETE FROM `{{$obj.DbTable}}` WHERE `{{$primaryField.Name | camel2name}}`=?")
 	result, err := tx.Exec(q , {{$primaryField.GetTransformValue "obj."}})
 	if err != nil {
-		tx.Err = err
+		tx.err = err
 		return err
 	}
-	tx.RowsAffected, tx.Err = result.RowsAffected()
-	return tx.Err
+	tx.rowsAffected, tx.err = result.RowsAffected()
+	return tx.err
 }
 
 func (tx *_{{$obj.Name}}MySQLTx) DeleteBy{{$primaryField.Name}}s({{$primaryField.Name | camel2name}}s []string) error { 
 	if len({{$primaryField.Name | camel2name}}s) == 0 {
 		return nil
 	}
-		
+
 	q := fmt.Sprintf("DELETE FROM `{{$obj.DbTable}}` WHERE `{{$primaryField.Name | camel2name}}` IN (%s)",
 		 strings.Join({{$primaryField.Name | camel2name}}s, ","))
 	result, err := tx.Exec(q)
 	if err != nil {
-		tx.Err = err
+		tx.err = err
 		return err
 	}
-	tx.RowsAffected, tx.Err = result.RowsAffected()
-	return tx.Err
+	tx.rowsAffected, tx.err = result.RowsAffected()
+	return tx.err
 }
 
 
 func (tx *_{{$obj.Name}}MySQLTx) Close() error {
-	if tx.Err != nil {
+	if tx.err != nil {
 		return tx.Rollback()
 	}
 	return tx.Commit()
@@ -152,14 +196,14 @@ func (tx *_{{$obj.Name}}MySQLTx) Close() error {
 func (tx *_{{$obj.Name}}MySQLTx) FindOne(unique Unique) (string, error) {
 	objs, err := tx.queryLimit(unique.SQLFormat(), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
-		tx.Err = err
+		tx.err = err
 		return "", err
 	}
 	if len(objs) > 0 {
 		return fmt.Sprint(objs[0]), nil
 	}
-	tx.Err = fmt.Errorf("{{$obj.Name}} find record not found")
-	return "", tx.Err
+	tx.err = fmt.Errorf("{{$obj.Name}} find record not found")
+	return "", tx.err
 }
 
 func (tx *_{{$obj.Name}}MySQLTx) Find(index Index) ([]string, error) {
@@ -184,7 +228,7 @@ func (tx *_{{$obj.Name}}MySQLTx) queryLimit(where string, limit int, args ...int
 
 	rows, err := tx.Query(query, args...)
 	if err != nil {
-		tx.Err = err
+		tx.err = err
 		return nil, fmt.Errorf("{{$obj.Name}} query limit error: %v", err)
 	}
 	defer rows.Close()
@@ -198,13 +242,13 @@ func (tx *_{{$obj.Name}}MySQLTx) queryLimit(where string, limit int, args ...int
 
 		var result {{$primaryField.GetType}}
 		if err = rows.Scan(&result); err != nil {
-			tx.Err = err
+			tx.err = err
 			return nil, err
 		}
 		results = append(results, fmt.Sprint(result))
 	}
 	if err := rows.Err() ;err != nil {
-		tx.Err = err
+		tx.err = err
 		return nil, fmt.Errorf("{{$obj.Name}} query limit result error: %v", err)
 	}
 	return
@@ -236,7 +280,7 @@ func (tx *_{{$obj.Name}}MySQLTx) FetchBy{{$primaryField.Name}}s({{$primaryField.
 func (tx *_{{$obj.Name}}MySQLTx) FetchBySQL(sql string, args ... interface{}) (results []*{{$obj.Name}}, err error) {
 	rows, err := tx.Query(sql, args...)
 	if err != nil {
-		tx.Err = err
+		tx.err = err
 		return nil, fmt.Errorf("{{$obj.Name}} fetch error: %v", err)
 	}
 	defer rows.Close()
@@ -261,7 +305,7 @@ func (tx *_{{$obj.Name}}MySQLTx) FetchBySQL(sql string, args ... interface{}) (r
 		{{- end -}}
 		)
 		if err != nil {
-			tx.Err = err
+			tx.err = err
 			return nil, err
 		}
 
@@ -282,7 +326,7 @@ func (tx *_{{$obj.Name}}MySQLTx) FetchBySQL(sql string, args ... interface{}) (r
 		results = append(results, &result)
 	}
 	if err = rows.Err() ;err != nil {
-		tx.Err = err
+		tx.err = err
 		return nil, fmt.Errorf("{{$obj.Name}} fetch result error: %v", err)
 	}
 	return

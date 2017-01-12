@@ -76,6 +76,7 @@ func (obj *User) GetColumns() []string {
 }
 func (obj *User) GetIndexes() []string {
 	idx := []string{
+		"Id",
 		"Sex",
 		"Age",
 	}
@@ -186,6 +187,119 @@ func (u *SexOfUserIDX) IDXRelation() IndexRelation {
 
 //! ranges
 
+type IdOfUserRNG struct {
+	IdBegin      int64
+	IdEnd        int64
+	offset       int
+	limit        int
+	includeBegin bool
+	includeEnd   bool
+	revert       bool
+}
+
+func (u *IdOfUserRNG) Key() string {
+	strs := []string{
+		"Id",
+	}
+	return fmt.Sprintf("%s", strings.Join(strs, ":"))
+}
+
+func (u *IdOfUserRNG) beginOp() string {
+	if u.includeBegin {
+		return ">="
+	}
+	return ">"
+}
+func (u *IdOfUserRNG) endOp() string {
+	if u.includeBegin {
+		return "<="
+	}
+	return "<"
+}
+
+func (u *IdOfUserRNG) SQLFormat() string {
+	conditions := []string{}
+	if u.IdBegin != u.IdEnd {
+		if u.IdBegin != -1 {
+			conditions = append(conditions, fmt.Sprintf("id %s ?", u.beginOp()))
+		}
+		if u.IdEnd != -1 {
+			conditions = append(conditions, fmt.Sprintf("id %s ?", u.endOp()))
+		}
+	}
+	return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Id", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
+}
+
+func (u *IdOfUserRNG) SQLParams() []interface{} {
+	params := []interface{}{}
+	if u.IdBegin != u.IdEnd {
+		if u.IdBegin != -1 {
+			params = append(params, u.IdBegin)
+		}
+		if u.IdEnd != -1 {
+			params = append(params, u.IdEnd)
+		}
+	}
+	return params
+}
+
+func (u *IdOfUserRNG) SQLLimit() int {
+	if u.limit > 0 {
+		return u.limit
+	}
+	return -1
+}
+
+func (u *IdOfUserRNG) Limit(n int) {
+	u.limit = n
+}
+
+func (u *IdOfUserRNG) Offset(n int) {
+	u.offset = n
+}
+
+func (u *IdOfUserRNG) Begin() int64 {
+	start := u.IdBegin
+	if start == -1 || start == 0 {
+		start = 0
+	}
+	if start > 0 {
+		if !u.includeBegin {
+			start = start + 1
+		}
+	}
+	return start
+}
+
+func (u *IdOfUserRNG) End() int64 {
+	stop := u.IdEnd
+	if stop == 0 || stop == -1 {
+		stop = -1
+	}
+	if stop > 0 {
+		if !u.includeBegin {
+			stop = stop - 1
+		}
+	}
+	return stop
+}
+
+func (u *IdOfUserRNG) Revert(b bool) {
+	u.revert = b
+}
+
+func (u *IdOfUserRNG) IncludeBegin(f bool) {
+	u.includeBegin = f
+}
+
+func (u *IdOfUserRNG) IncludeEnd(f bool) {
+	u.includeEnd = f
+}
+
+func (u *IdOfUserRNG) RNGRelation() RangeRelation {
+	return IdOfUserRNGRelationRedisMgr()
+}
+
 type AgeOfUserRNG struct {
 	AgeBegin     int64
 	AgeEnd       int64
@@ -258,11 +372,29 @@ func (u *AgeOfUserRNG) Offset(n int) {
 }
 
 func (u *AgeOfUserRNG) Begin() int64 {
-	return 0
+	start := u.AgeBegin
+	if start == -1 || start == 0 {
+		start = 0
+	}
+	if start > 0 {
+		if !u.includeBegin {
+			start = start + 1
+		}
+	}
+	return start
 }
 
 func (u *AgeOfUserRNG) End() int64 {
-	return 0
+	stop := u.AgeEnd
+	if stop == 0 || stop == -1 {
+		stop = -1
+	}
+	if stop > 0 {
+		if !u.includeBegin {
+			stop = stop - 1
+		}
+	}
+	return stop
 }
 
 func (u *AgeOfUserRNG) Revert(b bool) {
@@ -440,8 +572,8 @@ func (m *_UserMySQLMgr) queryLimit(where string, limit int, args ...interface{})
 //! tx write
 type _UserMySQLTx struct {
 	*orm.MySQLTx
-	Err          error
-	RowsAffected int64
+	err          error
+	rowsAffected int64
 }
 
 func (m *_UserMySQLMgr) BeginTx() (*_UserMySQLTx, error) {
@@ -452,25 +584,100 @@ func (m *_UserMySQLMgr) BeginTx() (*_UserMySQLTx, error) {
 	return &_UserMySQLTx{orm.NewMySQLTx(tx), nil, 0}, nil
 }
 
+func (tx *_UserMySQLTx) BatchCreate(objs []*User) error {
+	if len(objs) == 0 {
+		return nil
+	}
+
+	params := make([]string, 0, len(objs))
+	values := make([]interface{}, 0, len(objs)*13)
+	for _, obj := range objs {
+		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice(13, "?"), ",")))
+		values = append(values, 0)
+
+		values = append(values, obj.Name)
+
+		values = append(values, obj.Mailbox)
+
+		values = append(values, obj.Sex)
+
+		values = append(values, obj.Age)
+
+		values = append(values, obj.Longitude)
+
+		values = append(values, obj.Latitude)
+
+		values = append(values, obj.Description)
+
+		values = append(values, obj.Password)
+
+		values = append(values, obj.HeadUrl)
+
+		values = append(values, obj.Status)
+
+		values = append(values, orm.TimeFormat(obj.CreatedAt))
+
+		values = append(values, orm.TimeFormat(obj.UpdatedAt))
+	}
+	query := fmt.Sprintf("INSERT INTO `users`(%s) VALUES %s", strings.Join(objs[0].GetColumns(), ","), strings.Join(params, ","))
+	result, err := tx.Exec(query, values...)
+	if err != nil {
+		tx.err = err
+		return err
+	}
+	tx.rowsAffected, tx.err = result.RowsAffected()
+	return tx.err
+}
+
+func (tx *_UserMySQLTx) BatchDelete(objs []*User) error {
+	if len(objs) == 0 {
+		return nil
+	}
+
+	ids := []string{}
+	for _, obj := range objs {
+		ids = append(ids, fmt.Sprint(obj.Id))
+	}
+	return tx.DeleteByIds(ids)
+}
+
+// argument example:
+// set:"a=?, b=?"
+// where:"c=? and d=?"
+// params:[]interface{}{"a", "b", "c", "d"}...
+func (tx *_UserMySQLTx) UpdateBySQL(set, where string, args ...interface{}) error {
+	query := fmt.Sprintf("UPDATE `users` SET %s", set)
+	if where != "" {
+		query = fmt.Sprintf("UPDATE `users` SET %s WHERE %s", set, where)
+	}
+	result, err := tx.Exec(query, args)
+	if err != nil {
+		tx.err = err
+		return err
+	}
+	tx.rowsAffected, tx.err = result.RowsAffected()
+	return tx.err
+}
+
 func (tx *_UserMySQLTx) Create(obj *User) error {
 	params := orm.NewStringSlice(13, "?")
 	q := fmt.Sprintf("INSERT INTO `users`(%s) VALUES(%s)",
 		strings.Join(obj.GetColumns(), ","),
 		strings.Join(params, ","))
 
-	result, err := tx.Exec(q, obj.Id, obj.Name, obj.Mailbox, obj.Sex, obj.Age, obj.Longitude, obj.Latitude, obj.Description, obj.Password, obj.HeadUrl, obj.Status, orm.TimeFormat(obj.CreatedAt), orm.TimeFormat(obj.UpdatedAt))
+	result, err := tx.Exec(q, 0, obj.Name, obj.Mailbox, obj.Sex, obj.Age, obj.Longitude, obj.Latitude, obj.Description, obj.Password, obj.HeadUrl, obj.Status, orm.TimeFormat(obj.CreatedAt), orm.TimeFormat(obj.UpdatedAt))
 	if err != nil {
-		tx.Err = err
+		tx.err = err
 		return err
 	}
 	lastInsertId, err := result.LastInsertId()
 	if err != nil {
-		tx.Err = err
+		tx.err = err
 		return err
 	}
 	obj.Id = int32(lastInsertId)
-	tx.RowsAffected, tx.Err = result.RowsAffected()
-	return tx.Err
+	tx.rowsAffected, tx.err = result.RowsAffected()
+	return tx.err
 }
 
 func (tx *_UserMySQLTx) Update(obj *User) error {
@@ -492,11 +699,11 @@ func (tx *_UserMySQLTx) Update(obj *User) error {
 		strings.Join(columns, ","))
 	result, err := tx.Exec(q, obj.Name, obj.Mailbox, obj.Sex, obj.Age, obj.Longitude, obj.Latitude, obj.Description, obj.Password, obj.HeadUrl, obj.Status, orm.TimeFormat(obj.CreatedAt), orm.TimeFormat(obj.UpdatedAt), obj.Id)
 	if err != nil {
-		tx.Err = err
+		tx.err = err
 		return err
 	}
-	tx.RowsAffected, tx.Err = result.RowsAffected()
-	return tx.Err
+	tx.rowsAffected, tx.err = result.RowsAffected()
+	return tx.err
 }
 
 func (tx *_UserMySQLTx) Save(obj *User) error {
@@ -504,7 +711,7 @@ func (tx *_UserMySQLTx) Save(obj *User) error {
 	if err != nil {
 		return err
 	}
-	if tx.RowsAffected > 0 {
+	if tx.rowsAffected > 0 {
 		return nil
 	}
 	return tx.Create(obj)
@@ -514,11 +721,11 @@ func (tx *_UserMySQLTx) Delete(obj *User) error {
 	q := fmt.Sprintf("DELETE FROM `users` WHERE `id`=?")
 	result, err := tx.Exec(q, obj.Id)
 	if err != nil {
-		tx.Err = err
+		tx.err = err
 		return err
 	}
-	tx.RowsAffected, tx.Err = result.RowsAffected()
-	return tx.Err
+	tx.rowsAffected, tx.err = result.RowsAffected()
+	return tx.err
 }
 
 func (tx *_UserMySQLTx) DeleteByIds(ids []string) error {
@@ -530,15 +737,15 @@ func (tx *_UserMySQLTx) DeleteByIds(ids []string) error {
 		strings.Join(ids, ","))
 	result, err := tx.Exec(q)
 	if err != nil {
-		tx.Err = err
+		tx.err = err
 		return err
 	}
-	tx.RowsAffected, tx.Err = result.RowsAffected()
-	return tx.Err
+	tx.rowsAffected, tx.err = result.RowsAffected()
+	return tx.err
 }
 
 func (tx *_UserMySQLTx) Close() error {
-	if tx.Err != nil {
+	if tx.err != nil {
 		return tx.Rollback()
 	}
 	return tx.Commit()
@@ -548,14 +755,14 @@ func (tx *_UserMySQLTx) Close() error {
 func (tx *_UserMySQLTx) FindOne(unique Unique) (string, error) {
 	objs, err := tx.queryLimit(unique.SQLFormat(), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
-		tx.Err = err
+		tx.err = err
 		return "", err
 	}
 	if len(objs) > 0 {
 		return fmt.Sprint(objs[0]), nil
 	}
-	tx.Err = fmt.Errorf("User find record not found")
-	return "", tx.Err
+	tx.err = fmt.Errorf("User find record not found")
+	return "", tx.err
 }
 
 func (tx *_UserMySQLTx) Find(index Index) ([]string, error) {
@@ -580,7 +787,7 @@ func (tx *_UserMySQLTx) queryLimit(where string, limit int, args ...interface{})
 
 	rows, err := tx.Query(query, args...)
 	if err != nil {
-		tx.Err = err
+		tx.err = err
 		return nil, fmt.Errorf("User query limit error: %v", err)
 	}
 	defer rows.Close()
@@ -594,13 +801,13 @@ func (tx *_UserMySQLTx) queryLimit(where string, limit int, args ...interface{})
 
 		var result int32
 		if err = rows.Scan(&result); err != nil {
-			tx.Err = err
+			tx.err = err
 			return nil, err
 		}
 		results = append(results, fmt.Sprint(result))
 	}
 	if err := rows.Err(); err != nil {
-		tx.Err = err
+		tx.err = err
 		return nil, fmt.Errorf("User query limit result error: %v", err)
 	}
 	return
@@ -632,7 +839,7 @@ func (tx *_UserMySQLTx) FetchByIds(ids []string) ([]*User, error) {
 func (tx *_UserMySQLTx) FetchBySQL(sql string, args ...interface{}) (results []*User, err error) {
 	rows, err := tx.Query(sql, args...)
 	if err != nil {
-		tx.Err = err
+		tx.err = err
 		return nil, fmt.Errorf("User fetch error: %v", err)
 	}
 	defer rows.Close()
@@ -655,7 +862,7 @@ func (tx *_UserMySQLTx) FetchBySQL(sql string, args ...interface{}) (results []*
 			&(result.Status),
 			&CreatedAt, &UpdatedAt)
 		if err != nil {
-			tx.Err = err
+			tx.err = err
 			return nil, err
 		}
 
@@ -666,7 +873,7 @@ func (tx *_UserMySQLTx) FetchBySQL(sql string, args ...interface{}) (results []*
 		results = append(results, &result)
 	}
 	if err = rows.Err(); err != nil {
-		tx.Err = err
+		tx.err = err
 		return nil, fmt.Errorf("User fetch result error: %v", err)
 	}
 	return
@@ -764,13 +971,21 @@ func (m *_UserRedisMgr) Range(scope Range) ([]string, error) {
 func (m *_UserRedisMgr) RevertRange(scope Range) ([]string, error) {
 	if relation := scope.RNGRelation(); relation != nil {
 		scope.Revert(true)
-		return relation.Range(scope.Key(), scope.Begin(), scope.End())
+		return relation.RevertRange(scope.Key(), scope.Begin(), scope.End())
 	}
 	return nil, nil
 }
 
 func (m *_UserRedisMgr) Fetch(id string) (*User, error) {
 	obj := UserMgr.NewUser()
+
+	b, err := m.Exists(keyOfObject(obj, id)).Result()
+	if err != nil {
+		return nil, err
+	}
+	if !b {
+		return nil, fmt.Errorf("User Id:(%s) not exist", id)
+	}
 
 	strs, err := m.HMGet(keyOfObject(obj, id), "Id", "Name", "Mailbox", "Sex", "Age", "Longitude", "Latitude", "Description", "Password", "HeadUrl", "Status", "CreatedAt", "UpdatedAt").Result()
 	if err != nil {
@@ -869,17 +1084,31 @@ func (m *_UserRedisMgr) Delete(obj *User) error {
 
 	//! ranges
 	rg_key_0 := []string{
-		"Age",
+		"Id",
 	}
-	rg_mgr_0 := AgeOfUserRNGRelationRedisMgr(m.RedisStore)
-	rg_rel_0 := rg_mgr_0.NewAgeOfUserRNGRelation(strings.Join(rg_key_0, ":"))
-	score_rg_0, err := orm.ToFloat64(obj.Age)
+	rg_mgr_0 := IdOfUserRNGRelationRedisMgr(m.RedisStore)
+	rg_rel_0 := rg_mgr_0.NewIdOfUserRNGRelation(strings.Join(rg_key_0, ":"))
+	score_rg_0, err := orm.ToFloat64(obj.Id)
 	if err != nil {
 		return err
 	}
 	rg_rel_0.Score = score_rg_0
 	rg_rel_0.Value = obj.Id
 	if err := rg_mgr_0.ZSetRem(rg_rel_0); err != nil {
+		return err
+	}
+	rg_key_1 := []string{
+		"Age",
+	}
+	rg_mgr_1 := AgeOfUserRNGRelationRedisMgr(m.RedisStore)
+	rg_rel_1 := rg_mgr_1.NewAgeOfUserRNGRelation(strings.Join(rg_key_1, ":"))
+	score_rg_1, err := orm.ToFloat64(obj.Age)
+	if err != nil {
+		return err
+	}
+	rg_rel_1.Score = score_rg_1
+	rg_rel_1.Value = obj.Id
+	if err := rg_mgr_1.ZSetRem(rg_rel_1); err != nil {
 		return err
 	}
 
@@ -934,17 +1163,31 @@ func (m *_UserRedisMgr) Save(obj *User) error {
 
 	//! ranges
 	rg_key_0 := []string{
-		"Age",
+		"Id",
 	}
-	rg_mgr_0 := AgeOfUserRNGRelationRedisMgr(m.RedisStore)
-	rg_rel_0 := rg_mgr_0.NewAgeOfUserRNGRelation(strings.Join(rg_key_0, ":"))
-	score_rg_0, err := orm.ToFloat64(obj.Age)
+	rg_mgr_0 := IdOfUserRNGRelationRedisMgr(m.RedisStore)
+	rg_rel_0 := rg_mgr_0.NewIdOfUserRNGRelation(strings.Join(rg_key_0, ":"))
+	score_rg_0, err := orm.ToFloat64(obj.Id)
 	if err != nil {
 		return err
 	}
 	rg_rel_0.Score = score_rg_0
 	rg_rel_0.Value = obj.Id
 	if err := rg_mgr_0.ZSetAdd(rg_rel_0); err != nil {
+		return err
+	}
+	rg_key_1 := []string{
+		"Age",
+	}
+	rg_mgr_1 := AgeOfUserRNGRelationRedisMgr(m.RedisStore)
+	rg_rel_1 := rg_mgr_1.NewAgeOfUserRNGRelation(strings.Join(rg_key_1, ":"))
+	score_rg_1, err := orm.ToFloat64(obj.Age)
+	if err != nil {
+		return err
+	}
+	rg_rel_1.Score = score_rg_1
+	rg_rel_1.Value = obj.Id
+	if err := rg_mgr_1.ZSetAdd(rg_rel_1); err != nil {
 		return err
 	}
 
@@ -955,7 +1198,7 @@ func (m *_UserRedisMgr) Clear() error {
 	if strs, err := m.Keys(pairOfClass("User", "*")).Result(); err == nil {
 		m.Del(strs...)
 	}
-	if strs, err := m.Keys(hashOfClass("User", "*")).Result(); err == nil {
+	if strs, err := m.Keys(hashOfClass("User", "object", "*")).Result(); err == nil {
 		m.Del(strs...)
 	}
 	if strs, err := m.Keys(setOfClass("User", "*")).Result(); err == nil {
@@ -1156,6 +1399,120 @@ func (m *_SexOfUserIDXRelationRedisMgr) Clear() error {
 //! ranges
 
 //! relation
+type IdOfUserRNGRelation struct {
+	Key   string  `db:"key" json:"key"`
+	Score float64 `db:"score" json:"score"`
+	Value int32   `db:"value" json:"value"`
+}
+
+func (relation *IdOfUserRNGRelation) GetClassName() string {
+	return "IdOfUserRNGRelation"
+}
+
+func (relation *IdOfUserRNGRelation) GetIndexes() []string {
+	idx := []string{}
+	return idx
+}
+
+func (relation *IdOfUserRNGRelation) GetStoreType() string {
+	return "zset"
+}
+
+func (relation *IdOfUserRNGRelation) GetPrimaryName() string {
+	return "Key"
+}
+
+type _IdOfUserRNGRelationRedisMgr struct {
+	*orm.RedisStore
+}
+
+func IdOfUserRNGRelationRedisMgr(stores ...*orm.RedisStore) *_IdOfUserRNGRelationRedisMgr {
+	if len(stores) > 0 {
+		return &_IdOfUserRNGRelationRedisMgr{stores[0]}
+	}
+	return &_IdOfUserRNGRelationRedisMgr{_redis_store}
+}
+
+//! pipeline write
+type _IdOfUserRNGRelationRedisPipeline struct {
+	*redis.Pipeline
+	Err error
+}
+
+func (m *_IdOfUserRNGRelationRedisMgr) BeginPipeline() *_IdOfUserRNGRelationRedisPipeline {
+	return &_IdOfUserRNGRelationRedisPipeline{m.Pipeline(), nil}
+}
+
+func (m *_IdOfUserRNGRelationRedisMgr) NewIdOfUserRNGRelation(key string) *IdOfUserRNGRelation {
+	return &IdOfUserRNGRelation{
+		Key: key,
+	}
+}
+
+//! redis relation zset
+func (m *_IdOfUserRNGRelationRedisMgr) ZSetAdd(relation *IdOfUserRNGRelation) error {
+	return m.ZAdd(zsetOfClass("User", "IdOfUserRNGRelation", relation.Key), redis.Z{Score: relation.Score, Member: relation.Value}).Err()
+}
+
+func (m *_IdOfUserRNGRelationRedisMgr) ZSetRange(key string, min, max int64) ([]*IdOfUserRNGRelation, error) {
+	strs, err := m.ZRange(zsetOfClass("IdOfUserRNGRelation", key), min, max).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	relations := make([]*IdOfUserRNGRelation, len(strs))
+	for _, str := range strs {
+		relation := m.NewIdOfUserRNGRelation(key)
+		if err := m.StringScan(str, &relation.Value); err != nil {
+			return nil, err
+		}
+		relations = append(relations, relation)
+	}
+	return relations, nil
+}
+
+func (m *_IdOfUserRNGRelationRedisMgr) ZSetRevertRange(key string, min, max int64) ([]*IdOfUserRNGRelation, error) {
+	strs, err := m.ZRevRange(zsetOfClass("IdOfUserRNGRelation", key), min, max).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	relations := make([]*IdOfUserRNGRelation, len(strs))
+	for _, str := range strs {
+		relation := m.NewIdOfUserRNGRelation(key)
+		if err := m.StringScan(str, &relation.Value); err != nil {
+			return nil, err
+		}
+		relations = append(relations, relation)
+	}
+	return relations, nil
+}
+
+func (m *_IdOfUserRNGRelationRedisMgr) ZSetRem(relation *IdOfUserRNGRelation) error {
+	return m.ZRem(zsetOfClass("User", "IdOfUserRNGRelation", relation.Key), relation.Value).Err()
+}
+
+func (m *_IdOfUserRNGRelationRedisMgr) ZSetDel(key string) error {
+	return m.Del(setOfClass("User", "IdOfUserRNGRelation", key)).Err()
+}
+
+func (m *_IdOfUserRNGRelationRedisMgr) Range(key string, min, max int64) ([]string, error) {
+	return m.ZRange(zsetOfClass("User", "IdOfUserRNGRelation", key), min, max).Result()
+}
+
+func (m *_IdOfUserRNGRelationRedisMgr) RevertRange(key string, min, max int64) ([]string, error) {
+	return m.ZRevRange(zsetOfClass("User", "IdOfUserRNGRelation", key), min, max).Result()
+}
+
+func (m *_IdOfUserRNGRelationRedisMgr) Clear() error {
+	strs, err := m.Keys(zsetOfClass("User", "IdOfUserRNGRelation", "*")).Result()
+	if err != nil {
+		return err
+	}
+	return m.Del(strs...).Err()
+}
+
+//! relation
 type AgeOfUserRNGRelation struct {
 	Key   string  `db:"key" json:"key"`
 	Score float64 `db:"score" json:"score"`
@@ -1246,7 +1603,7 @@ func (m *_AgeOfUserRNGRelationRedisMgr) ZSetRevertRange(key string, min, max int
 }
 
 func (m *_AgeOfUserRNGRelationRedisMgr) ZSetRem(relation *AgeOfUserRNGRelation) error {
-	return m.ZRem(zsetOfClass("User", "AgeOfUserRNGRelation", relation.Key), redis.Z{Score: relation.Score, Member: relation.Value}).Err()
+	return m.ZRem(zsetOfClass("User", "AgeOfUserRNGRelation", relation.Key), relation.Value).Err()
 }
 
 func (m *_AgeOfUserRNGRelationRedisMgr) ZSetDel(key string) error {

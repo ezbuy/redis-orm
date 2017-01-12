@@ -45,7 +45,7 @@ func GenerateCode() {
 	for _, yaml := range yamls {
 		objs, err := parser.ReadYaml(packageName, yaml)
 		if err != nil {
-			fmt.Println("redis-orm failed: ", err)
+			fmt.Println("failed: ", err)
 			os.Exit(1)
 		}
 

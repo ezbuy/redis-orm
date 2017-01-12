@@ -68,7 +68,7 @@ func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
 		return err
 	}
 	{{- end}}
-
+	
 	return m.Del(keyOfObject(obj, fmt.Sprint({{$primaryField.GetTransformValue "obj."}}))).Err()
 }
 
@@ -149,7 +149,7 @@ func (m *_{{$obj.Name}}RedisMgr) Clear() error {
 	if strs, err := m.Keys(pairOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
 		m.Del(strs...)
 	}
-	if strs, err := m.Keys(hashOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
+	if strs, err := m.Keys(hashOfClass("{{$obj.Name}}", "object","*")).Result(); err == nil {
 		m.Del(strs...)
 	}
 	if strs, err := m.Keys(setOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
