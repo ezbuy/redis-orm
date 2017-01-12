@@ -1,4 +1,5 @@
 # redis-orm
+
 redis-orm fly orm up 
 
 ## features
@@ -20,6 +21,7 @@ $: redis-orm code -i example/yaml -o example/model
 import "github.com/ezbuy/redis-orm/example/model"
 
 # mysql
+model.MySQLSetup(cf)
 
 //! query (ids []string) by unique & index & range definitions
 model.UserMySQLMgr().FindOne(unique)
@@ -32,6 +34,7 @@ model.UserMySQLMgr().Fetch(id string) (*User, error)
 model.UserMySQLMgr().FetchByIds(ids []string) ([]*User, error)
 
 # redis
+model.RedisSetup(cf)
 
 //! query (ids []string) by unique & index & range definitions
 model.UserRedisMgr().FindOne(unique)
@@ -51,20 +54,43 @@ model.UserRedisMgr().FetchByIds(ids []string) ([]*User, error)
 import "github.com/ezbuy/redis-orm/example/model"
 
 # mysql
+model.MySQLSetup(cf)
 
 tx, _ := model.UserMySQLMgr().BeginTx()
 tx.Save(obj)
 tx.Create(obj)
 tx.Update(obj)
 tx.Delete(obj)
+
+tx.FindOne(unique)
+tx.Find(index)
+tx.Range(scope)
+tx.RevertRange(scope)
+
+tx.Fetch(id string) (*User, error)
+tx.FetchByIds(ids []string) ([]*User, error)
+
 tx.Close()
 
 # redis
+model.RedisSetup(cf)
 
 model.UserRedisMgr().Save(obj)
 model.UserRedisMgr().Create(obj)
 model.UserRedisMgr().Update(obj)
 model.UserRedisMgr().Delete(obj)
+
+````
+
+### sync data
+
+````
+import "github.com/ezbuy/redis-orm/example/model"
+
+model.MySQLSetup(cf)
+model.RedisSetup(cf)
+
+model.UserRedisMgr().Load(model.UserMySQLMgr())
 
 ````
 
