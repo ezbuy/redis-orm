@@ -2,6 +2,7 @@
 {{$rg := .}}
 {{$obj := .Obj}}
 {{$primaryField := .Obj.PrimaryField}}
+
 type {{$rg.Name}} struct{
 	{{- range $j, $field := $rg.Fields}}
 		{{- if ne (add $j 1) (len $rg.Fields)}}
@@ -49,13 +50,15 @@ func (u *{{$rg.Name}}) SQLFormat() string {
 			conditions = append(conditions, "{{$field.Name | camel2name}} = ?")
 		{{- end}}		
 	{{- end}}
-	if u.{{$rg.LastField.Name}}Begin != -1 {
-		conditions = append(conditions, fmt.Sprintf("{{$rg.LastField.Name | camel2name}} %s ?", u.beginOp()))
+	if u.{{$rg.LastField.Name}}Begin != u.{{$rg.LastField.Name}}End {
+		if u.{{$rg.LastField.Name}}Begin != -1 {
+			conditions = append(conditions, fmt.Sprintf("{{$rg.LastField.Name | camel2name}} %s ?", u.beginOp()))
+		}
+		if u.{{$rg.LastField.Name}}End != -1 {
+			conditions = append(conditions, fmt.Sprintf("{{$rg.LastField.Name | camel2name}} %s ?", u.endOp()))
+		}
 	}
-	if u.{{$rg.LastField.Name}}End != -1 {
-		conditions = append(conditions, fmt.Sprintf("{{$rg.LastField.Name | camel2name}} %s ?", u.endOp()))
-	}
-	return fmt.Sprintf("%s %s %s", strings.Join(conditions, " AND "), orm.SQLOrderBy("{{$rg.LastField.Name}}", u.revert), orm.OffsetLimit(u.offset, u.limit))
+	return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("{{$rg.LastField.Name}}", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
 }
 
 func (u *{{$rg.Name}}) SQLParams() []interface{} {
@@ -66,13 +69,14 @@ func (u *{{$rg.Name}}) SQLParams() []interface{} {
 			{{- end}}
 		{{- end}}
 	}
-
-	if u.{{$rg.LastField.Name}}Begin != -1 {
-		params = append(params, u.{{$rg.LastField.Name}}Begin)
-	}
-	if u.{{$rg.LastField.Name}}End != -1 {
-		params = append(params, u.{{$rg.LastField.Name}}End)
-	}
+	if u.{{$rg.LastField.Name}}Begin != u.{{$rg.LastField.Name}}End {
+		if u.{{$rg.LastField.Name}}Begin != -1 {
+			params = append(params, u.{{$rg.LastField.Name}}Begin)
+		}
+		if u.{{$rg.LastField.Name}}End != -1 {
+			params = append(params, u.{{$rg.LastField.Name}}End)
+		}
+	}	
 	return params
 }
 
@@ -119,4 +123,5 @@ func (u *{{$rg.Name}}) RNGRelation() RangeRelation {
 	return nil
 	{{- end}}
 }
+
 {{end}}

@@ -80,7 +80,7 @@ func (u *MailboxPasswordOfUserBaseInfoUK) SQLFormat() string {
 		"mailbox = ?",
 		"password = ?",
 	}
-	return strings.Join(conditions, " AND ")
+	return orm.SQLWhere(conditions)
 }
 
 func (u *MailboxPasswordOfUserBaseInfoUK) SQLParams() []interface{} {
@@ -124,7 +124,7 @@ func (u *NameOfUserBaseInfoIDX) SQLFormat() string {
 	conditions := []string{
 		"name = ?",
 	}
-	return fmt.Sprintf("%s %s", strings.Join(conditions, " AND "), orm.OffsetLimit(u.offset, u.limit))
+	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOffsetLimit(u.offset, u.limit))
 }
 
 func (u *NameOfUserBaseInfoIDX) SQLParams() []interface{} {
@@ -255,12 +255,7 @@ func (m *_UserBaseInfoMySQLMgr) RevertRange(scope Range) ([]string, error) {
 }
 
 func (m *_UserBaseInfoMySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []string, err error) {
-	query := fmt.Sprintf("SELECT `id` FROM `user_base_info`")
-	if where != "" {
-		query += " WHERE "
-		query += where
-	}
-
+	query := fmt.Sprintf("SELECT `id` FROM `user_base_info` %s", where)
 	rows, err := m.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("UserBaseInfo query limit error: %v", err)

@@ -125,12 +125,7 @@ func (m *_{{$obj.Name}}MySQLMgr) RevertRange(scope Range) ([]string, error) {
 }
 
 func (m *_{{$obj.Name}}MySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []string, err error){
-	query := fmt.Sprintf("SELECT `{{$primaryField.Name | camel2name}}` FROM `{{$obj.DbSource}}`")
-	if where != "" {
-		query += " WHERE " 
-		query += where
-	}
-
+	query := fmt.Sprintf("SELECT `{{$primaryField.Name | camel2name}}` FROM `{{$obj.DbSource}}` %s", where)
 	rows, err := m.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("{{$obj.Name}} query limit error: %v", err)

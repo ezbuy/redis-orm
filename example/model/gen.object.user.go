@@ -112,7 +112,7 @@ func (u *MailboxPasswordOfUserUK) SQLFormat() string {
 		"mailbox = ?",
 		"password = ?",
 	}
-	return strings.Join(conditions, " AND ")
+	return orm.SQLWhere(conditions)
 }
 
 func (u *MailboxPasswordOfUserUK) SQLParams() []interface{} {
@@ -156,7 +156,7 @@ func (u *SexOfUserIDX) SQLFormat() string {
 	conditions := []string{
 		"sex = ?",
 	}
-	return fmt.Sprintf("%s %s", strings.Join(conditions, " AND "), orm.OffsetLimit(u.offset, u.limit))
+	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOffsetLimit(u.offset, u.limit))
 }
 
 func (u *SexOfUserIDX) SQLParams() []interface{} {
@@ -218,23 +218,26 @@ func (u *AgeOfUserRNG) endOp() string {
 
 func (u *AgeOfUserRNG) SQLFormat() string {
 	conditions := []string{}
-	if u.AgeBegin != -1 {
-		conditions = append(conditions, fmt.Sprintf("age %s ?", u.beginOp()))
+	if u.AgeBegin != u.AgeEnd {
+		if u.AgeBegin != -1 {
+			conditions = append(conditions, fmt.Sprintf("age %s ?", u.beginOp()))
+		}
+		if u.AgeEnd != -1 {
+			conditions = append(conditions, fmt.Sprintf("age %s ?", u.endOp()))
+		}
 	}
-	if u.AgeEnd != -1 {
-		conditions = append(conditions, fmt.Sprintf("age %s ?", u.endOp()))
-	}
-	return fmt.Sprintf("%s %s %s", strings.Join(conditions, " AND "), orm.SQLOrderBy("Age", u.revert), orm.OffsetLimit(u.offset, u.limit))
+	return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Age", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
 }
 
 func (u *AgeOfUserRNG) SQLParams() []interface{} {
 	params := []interface{}{}
-
-	if u.AgeBegin != -1 {
-		params = append(params, u.AgeBegin)
-	}
-	if u.AgeEnd != -1 {
-		params = append(params, u.AgeEnd)
+	if u.AgeBegin != u.AgeEnd {
+		if u.AgeBegin != -1 {
+			params = append(params, u.AgeBegin)
+		}
+		if u.AgeEnd != -1 {
+			params = append(params, u.AgeEnd)
+		}
 	}
 	return params
 }
@@ -393,12 +396,7 @@ func (m *_UserMySQLMgr) RevertRange(scope Range) ([]string, error) {
 }
 
 func (m *_UserMySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []string, err error) {
-	query := fmt.Sprintf("SELECT `id` FROM `users`")
-	if where != "" {
-		query += " WHERE "
-		query += where
-	}
-
+	query := fmt.Sprintf("SELECT `id` FROM `users` %s", where)
 	rows, err := m.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("User query limit error: %v", err)

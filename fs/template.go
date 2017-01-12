@@ -99,7 +99,6 @@ func init() {
 		"tpl/object.mysql.gogo",
 		"tpl/object.mysql.read.gogo",
 		"tpl/object.mysql.write.gogo",
-		"tpl/object.order.by.gogo",
 		"tpl/object.range.gogo",
 		"tpl/object.redis.gogo",
 		"tpl/object.redis.read.gogo",

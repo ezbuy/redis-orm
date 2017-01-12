@@ -128,21 +128,30 @@ var _ = Describe("redis-orm.mysql", func() {
 			us, err := UserMySQLMgr().Range(scope)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(len(us)).To(Equal(24))
-			fmt.Println("range us =>", us)
 			Ω(us[1] > us[0]).To(Equal(true))
 		})
 
 		It("range.revert", func() {
-			scope := &AgeOfUserRNG{
-				AgeBegin: 10,
-				AgeEnd:   35,
-			}
+			scope := &AgeOfUserRNG{}
 			us, err := UserMySQLMgr().RevertRange(scope)
 			Ω(err).ShouldNot(HaveOccurred())
-			Ω(len(us)).To(Equal(24))
-			fmt.Println("range.revert us =>", us)
+			Ω(len(us)).To(Equal(100))
 			Ω(us[1] > us[0]).To(Equal(false))
 		})
+
+		It("fetch", func() {
+			scope := &AgeOfUserRNG{}
+			us, err := UserMySQLMgr().Range(scope)
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(len(us)).To(Equal(100))
+			objs, err := UserMySQLMgr().FetchByIds(us)
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(len(objs)).To(Equal(100))
+			for _, obj := range objs {
+				fmt.Println("mysql fetch =>", obj)
+			}
+		})
+
 	})
 
 })

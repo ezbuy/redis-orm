@@ -21,6 +21,22 @@ func (idx *Index) LastField() *Field {
 	return idx.Fields[len(idx.Fields)-1]
 }
 
+func (idx *Index) buildUnique() error {
+	return idx.build("UK")
+}
+func (idx *Index) buildIndex() error {
+	return idx.build("IDX")
+}
+func (idx *Index) buildRange() error {
+	err := idx.build("RNG")
+	if err != nil {
+		return err
+	}
+	if !idx.LastField().IsNumber() {
+		return fmt.Errorf("range field <%s> is not number type", idx.LastField().Name)
+	}
+	return nil
+}
 func (idx *Index) build(suffix string) error {
 	idx.Name = fmt.Sprintf("%sOf%s%s", strings.Join(idx.FieldNames, ""), idx.Obj.Name, suffix)
 	for _, name := range idx.FieldNames {

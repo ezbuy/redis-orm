@@ -108,6 +108,18 @@ func (f *Field) IsFullText() bool {
 	return f.Flags.Contains("fulltext")
 }
 
+func (f *Field) IsNumber() bool {
+	if transform := f.GetTransform(); transform != nil {
+		if strings.HasPrefix(transform.TypeOrigin, "int") || strings.HasPrefix(transform.TypeOrigin, "float") {
+			return true
+		}
+	}
+	if strings.HasPrefix(f.Type, "int") || strings.HasPrefix(f.Type, "float") {
+		return true
+	}
+	return false
+}
+
 func (f *Field) HasIndex() bool {
 	return f.Flags.Contains("unique") ||
 		f.Flags.Contains("index") ||

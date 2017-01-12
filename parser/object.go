@@ -175,17 +175,17 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 	}
 
 	for _, unique := range o.Uniques {
-		if err := unique.build("UK"); err != nil {
+		if err := unique.buildUnique(); err != nil {
 			return err
 		}
 	}
 	for _, index := range o.Indexes {
-		if err := index.build("IDX"); err != nil {
+		if err := index.buildIndex(); err != nil {
 			return err
 		}
 	}
 	for _, rg := range o.Ranges {
-		if err := rg.build("RNG"); err != nil {
+		if err := rg.buildRange(); err != nil {
 			return err
 		}
 	}

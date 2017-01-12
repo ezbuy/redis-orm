@@ -45,16 +45,6 @@ func TimeParseLocalTime(s string) time.Time {
 	return localTime
 }
 
-func OffsetLimit(offset, limit int) string {
-	if limit <= 0 {
-		return ""
-	}
-	if offset <= 0 {
-		return fmt.Sprintf(" LIMIT %d", limit)
-	}
-	return fmt.Sprintf(" LIMIT %d, %d", offset, limit)
-}
-
 func NewStringSlice(len int, val string) []string {
 	s := make([]string, len)
 	for i := 0; i < len; i++ {
@@ -87,6 +77,13 @@ func ToFloat64(value interface{}) (float64, error) {
 	return float64(0), errors.New("unsupport type to float64")
 }
 
+func SQLWhere(conditions []string) string {
+	if len(conditions) > 0 {
+		return fmt.Sprintf("WHERE %s", strings.Join(conditions, " AND "))
+	}
+	return ""
+}
+
 func SQLOrderBy(field string, revert bool) string {
 	if field != "" {
 		if revert {
@@ -95,4 +92,14 @@ func SQLOrderBy(field string, revert bool) string {
 		return fmt.Sprintf("ORDER BY `%s` ASC", field)
 	}
 	return ""
+}
+
+func SQLOffsetLimit(offset, limit int) string {
+	if limit <= 0 {
+		return ""
+	}
+	if offset <= 0 {
+		return fmt.Sprintf("LIMIT %d", limit)
+	}
+	return fmt.Sprintf("LIMIT %d, %d", offset, limit)
 }

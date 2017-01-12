@@ -86,7 +86,7 @@ func (u *UserIdOfBlogIDX) SQLFormat() string {
 	conditions := []string{
 		"user_id = ?",
 	}
-	return fmt.Sprintf("%s %s", strings.Join(conditions, " AND "), orm.OffsetLimit(u.offset, u.limit))
+	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOffsetLimit(u.offset, u.limit))
 }
 
 func (u *UserIdOfBlogIDX) SQLParams() []interface{} {
@@ -225,12 +225,7 @@ func (m *_BlogMySQLMgr) RevertRange(scope Range) ([]string, error) {
 }
 
 func (m *_BlogMySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []string, err error) {
-	query := fmt.Sprintf("SELECT `id` FROM `blogs`")
-	if where != "" {
-		query += " WHERE "
-		query += where
-	}
-
+	query := fmt.Sprintf("SELECT `id` FROM `blogs` %s", where)
 	rows, err := m.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("Blog query limit error: %v", err)
