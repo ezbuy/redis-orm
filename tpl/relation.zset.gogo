@@ -31,8 +31,33 @@ func (m *_{{$relation.Name}}RedisMgr) ZSetRange(key string, min, max int64) ([]*
 	return relations, nil
 }
 
+func (m *_{{$relation.Name}}RedisMgr) ZSetRevertRange(key string, min, max int64) ([]*{{$relation.Name}}, error) {
+	strs, err := m.ZRevRange(zsetOfClass("{{$relation.Name}}", key), min, max).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	relations := make([]*{{$relation.Name}}, len(strs))
+	for _, str := range strs {
+		relation := m.New{{$relation.Name}}(key)
+		{{- if $relation.ValueField.IsNeedTransform}}
+			var val {{$relation.ValueField.GetTransform.TypeOrigin}}
+			if err := m.StringScan(str, &val); err != nil {
+				return nil, err
+			}
+			relation.{{$relation.ValueField.Name}} = {{- printf $relation.ValueField.GetTransform.ConvertTo "val"}}
+		{{- else}}
+		if err := m.StringScan(str, &relation.Value); err != nil {
+			return nil, err
+		}
+		{{- end}}
+		relations = append(relations, relation)
+	}
+	return relations, nil
+}
+
 func (m *_{{$relation.Name}}RedisMgr) ZSetRem(relation *{{$relation.Name}}) error {
-	return m.ZRem(zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), redis.Z{Score: relation.Score, Member: {{$relation.ValueField.GetTransformValue "relation."}}}).Err()
+	return m.ZRem(zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), {{$relation.ValueField.GetTransformValue "relation."}}).Err()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) ZSetDel(key string) error {
@@ -43,10 +68,16 @@ func (m *_{{$relation.Name}}RedisMgr) Range(key string, min, max int64) ([]strin
 	return m.ZRange(zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key), min, max).Result()
 }
 
-func (m *_{{$relation.Name}}RedisMgr) OrderBy(key string, asc bool) ([]string, error) {
-	//! TODO revert
-	return m.ZRange(zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key), 0, -1).Result()
+func (m *_{{$relation.Name}}RedisMgr) RevertRange(key string, min, max int64) ([]string, error) {
+	return m.ZRevRange(zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key), min, max).Result()
 }
 
+func (m *_{{$relation.Name}}RedisMgr) Clear() error {
+	strs, err := m.Keys(zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", "*")).Result()
+	if err != nil {
+		return err
+	}
+	return m.Del(strs...).Err()
+}
 {{end}}
 

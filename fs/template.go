@@ -99,7 +99,6 @@ func init() {
 		"tpl/object.mysql.gogo",
 		"tpl/object.mysql.read.gogo",
 		"tpl/object.mysql.write.gogo",
-		"tpl/object.order.by.gogo",
 		"tpl/object.range.gogo",
 		"tpl/object.redis.gogo",
 		"tpl/object.redis.read.gogo",
@@ -109,11 +108,16 @@ func init() {
 		"tpl/object.unqiue.gogo",
 		"tpl/relation.functions.gogo",
 		"tpl/relation.geo.gogo",
+		"tpl/relation.geo.sync.gogo",
 		"tpl/relation.gogo",
 		"tpl/relation.list.gogo",
+		"tpl/relation.list.sync.gogo",
 		"tpl/relation.pair.gogo",
+		"tpl/relation.pair.sync.gogo",
 		"tpl/relation.set.gogo",
+		"tpl/relation.set.sync.gogo",
 		"tpl/relation.zset.gogo",
+		"tpl/relation.zset.sync.gogo",
 	}
 	for _, fname := range files {
 		data, err := tpl.Asset(fname)

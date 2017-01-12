@@ -11,6 +11,7 @@ CREATE TABLE `users` (
   `name`        VARCHAR(32)      NOT NULL  DEFAULT '',
   `mailbox`     VARCHAR(128)     NOT NULL  DEFAULT '',
   `sex`         TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
+  `age`         INT UNSIGNED     NOT NULL  DEFAULT 0,
   `description` VARCHAR(256)     NOT NULL  DEFAULT '',
   `password`    VARCHAR(32)      NOT NULL  DEFAULT '',
   `head_url`    VARCHAR(255)     NOT NULL  DEFAULT '',

@@ -25,7 +25,7 @@ func (u *{{$index.Name}}) SQLFormat() string {
 		"{{$field.Name | camel2name}} = ?",
 		{{- end}}
 	}
-	return fmt.Sprintf("%s %s", strings.Join(conditions, " AND "), orm.OffsetLimit(u.offset, u.limit))
+	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOffsetLimit(u.offset, u.limit))
 }
 
 func (u *{{$index.Name}}) SQLParams() []interface{} {

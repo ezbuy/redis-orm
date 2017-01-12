@@ -100,16 +100,24 @@ func (f *Field) IsRange() bool {
 	return f.Flags.Contains("range")
 }
 
-func (f *Field) IsOrder() bool {
-	return f.Flags.Contains("order")
-}
-
 func (f *Field) IsIndex() bool {
 	return f.Flags.Contains("index")
 }
 
 func (f *Field) IsFullText() bool {
 	return f.Flags.Contains("fulltext")
+}
+
+func (f *Field) IsNumber() bool {
+	if transform := f.GetTransform(); transform != nil {
+		if strings.HasPrefix(transform.TypeOrigin, "int") || strings.HasPrefix(transform.TypeOrigin, "float") {
+			return true
+		}
+	}
+	if strings.HasPrefix(f.Type, "int") || strings.HasPrefix(f.Type, "float") {
+		return true
+	}
+	return false
 }
 
 func (f *Field) HasIndex() bool {
@@ -318,11 +326,6 @@ func (f *Field) Read(data map[interface{}]interface{}) error {
 		index := NewIndex(f.Obj)
 		index.FieldNames = []string{f.Name}
 		f.Obj.Ranges = append(f.Obj.Ranges, index)
-	}
-	if f.IsOrder() {
-		index := NewIndex(f.Obj)
-		index.FieldNames = []string{f.Name}
-		f.Obj.Orders = append(f.Obj.Orders, index)
 	}
 	return nil
 }

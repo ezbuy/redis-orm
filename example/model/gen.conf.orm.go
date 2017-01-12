@@ -31,32 +31,25 @@ type IndexRelation interface {
 
 type Range interface {
 	SQL
-	Key() string
 	IncludeBegin(flag bool)
 	IncludeEnd(flag bool)
 	Begin() int64
 	End() int64
+	Revert(flag bool)
+	Key() string
 	RNGRelation() RangeRelation
 }
+
 type RangeRelation interface {
 	Range(key string, start, end int64) ([]string, error)
-}
-
-type OrderBy interface {
-	SQL
-	Key() string
-	Ascend(flag bool)
-	ORDRelation() OrderByRelation
-}
-type OrderByRelation interface {
-	OrderBy(key string, asc bool) ([]string, error)
+	RevertRange(key string, start, end int64) ([]string, error)
 }
 
 type Finder interface {
 	FindOne(unique Unique) (string, error)
 	Find(index Index) ([]string, error)
 	Range(scope Range) ([]string, error)
-	OrderBy(sort OrderBy) ([]string, error)
+	RevertRange(scope Range) ([]string, error)
 }
 
 type DBFetcher interface {
@@ -64,16 +57,21 @@ type DBFetcher interface {
 }
 
 type ReferenceResult struct {
-	db    Finder
-	set   *orm.VSet
-	times int
-	err   error
+	db     Finder
+	set    *orm.VSet
+	times  int
+	offset int
+	limit  int
+	err    error
 }
 
 func NewReferenceResult(db Finder) *ReferenceResult {
 	return &ReferenceResult{
-		db:  db,
-		set: orm.NewVSet(),
+		db:     db,
+		set:    orm.NewVSet(),
+		times:  0,
+		offset: 0,
+		limit:  -1,
 	}
 }
 
@@ -82,16 +80,26 @@ func (rr *ReferenceResult) DB(db Finder) *ReferenceResult {
 	return rr
 }
 
+func (rr *ReferenceResult) Offset(n int) *ReferenceResult {
+	rr.offset = n
+	return rr
+}
+
+func (rr *ReferenceResult) Limit(n int) *ReferenceResult {
+	rr.limit = n
+	return rr
+}
+
 func (rr *ReferenceResult) Result() ([]string, error) {
-	return rr.set.Values(rr.times), rr.err
+	return rr.set.Values(rr.times, rr.offset, rr.limit), rr.err
 }
 
 func (rr *ReferenceResult) Values() []string {
-	return rr.set.Values(rr.times)
+	return rr.set.Values(rr.times, rr.offset, rr.limit)
 }
 
 func (rr *ReferenceResult) Unions() []string {
-	return rr.set.Values(0)
+	return rr.set.Values(0, rr.offset, rr.limit)
 }
 
 func (rr *ReferenceResult) Err() error {
@@ -121,17 +129,17 @@ func (rr *ReferenceResult) Find(index Index) *ReferenceResult {
 func (rr *ReferenceResult) Range(scope Range) *ReferenceResult {
 	rr.times = rr.times + 1
 	if strs, err := rr.db.Range(scope); err == nil {
-		rr.set.Add(1, strs...)
+		rr.set.SortAdd(1, strs...)
 	} else {
 		rr.err = err
 	}
 	return rr
 }
 
-func (rr *ReferenceResult) OrderBy(sort OrderBy) *ReferenceResult {
+func (rr *ReferenceResult) RevertRange(scope Range) *ReferenceResult {
 	rr.times = rr.times + 1
-	if strs, err := rr.db.OrderBy(sort); err == nil {
-		rr.set.Add(1, strs...)
+	if strs, err := rr.db.RevertRange(scope); err == nil {
+		rr.set.SortAdd(1, strs...)
 	} else {
 		rr.err = err
 	}

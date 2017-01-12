@@ -25,7 +25,7 @@ func (u *{{$unique.Name}}) SQLFormat() string {
 		"{{$field.Name | camel2name}} = ?",
 		{{- end}}
 	}
-	return strings.Join(conditions, " AND ")
+	return orm.SQLWhere(conditions)
 }
 
 func (u *{{$unique.Name}}) SQLParams() []interface{} {

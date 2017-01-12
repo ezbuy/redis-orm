@@ -2,30 +2,30 @@
 {{$rg := .}}
 {{$obj := .Obj}}
 {{$primaryField := .Obj.PrimaryField}}
+
 type {{$rg.Name}} struct{
 	{{- range $j, $field := $rg.Fields}}
-		{{- if eq (add $j 1) (len $rg.Fields)}}
-		{{$field.Name}}Begin {{$field.GetType}}
-		{{$field.Name}}End {{$field.GetType}}
-		{{- else}}
+		{{- if ne (add $j 1) (len $rg.Fields)}}
 		{{$field.Name}} {{$field.GetType}}
 		{{- end}}
 	{{- end}}
+	{{$rg.LastField.Name}}Begin int64
+	{{$rg.LastField.Name}}End int64
 	offset int
 	limit int
 	includeBegin bool
 	includeEnd bool
+	revert bool
 }
 func (u *{{$rg.Name}}) Key() string {
 	strs := []string{
 		{{- range $j, $field := $rg.Fields}}
-			{{- if eq (add $j 1) (len $rg.Fields)}}
-				"{{$field.Name}}",
-			{{- else}}
+			{{- if ne (add $j 1) (len $rg.Fields)}}
 				"{{$field.Name}}",
 				fmt.Sprint(u.{{$field.Name}}),
 			{{- end}}
 		{{- end}}
+		"{{$rg.LastField.Name}}",
 	}
 	return fmt.Sprintf("%s", strings.Join(strs, ":"))
 }
@@ -45,28 +45,39 @@ func (u *{{$rg.Name}}) endOp() string {
 
 func (u *{{$rg.Name}}) SQLFormat() string {
 	conditions := []string{}
-		{{- range $j, $field := $rg.Fields}}
-			{{- if eq (add $j 1) (len $rg.Fields)}}
-				conditions = append(conditions, fmt.Sprintf("{{$field.Name | camel2name}} %s ?", u.beginOp()))
-				conditions = append(conditions, fmt.Sprintf("{{$field.Name | camel2name}} %s ?", u.endOp()))
-			{{- else}}
-				conditions = append(conditions, "{{$field.Name | camel2name}} = ?")
-			{{- end}}		
-		{{- end}}
-	return fmt.Sprintf("%s %s", strings.Join(conditions, " AND "), orm.OffsetLimit(u.offset, u.limit))
+	{{- range $j, $field := $rg.Fields}}
+		{{- if ne (add $j 1) (len $rg.Fields)}}
+			conditions = append(conditions, "{{$field.Name | camel2name}} = ?")
+		{{- end}}		
+	{{- end}}
+	if u.{{$rg.LastField.Name}}Begin != u.{{$rg.LastField.Name}}End {
+		if u.{{$rg.LastField.Name}}Begin != -1 {
+			conditions = append(conditions, fmt.Sprintf("{{$rg.LastField.Name | camel2name}} %s ?", u.beginOp()))
+		}
+		if u.{{$rg.LastField.Name}}End != -1 {
+			conditions = append(conditions, fmt.Sprintf("{{$rg.LastField.Name | camel2name}} %s ?", u.endOp()))
+		}
+	}
+	return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("{{$rg.LastField.Name}}", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
 }
 
 func (u *{{$rg.Name}}) SQLParams() []interface{} {
-	return []interface{}{
+	params := []interface{}{
 		{{- range $j, $field := $rg.Fields}}
-			{{- if eq (add $j 1) (len $rg.Fields)}}
-				u.{{$field.Name}}Begin,
-				u.{{$field.Name}}End,
-			{{- else}}
+			{{- if ne (add $j 1) (len $rg.Fields)}}
 				u.{{$field.Name}},
 			{{- end}}
 		{{- end}}
 	}
+	if u.{{$rg.LastField.Name}}Begin != u.{{$rg.LastField.Name}}End {
+		if u.{{$rg.LastField.Name}}Begin != -1 {
+			params = append(params, u.{{$rg.LastField.Name}}Begin)
+		}
+		if u.{{$rg.LastField.Name}}End != -1 {
+			params = append(params, u.{{$rg.LastField.Name}}End)
+		}
+	}	
+	return params
 }
 
 func (u *{{$rg.Name}}) SQLLimit() int {
@@ -85,13 +96,34 @@ func (u *{{$rg.Name}}) Offset(n int) {
 }
 
 func (u *{{$rg.Name}}) Begin() int64 {
-	return 0
+	start := u.{{$rg.LastField.Name}}Begin
+	if start == -1 || start == 0 {
+		start = 0
+	}
+	if start > 0 {
+		if !u.includeBegin {
+			start = start + 1
+		}
+	}	
+	return start
 }
 
 func (u *{{$rg.Name}}) End() int64 {
-	return 0
+	stop := u.{{$rg.LastField.Name}}End
+	if stop == 0 || stop == -1 {
+		stop = -1
+	}
+	if stop > 0 {
+		if !u.includeBegin {
+			stop = stop - 1
+		}
+	}
+	return stop
 }
 
+func (u *{{$rg.Name}}) Revert(b bool) {
+	u.revert = b
+}
 
 func (u *{{$rg.Name}}) IncludeBegin(f bool) {
 	u.includeBegin = f
@@ -102,11 +134,12 @@ func (u *{{$rg.Name}}) IncludeEnd(f bool) {
 }
 
 {{$relation := $rg.GetRelation "zset" $primaryField.GetType $obj.Name}}
-func (u *{{$rg.Name}}) ORDRelation() RangeRelation {
+func (u *{{$rg.Name}}) RNGRelation() RangeRelation {
 	{{- if $rg.Obj.DbContains "redis"}}
 	return {{$relation.Name}}RedisMgr()
 	{{- else}}
 	return nil
 	{{- end}}
 }
+
 {{end}}

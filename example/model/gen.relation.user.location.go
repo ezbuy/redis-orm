@@ -102,3 +102,90 @@ func (m *_UserLocationRedisMgr) LocationRem(relation *UserLocation) error {
 func (m *_UserLocationRedisMgr) LocationDel(key string) error {
 	return m.Del(geoOfClass("UserLocation", "UserLocation", key)).Err()
 }
+
+func (m *_UserLocationRedisMgr) Clear() error {
+	strs, err := m.Keys(geoOfClass("UserLocation", "UserLocation", "*")).Result()
+	if err != nil {
+		return err
+	}
+	return m.Del(strs...).Err()
+}
+
+func (m *_UserLocationRedisMgr) Load(db DBFetcher) error {
+
+	if err := m.Clear(); err != nil {
+		return err
+	}
+	return m.AddBySQL(db, "SELECT 'all',`longitude`,`latitude`,`id` FROM users")
+
+}
+
+func (m *_UserLocationRedisMgr) AddBySQL(db DBFetcher, sql string, args ...interface{}) error {
+	objs, err := db.FetchBySQL(sql, args...)
+	if err != nil {
+		return err
+	}
+
+	for _, obj := range objs {
+		if err := m.LocationAdd(obj.(*UserLocation)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+func (m *_UserLocationRedisMgr) DelBySQL(db DBFetcher, sql string, args ...interface{}) error {
+	objs, err := db.FetchBySQL(sql, args...)
+	if err != nil {
+		return err
+	}
+
+	for _, obj := range objs {
+		if err := m.LocationRem(obj.(*UserLocation)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+type _UserLocationMySQLMgr struct {
+	*orm.MySQLStore
+}
+
+func UserLocationMySQLMgr() *_UserLocationMySQLMgr {
+	return &_UserLocationMySQLMgr{_mysql_store}
+}
+
+func NewUserLocationMySQLMgr(cf *MySQLConfig) (*_UserLocationMySQLMgr, error) {
+	store, err := orm.NewMySQLStore(cf.Host, cf.Port, cf.Database, cf.UserName, cf.Password)
+	if err != nil {
+		return nil, err
+	}
+	return &_UserLocationMySQLMgr{store}, nil
+}
+
+func (m *_UserLocationMySQLMgr) FetchBySQL(sql string, args ...interface{}) (results []interface{}, err error) {
+	rows, err := m.Query(sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("UserLocation fetch error: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var result UserLocation
+		err = rows.Scan(&(result.Key),
+			&(result.Longitude),
+			&(result.Latitude),
+			&(result.Value),
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		results = append(results, &result)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("UserLocation fetch result error: %v", err)
+	}
+	return
+}

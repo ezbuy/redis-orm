@@ -91,4 +91,13 @@ func (m *_{{$relation.Name}}RedisMgr) ListLDel(key string) error {
 	return m.Del(listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Err()
 }
 
+func (m *_{{$relation.Name}}RedisMgr) Clear() error {
+	strs, err := m.Keys(listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", "*")).Result()
+	if err != nil {
+		return err
+	}
+	return m.Del(strs...).Err()
+}
+
+
 {{end}}

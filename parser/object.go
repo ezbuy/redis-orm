@@ -27,7 +27,6 @@ type MetaObject struct {
 	Uniques []*Index
 	Indexes []*Index
 	Ranges  []*Index
-	Orders  []*Index
 	//! relation
 	Relation *Relation
 	//! importSQL
@@ -42,7 +41,6 @@ func NewMetaObject(packageName string) *MetaObject {
 		Uniques:      []*Index{},
 		Indexes:      []*Index{},
 		Ranges:       []*Index{},
-		Orders:       []*Index{},
 	}
 }
 
@@ -166,15 +164,6 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 				index.FieldNames = toStringSlice(i.([]interface{}))
 				o.Ranges = append(o.Ranges, index)
 			}
-		case "orders":
-			for _, i := range val.([]interface{}) {
-				if len(i.([]interface{})) == 0 {
-					continue
-				}
-				index := NewIndex(o)
-				index.FieldNames = toStringSlice(i.([]interface{}))
-				o.Orders = append(o.Orders, index)
-			}
 		case "relation":
 			relation := NewRelation(o)
 			err := relation.Read(val.(map[interface{}]interface{}))
@@ -186,22 +175,17 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 	}
 
 	for _, unique := range o.Uniques {
-		if err := unique.build("UK"); err != nil {
+		if err := unique.buildUnique(); err != nil {
 			return err
 		}
 	}
 	for _, index := range o.Indexes {
-		if err := index.build("IDX"); err != nil {
+		if err := index.buildIndex(); err != nil {
 			return err
 		}
 	}
 	for _, rg := range o.Ranges {
-		if err := rg.build("RNG"); err != nil {
-			return err
-		}
-	}
-	for _, order := range o.Orders {
-		if err := order.build("ORD"); err != nil {
+		if err := rg.buildRange(); err != nil {
 			return err
 		}
 	}

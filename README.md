@@ -22,11 +22,10 @@ ModelName:
   uniques: [[FieldName1, ..., FieldNameN],[FieldName1, ..., FieldNameM]]
   indexes: [[FieldName1, ..., FieldNameN],[FieldName1, ..., FieldNameM]]
   ranges: [[FieldName1, ..., RangeFieldName],[FieldName1, ..., RangeFieldName]]
-  orders: [[FieldName1, ..., FieldNameN],[FieldName1, ..., FieldNameM]]
   relation:
-    - storetype: pair | set | zset | geo | list
-    - valuetype: int32 
-    - modeltype: ReferenceModelName
+    storetype: pair | set | zset | geo | list
+    valuetype: int32 
+    modeltype: ReferenceModelName
   importSQL: 'select fields... from table'
 
 ````
