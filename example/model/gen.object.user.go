@@ -967,15 +967,21 @@ func (m *_UserRedisMgr) RevertRange(scope Range) ([]string, error) {
 func (m *_UserRedisMgr) Fetch(id string) (*User, error) {
 	obj := UserMgr.NewUser()
 
-	b, err := m.Exists(keyOfObject(obj, id)).Result()
+	pipe := m.BeginPipeline()
+	pipe.Exists(keyOfObject(obj, id))
+	pipe.HMGet(keyOfObject(obj, id), "Id", "Name", "Mailbox", "Sex", "Age", "Longitude", "Latitude", "Description", "Password", "HeadUrl", "Status", "CreatedAt", "UpdatedAt")
+	cmds, err := pipe.Exec()
 	if err != nil {
 		return nil, err
 	}
-	if !b {
-		return nil, fmt.Errorf("User Id:(%s) not exist", id)
+
+	if b, err := cmds[0].(*redis.BoolCmd).Result(); err == nil {
+		if !b {
+			return nil, fmt.Errorf("User Id:(%s) not exist", id)
+		}
 	}
 
-	strs, err := m.HMGet(keyOfObject(obj, id), "Id", "Name", "Mailbox", "Sex", "Age", "Longitude", "Latitude", "Description", "Password", "HeadUrl", "Status", "CreatedAt", "UpdatedAt").Result()
+	strs, err := cmds[1].(*redis.SliceCmd).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -1027,11 +1033,72 @@ func (m *_UserRedisMgr) Fetch(id string) (*User, error) {
 
 func (m *_UserRedisMgr) FetchByIds(ids []string) ([]*User, error) {
 	objs := make([]*User, 0, len(ids))
+	pipe := m.BeginPipeline()
+	obj := UserMgr.NewUser()
 	for _, id := range ids {
-		obj, err := m.Fetch(id)
-		if err != nil {
-			return objs, err
+		pipe.Exists(keyOfObject(obj, id))
+		pipe.HMGet(keyOfObject(obj, id), "Id", "Name", "Mailbox", "Sex", "Age", "Longitude", "Latitude", "Description", "Password", "HeadUrl", "Status", "CreatedAt", "UpdatedAt")
+	}
+	cmds, err := pipe.Exec()
+	if err != nil {
+		return nil, err
+	}
+	for i := 0; i < len(ids); i++ {
+		if b, err := cmds[2*i].(*redis.BoolCmd).Result(); err == nil {
+			if !b {
+				return nil, fmt.Errorf("User Id:(%s) not exist", ids[i])
+			}
 		}
+
+		strs, err := cmds[2*i+1].(*redis.SliceCmd).Result()
+		if err != nil {
+			return nil, err
+		}
+
+		obj := UserMgr.NewUser()
+		if err := m.StringScan(strs[0].(string), &obj.Id); err != nil {
+			return nil, err
+		}
+		if err := m.StringScan(strs[1].(string), &obj.Name); err != nil {
+			return nil, err
+		}
+		if err := m.StringScan(strs[2].(string), &obj.Mailbox); err != nil {
+			return nil, err
+		}
+		if err := m.StringScan(strs[3].(string), &obj.Sex); err != nil {
+			return nil, err
+		}
+		if err := m.StringScan(strs[4].(string), &obj.Age); err != nil {
+			return nil, err
+		}
+		if err := m.StringScan(strs[5].(string), &obj.Longitude); err != nil {
+			return nil, err
+		}
+		if err := m.StringScan(strs[6].(string), &obj.Latitude); err != nil {
+			return nil, err
+		}
+		if err := m.StringScan(strs[7].(string), &obj.Description); err != nil {
+			return nil, err
+		}
+		if err := m.StringScan(strs[8].(string), &obj.Password); err != nil {
+			return nil, err
+		}
+		if err := m.StringScan(strs[9].(string), &obj.HeadUrl); err != nil {
+			return nil, err
+		}
+		if err := m.StringScan(strs[10].(string), &obj.Status); err != nil {
+			return nil, err
+		}
+		var val11 string
+		if err := m.StringScan(strs[11].(string), &val11); err != nil {
+			return nil, err
+		}
+		obj.CreatedAt = orm.TimeParse(val11)
+		var val12 string
+		if err := m.StringScan(strs[12].(string), &val12); err != nil {
+			return nil, err
+		}
+		obj.UpdatedAt = orm.TimeParse(val12)
 		objs = append(objs, obj)
 	}
 	return objs, nil
