@@ -41,15 +41,15 @@ func (tx *_{{$obj.Name}}MySQLTx) BatchCreate(objs []*{{$obj.Name}}) error {
 	for _, obj := range objs {
 		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice({{len $obj.Fields}}, "?"), ",")))
 		{{- range $i, $field := $obj.Fields -}}
-			{{if $field.IsPrimary}}
+			{{- if $field.IsPrimary}}
 				{{- if $field.IsAutoIncrement}}
 				values = append(values, 0)
 				{{- else}}
 				values = append(values, {{$field.GetTransformValue "obj."}})	
 				{{- end}}			
-			{{else}}
+			{{- else}}
 			values = append(values, {{$field.GetTransformValue "obj."}})
-			{{end}}			
+			{{- end}}			
 		{{- end -}}
 	}
 	query := fmt.Sprintf("INSERT INTO `{{$obj.DbTable}}`(%s) VALUES %s", strings.Join(objs[0].GetColumns(), ","), strings.Join(params, ","))
@@ -67,7 +67,7 @@ func (tx *_{{$obj.Name}}MySQLTx) BatchDelete(objs []*{{$obj.Name}}) error {
 		return nil
 	}
 
-	ids := []string{}
+	ids := make([]string, 0, len(objs))
 	for _, obj := range objs {
 		ids = append(ids, fmt.Sprint(obj.{{$primaryField.Name}}))
 	}

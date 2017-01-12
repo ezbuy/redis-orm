@@ -67,7 +67,7 @@ func (m *_{{$obj.Name}}RedisMgr) Fetch({{$primaryField.Name | camel2name}} strin
 }
 
 func (m *_{{$obj.Name}}RedisMgr) FetchBy{{$primaryField.Name}}s({{$primaryField.Name | camel2name}}s []string) ([]*{{$obj.Name}}, error) {
-	objs := []*{{$obj.Name}}{}
+	objs := make([]*{{$obj.Name}}, 0, len({{$primaryField.Name | camel2name}}s))
 	for _, id := range {{$primaryField.Name | camel2name}}s {
 		obj, err := m.Fetch(id)
 		if err != nil {

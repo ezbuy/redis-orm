@@ -223,7 +223,7 @@ func (m *_UserBaseInfoMySQLMgr) FetchByIds(ids []string) ([]*UserBaseInfo, error
 	if err != nil {
 		return nil, err
 	}
-	results := []*UserBaseInfo{}
+	results := make([]*UserBaseInfo, 0, len(objs))
 	for _, obj := range objs {
 		results = append(results, obj.(*UserBaseInfo))
 	}
