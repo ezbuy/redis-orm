@@ -158,6 +158,51 @@ var _ = Describe("redis-orm.mysql", func() {
 			}
 		})
 
+		Measure("mysql.bench", func(b Benchmarker) {
+			b.Time("unique.runtime", func() {
+				unique := &MailboxPasswordOfUserUK{
+					Mailbox:  "name20@ezbuy.com",
+					Password: "pwd20",
+				}
+				obj, err := UserMySQLMgr().FindOne(unique)
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(obj).ShouldNot(BeNil())
+			})
+			b.Time("index.runtime", func() {
+				sexIdx := &SexOfUserIDX{
+					Sex: false,
+				}
+				us, err := UserMySQLMgr().Find(sexIdx)
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(len(us)).To(Equal(50))
+			})
+			b.Time("range.runtime", func() {
+				scope := &AgeOfUserRNG{
+					AgeBegin: 10,
+					AgeEnd:   35,
+				}
+				us, err := UserMySQLMgr().Range(scope)
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(len(us)).To(Equal(24))
+				Ω(us[1] > us[0]).To(Equal(true))
+			})
+			b.Time("range.revert.runtime", func() {
+				scope := &AgeOfUserRNG{}
+				us, err := UserMySQLMgr().RevertRange(scope)
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(len(us)).To(Equal(100))
+				Ω(us[1] > us[0]).To(Equal(false))
+			})
+			b.Time("fetch.runtime", func() {
+				scope := &IdOfUserRNG{}
+				us, err := UserMySQLMgr().Range(scope)
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(len(us)).To(Equal(100))
+				objs, err := UserMySQLMgr().FetchByIds(us)
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(len(objs)).To(Equal(100))
+			})
+		}, 1000)
 	})
 
 })
@@ -293,5 +338,51 @@ var _ = Describe("redis-orm.redis", func() {
 			Ω(len(us)).To(Equal(100))
 			Ω(us[1] > us[0]).To(Equal(false))
 		})
+
+		Measure("redis.bench", func(b Benchmarker) {
+			b.Time("unique.runtime", func() {
+				unique := &MailboxPasswordOfUserUK{
+					Mailbox:  "name20@ezbuy.com",
+					Password: "pwd20",
+				}
+				obj, err := UserRedisMgr().FindOne(unique)
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(obj).ShouldNot(BeNil())
+			})
+			b.Time("index.runtime", func() {
+				sexIdx := &SexOfUserIDX{
+					Sex: false,
+				}
+				us, err := UserRedisMgr().Find(sexIdx)
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(len(us)).To(Equal(50))
+			})
+			b.Time("range.runtime", func() {
+				scope := &AgeOfUserRNG{
+					AgeBegin: 10,
+					AgeEnd:   35,
+				}
+				us, err := UserRedisMgr().Range(scope)
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(len(us)).To(Equal(24))
+				Ω(us[1] > us[0]).To(Equal(true))
+			})
+			b.Time("range.revert.runtime", func() {
+				scope := &AgeOfUserRNG{}
+				us, err := UserRedisMgr().RevertRange(scope)
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(len(us)).To(Equal(100))
+				Ω(us[1] > us[0]).To(Equal(false))
+			})
+			b.Time("fetch.runtime", func() {
+				scope := &AgeOfUserRNG{}
+				us, err := UserRedisMgr().RevertRange(scope)
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(len(us)).To(Equal(100))
+				objs, err := UserRedisMgr().FetchByIds(us)
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(len(objs)).To(Equal(100))
+			})
+		}, 1000)
 	})
 })
