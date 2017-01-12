@@ -496,7 +496,7 @@ func (m *_UserMySQLMgr) FetchByIds(ids []string) ([]*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	results := []*User{}
+	results := make([]*User, 0, len(objs))
 	for _, obj := range objs {
 		results = append(results, obj.(*User))
 	}
@@ -594,29 +594,17 @@ func (tx *_UserMySQLTx) BatchCreate(objs []*User) error {
 	for _, obj := range objs {
 		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice(13, "?"), ",")))
 		values = append(values, 0)
-
 		values = append(values, obj.Name)
-
 		values = append(values, obj.Mailbox)
-
 		values = append(values, obj.Sex)
-
 		values = append(values, obj.Age)
-
 		values = append(values, obj.Longitude)
-
 		values = append(values, obj.Latitude)
-
 		values = append(values, obj.Description)
-
 		values = append(values, obj.Password)
-
 		values = append(values, obj.HeadUrl)
-
 		values = append(values, obj.Status)
-
 		values = append(values, orm.TimeFormat(obj.CreatedAt))
-
 		values = append(values, orm.TimeFormat(obj.UpdatedAt))
 	}
 	query := fmt.Sprintf("INSERT INTO `users`(%s) VALUES %s", strings.Join(objs[0].GetColumns(), ","), strings.Join(params, ","))
@@ -634,7 +622,7 @@ func (tx *_UserMySQLTx) BatchDelete(objs []*User) error {
 		return nil
 	}
 
-	ids := []string{}
+	ids := make([]string, 0, len(objs))
 	for _, obj := range objs {
 		ids = append(ids, fmt.Sprint(obj.Id))
 	}
@@ -1038,7 +1026,7 @@ func (m *_UserRedisMgr) Fetch(id string) (*User, error) {
 }
 
 func (m *_UserRedisMgr) FetchByIds(ids []string) ([]*User, error) {
-	objs := []*User{}
+	objs := make([]*User, 0, len(ids))
 	for _, id := range ids {
 		obj, err := m.Fetch(id)
 		if err != nil {
@@ -1365,7 +1353,7 @@ func (m *_SexOfUserIDXRelationRedisMgr) SetGet(key string) ([]*SexOfUserIDXRelat
 		return nil, err
 	}
 
-	relations := make([]*SexOfUserIDXRelation, len(strs))
+	relations := make([]*SexOfUserIDXRelation, 0, len(strs))
 	for _, str := range strs {
 		relation := m.NewSexOfUserIDXRelation(key)
 		if err := m.StringScan(str, &relation.Value); err != nil {
@@ -1460,7 +1448,7 @@ func (m *_IdOfUserRNGRelationRedisMgr) ZSetRange(key string, min, max int64) ([]
 		return nil, err
 	}
 
-	relations := make([]*IdOfUserRNGRelation, len(strs))
+	relations := make([]*IdOfUserRNGRelation, 0, len(strs))
 	for _, str := range strs {
 		relation := m.NewIdOfUserRNGRelation(key)
 		if err := m.StringScan(str, &relation.Value); err != nil {
@@ -1477,7 +1465,7 @@ func (m *_IdOfUserRNGRelationRedisMgr) ZSetRevertRange(key string, min, max int6
 		return nil, err
 	}
 
-	relations := make([]*IdOfUserRNGRelation, len(strs))
+	relations := make([]*IdOfUserRNGRelation, 0, len(strs))
 	for _, str := range strs {
 		relation := m.NewIdOfUserRNGRelation(key)
 		if err := m.StringScan(str, &relation.Value); err != nil {
@@ -1574,7 +1562,7 @@ func (m *_AgeOfUserRNGRelationRedisMgr) ZSetRange(key string, min, max int64) ([
 		return nil, err
 	}
 
-	relations := make([]*AgeOfUserRNGRelation, len(strs))
+	relations := make([]*AgeOfUserRNGRelation, 0, len(strs))
 	for _, str := range strs {
 		relation := m.NewAgeOfUserRNGRelation(key)
 		if err := m.StringScan(str, &relation.Value); err != nil {
@@ -1591,7 +1579,7 @@ func (m *_AgeOfUserRNGRelationRedisMgr) ZSetRevertRange(key string, min, max int
 		return nil, err
 	}
 
-	relations := make([]*AgeOfUserRNGRelation, len(strs))
+	relations := make([]*AgeOfUserRNGRelation, 0, len(strs))
 	for _, str := range strs {
 		relation := m.NewAgeOfUserRNGRelation(key)
 		if err := m.StringScan(str, &relation.Value); err != nil {

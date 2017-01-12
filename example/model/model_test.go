@@ -253,8 +253,8 @@ var _ = Describe("redis-orm.redis", func() {
 		})
 		It("delete", func() {
 			Ω(UserRedisMgr().Delete(user)).ShouldNot(HaveOccurred())
-			obj, err := UserRedisMgr().Fetch(fmt.Sprint(user.Id))
-			fmt.Println("redis delete =>", obj, err)
+			_, err := UserRedisMgr().Fetch(fmt.Sprint(user.Id))
+			Ω(err).Should(HaveOccurred())
 		})
 	})
 

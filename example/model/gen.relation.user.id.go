@@ -108,7 +108,7 @@ func (m *_UserIdRedisMgr) ListLRange(key string, start, stop int64) ([]*UserId, 
 		return nil, err
 	}
 
-	relations := make([]*UserId, len(strs))
+	relations := make([]*UserId, 0, len(strs))
 	for _, str := range strs {
 		relation := m.NewUserId(key)
 		if err := m.StringScan(str, &relation.Value); err != nil {

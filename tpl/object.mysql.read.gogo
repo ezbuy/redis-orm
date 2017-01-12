@@ -93,7 +93,7 @@ func (m *_{{$obj.Name}}MySQLMgr) FetchBy{{$primaryField.Name}}s({{$primaryField.
 	if err != nil {
 		return nil, err
 	}
-	results := []*{{$obj.Name}}{}
+	results := make([]*{{$obj.Name}}, 0, len(objs))
 	for _, obj := range objs {
 		results = append(results, obj.(*{{$obj.Name}}))
 	}

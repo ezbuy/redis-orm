@@ -77,7 +77,7 @@ func (m *_UserBlogsRedisMgr) ZSetRange(key string, min, max int64) ([]*UserBlogs
 		return nil, err
 	}
 
-	relations := make([]*UserBlogs, len(strs))
+	relations := make([]*UserBlogs, 0, len(strs))
 	for _, str := range strs {
 		relation := m.NewUserBlogs(key)
 		if err := m.StringScan(str, &relation.Value); err != nil {
@@ -94,7 +94,7 @@ func (m *_UserBlogsRedisMgr) ZSetRevertRange(key string, min, max int64) ([]*Use
 		return nil, err
 	}
 
-	relations := make([]*UserBlogs, len(strs))
+	relations := make([]*UserBlogs, 0, len(strs))
 	for _, str := range strs {
 		relation := m.NewUserBlogs(key)
 		if err := m.StringScan(str, &relation.Value); err != nil {

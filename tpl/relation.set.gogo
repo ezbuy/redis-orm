@@ -12,7 +12,7 @@ func (m *_{{$relation.Name}}RedisMgr) SetGet(key string) ([]*{{$relation.Name}},
 		return nil, err
 	}
 
-	relations := make([]*{{$relation.Name}}, len(strs))
+	relations := make([]*{{$relation.Name}}, 0, len(strs))
 	for _, str := range strs {
 		relation := m.New{{$relation.Name}}(key)
 		{{- if $relation.ValueField.IsNeedTransform}}

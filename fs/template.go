@@ -21,7 +21,13 @@ func generate_templates(obj *parser.MetaObject) []string {
 	if obj.Relation != nil {
 		tpls = append(tpls, "relation")
 	} else {
-		tpls = append(tpls, "object")
+		if obj.DbView != "" {
+			tpls = append(tpls, "view")
+		} else {
+			if obj.DbTable != "" {
+				tpls = append(tpls, "object")
+			}
+		}
 	}
 	return tpls
 }
@@ -118,6 +124,7 @@ func init() {
 		"tpl/relation.set.sync.gogo",
 		"tpl/relation.zset.gogo",
 		"tpl/relation.zset.sync.gogo",
+		"tpl/view.gogo",
 	}
 	for _, fname := range files {
 		data, err := tpl.Asset(fname)

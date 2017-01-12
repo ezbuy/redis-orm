@@ -193,7 +193,7 @@ func (m *_BlogMySQLMgr) FetchByIds(ids []string) ([]*Blog, error) {
 	if err != nil {
 		return nil, err
 	}
-	results := []*Blog{}
+	results := make([]*Blog, 0, len(objs))
 	for _, obj := range objs {
 		results = append(results, obj.(*Blog))
 	}
@@ -291,19 +291,12 @@ func (tx *_BlogMySQLTx) BatchCreate(objs []*Blog) error {
 	for _, obj := range objs {
 		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice(8, "?"), ",")))
 		values = append(values, 0)
-
 		values = append(values, obj.UserId)
-
 		values = append(values, obj.Title)
-
 		values = append(values, obj.Content)
-
 		values = append(values, obj.Status)
-
 		values = append(values, obj.Readed)
-
 		values = append(values, orm.TimeFormat(obj.CreatedAt))
-
 		values = append(values, orm.TimeFormat(obj.UpdatedAt))
 	}
 	query := fmt.Sprintf("INSERT INTO `blogs`(%s) VALUES %s", strings.Join(objs[0].GetColumns(), ","), strings.Join(params, ","))
@@ -321,7 +314,7 @@ func (tx *_BlogMySQLTx) BatchDelete(objs []*Blog) error {
 		return nil
 	}
 
-	ids := []string{}
+	ids := make([]string, 0, len(objs))
 	for _, obj := range objs {
 		ids = append(ids, fmt.Sprint(obj.Id))
 	}
