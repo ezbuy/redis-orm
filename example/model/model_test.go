@@ -64,6 +64,51 @@ var _ = Describe("redis-orm.mysql", func() {
 			Ω(tx.Save(user)).ShouldNot(HaveOccurred())
 			Ω(tx.Delete(user)).ShouldNot(HaveOccurred())
 		})
+
+		Measure("mysql.bench", func(b Benchmarker) {
+			b.Time("crud.runtime", func() {
+				user := UserMgr.NewUser()
+				user.Name = "user01"
+				user.Mailbox = "user01@sss.fff"
+				user.HeadUrl = "aaaa.png"
+				user.Password = "123456"
+				user.CreatedAt = time.Now()
+				user.UpdatedAt = user.CreatedAt
+				user.Longitude = 103.754
+				user.Latitude = 1.3282
+				tx, err := UserMySQLMgr().BeginTx()
+				Ω(err).ShouldNot(HaveOccurred())
+				defer tx.Close()
+				//! debug sql
+				tx.Debug(false)
+
+				//! create
+				Ω(tx.Create(user)).ShouldNot(HaveOccurred())
+
+				//! update
+				user.HeadUrl = "bbbb.png"
+				user.UpdatedAt = time.Now()
+				Ω(tx.Update(user)).ShouldNot(HaveOccurred())
+
+				//! fetch check
+				obj, err := tx.Fetch(user.Id)
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(obj.HeadUrl).To(Equal(user.HeadUrl))
+
+				//! delete
+				Ω(tx.Delete(obj)).ShouldNot(HaveOccurred())
+
+				//! fetch check
+				_, err = tx.Fetch(user.Id)
+				Ω(err).Should(HaveOccurred())
+
+				//! save
+				Ω(tx.Save(user)).ShouldNot(HaveOccurred())
+				user.HeadUrl = "ccc.png"
+				Ω(tx.Save(user)).ShouldNot(HaveOccurred())
+				Ω(tx.Delete(user)).ShouldNot(HaveOccurred())
+			})
+		}, 1)
 	})
 
 	Describe("Finder", func() {
@@ -134,7 +179,7 @@ var _ = Describe("redis-orm.mysql", func() {
 			us, err := UserMySQLMgr().Range(scope)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(len(us)).To(Equal(24))
-			Ω(us[1] > us[0]).To(Equal(true))
+			Ω(us[1].(int32) > us[0].(int32)).To(Equal(true))
 		})
 
 		It("range.revert", func() {
@@ -142,7 +187,7 @@ var _ = Describe("redis-orm.mysql", func() {
 			us, err := UserMySQLMgr().RevertRange(scope)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(len(us)).To(Equal(100))
-			Ω(us[1] > us[0]).To(Equal(false))
+			Ω(us[1].(int32) > us[0].(int32)).To(Equal(false))
 		})
 
 		It("fetch", func() {
@@ -184,14 +229,14 @@ var _ = Describe("redis-orm.mysql", func() {
 				us, err := UserMySQLMgr().Range(scope)
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(len(us)).To(Equal(24))
-				Ω(us[1] > us[0]).To(Equal(true))
+				Ω(us[1].(int32) > us[0].(int32)).To(Equal(true))
 			})
 			b.Time("range.revert.runtime", func() {
 				scope := &AgeOfUserRNG{}
 				us, err := UserMySQLMgr().RevertRange(scope)
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(len(us)).To(Equal(100))
-				Ω(us[1] > us[0]).To(Equal(false))
+				Ω(us[1].(int32) > us[0].(int32)).To(Equal(false))
 			})
 			b.Time("fetch.runtime", func() {
 				scope := &IdOfUserRNG{}
@@ -202,7 +247,7 @@ var _ = Describe("redis-orm.mysql", func() {
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(len(objs)).To(Equal(100))
 			})
-		}, 1000)
+		}, 1)
 	})
 
 })
@@ -301,6 +346,38 @@ var _ = Describe("redis-orm.redis", func() {
 			_, err := UserRedisMgr().Fetch(fmt.Sprint(user.Id))
 			Ω(err).Should(HaveOccurred())
 		})
+
+		Measure("redis.bench", func(b Benchmarker) {
+			b.Time("crud.runtime", func() {
+				user = UserMgr.NewUser()
+				user.Id = 101
+				user.Name = fmt.Sprintf("name%d", 101)
+				user.Mailbox = fmt.Sprintf("name%d@ezbuy.com", 101)
+				user.HeadUrl = fmt.Sprintf("name%d.png", 101)
+				user.Password = fmt.Sprintf("pwd%d", 101)
+				user.Sex = true
+				user.Age = int32(32)
+				user.CreatedAt = time.Now()
+				user.UpdatedAt = user.CreatedAt
+				user.Longitude = 103.754
+				user.Latitude = 1.3282
+				Ω(UserRedisMgr().Create(user)).ShouldNot(HaveOccurred())
+
+				obj, err := UserRedisMgr().Fetch(fmt.Sprint(user.Id))
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(obj.Name).To(Equal(fmt.Sprintf("name%d", 101)))
+
+				user.Age = int32(40)
+				Ω(UserRedisMgr().Update(user)).ShouldNot(HaveOccurred())
+				obj, err = UserRedisMgr().Fetch(fmt.Sprint(user.Id))
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(obj.Age).To(Equal(int32(40)))
+
+				Ω(UserRedisMgr().Delete(user)).ShouldNot(HaveOccurred())
+				_, err = UserRedisMgr().Fetch(fmt.Sprint(user.Id))
+				Ω(err).Should(HaveOccurred())
+			})
+		}, 1)
 	})
 
 	Describe("finder", func() {
@@ -329,14 +406,14 @@ var _ = Describe("redis-orm.redis", func() {
 			us, err := UserRedisMgr().Range(scope)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(len(us)).To(Equal(24))
-			Ω(us[1] > us[0]).To(Equal(true))
+			Ω(us[1].(int32) > us[0].(int32)).To(Equal(true))
 		})
 		It("range.revert", func() {
 			scope := &AgeOfUserRNG{}
 			us, err := UserRedisMgr().RevertRange(scope)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(len(us)).To(Equal(100))
-			Ω(us[1] > us[0]).To(Equal(false))
+			Ω(us[1].(int32) > us[0].(int32)).To(Equal(false))
 		})
 
 		Measure("redis.bench", func(b Benchmarker) {
@@ -365,14 +442,14 @@ var _ = Describe("redis-orm.redis", func() {
 				us, err := UserRedisMgr().Range(scope)
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(len(us)).To(Equal(24))
-				Ω(us[1] > us[0]).To(Equal(true))
+				Ω(us[1].(int32) > us[0].(int32)).To(Equal(true))
 			})
 			b.Time("range.revert.runtime", func() {
 				scope := &AgeOfUserRNG{}
 				us, err := UserRedisMgr().RevertRange(scope)
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(len(us)).To(Equal(100))
-				Ω(us[1] > us[0]).To(Equal(false))
+				Ω(us[1].(int32) > us[0].(int32)).To(Equal(false))
 			})
 			b.Time("fetch.runtime", func() {
 				scope := &AgeOfUserRNG{}
@@ -383,6 +460,6 @@ var _ = Describe("redis-orm.redis", func() {
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(len(objs)).To(Equal(100))
 			})
-		}, 1000)
+		}, 1)
 	})
 })

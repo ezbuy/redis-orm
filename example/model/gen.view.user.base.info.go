@@ -199,7 +199,7 @@ func (m *_UserBaseInfoMySQLMgr) FetchBySQL(sql string, args ...interface{}) (res
 	}
 	return
 }
-func (m *_UserBaseInfoMySQLMgr) Fetch(id string) (*UserBaseInfo, error) {
+func (m *_UserBaseInfoMySQLMgr) Fetch(id interface{}) (*UserBaseInfo, error) {
 	obj := UserBaseInfoMgr.NewUserBaseInfo()
 	query := fmt.Sprintf("SELECT %s FROM `user_base_info` WHERE `Id` = (%s)", strings.Join(obj.GetColumns(), ","), id)
 	objs, err := m.FetchBySQL(query)
@@ -212,13 +212,13 @@ func (m *_UserBaseInfoMySQLMgr) Fetch(id string) (*UserBaseInfo, error) {
 	return nil, fmt.Errorf("UserBaseInfo fetch record not found")
 }
 
-func (m *_UserBaseInfoMySQLMgr) FetchByIds(ids []string) ([]*UserBaseInfo, error) {
+func (m *_UserBaseInfoMySQLMgr) FetchByIds(ids []interface{}) ([]*UserBaseInfo, error) {
 	if len(ids) == 0 {
 		return []*UserBaseInfo{}, nil
 	}
 
 	obj := UserBaseInfoMgr.NewUserBaseInfo()
-	query := fmt.Sprintf("SELECT %s FROM `user_base_info` WHERE `Id` IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join(ids, ","))
+	query := fmt.Sprintf("SELECT %s FROM `user_base_info` WHERE `Id` IN (%s)", strings.Join(obj.GetColumns(), ","), orm.SliceJoin(ids, ","))
 	objs, err := m.FetchBySQL(query)
 	if err != nil {
 		return nil, err
@@ -230,31 +230,31 @@ func (m *_UserBaseInfoMySQLMgr) FetchByIds(ids []string) ([]*UserBaseInfo, error
 	return results, nil
 }
 
-func (m *_UserBaseInfoMySQLMgr) FindOne(unique Unique) (string, error) {
+func (m *_UserBaseInfoMySQLMgr) FindOne(unique Unique) (interface{}, error) {
 	objs, err := m.queryLimit(unique.SQLFormat(), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
 		return "", err
 	}
 	if len(objs) > 0 {
-		return fmt.Sprint(objs[0]), nil
+		return objs[0], nil
 	}
 	return "", fmt.Errorf("UserBaseInfo find record not found")
 }
 
-func (m *_UserBaseInfoMySQLMgr) Find(index Index) ([]string, error) {
+func (m *_UserBaseInfoMySQLMgr) Find(index Index) ([]interface{}, error) {
 	return m.queryLimit(index.SQLFormat(), index.SQLLimit(), index.SQLParams()...)
 }
 
-func (m *_UserBaseInfoMySQLMgr) Range(scope Range) ([]string, error) {
+func (m *_UserBaseInfoMySQLMgr) Range(scope Range) ([]interface{}, error) {
 	return m.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (m *_UserBaseInfoMySQLMgr) RevertRange(scope Range) ([]string, error) {
+func (m *_UserBaseInfoMySQLMgr) RevertRange(scope Range) ([]interface{}, error) {
 	scope.Revert(true)
 	return m.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (m *_UserBaseInfoMySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []string, err error) {
+func (m *_UserBaseInfoMySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []interface{}, err error) {
 	query := fmt.Sprintf("SELECT `id` FROM `user_base_info` %s", where)
 	rows, err := m.Query(query, args...)
 	if err != nil {
@@ -273,7 +273,7 @@ func (m *_UserBaseInfoMySQLMgr) queryLimit(where string, limit int, args ...inte
 		if err = rows.Scan(&result); err != nil {
 			return nil, err
 		}
-		results = append(results, fmt.Sprint(result))
+		results = append(results, result)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("UserBaseInfo query limit result error: %v", err)

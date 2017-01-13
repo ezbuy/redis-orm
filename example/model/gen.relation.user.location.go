@@ -51,20 +51,23 @@ func UserLocationRedisMgr(stores ...*orm.RedisStore) *_UserLocationRedisMgr {
 	return &_UserLocationRedisMgr{_redis_store}
 }
 
-//! pipeline write
+func (m *_UserLocationRedisMgr) NewUserLocation(key string) *UserLocation {
+	return &UserLocation{
+		Key: key,
+	}
+}
+
+//! pipeline
 type _UserLocationRedisPipeline struct {
 	*redis.Pipeline
 	Err error
 }
 
-func (m *_UserLocationRedisMgr) BeginPipeline() *_UserLocationRedisPipeline {
-	return &_UserLocationRedisPipeline{m.Pipeline(), nil}
-}
-
-func (m *_UserLocationRedisMgr) NewUserLocation(key string) *UserLocation {
-	return &UserLocation{
-		Key: key,
+func (m *_UserLocationRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_UserLocationRedisPipeline {
+	if len(pipes) > 0 {
+		return &_UserLocationRedisPipeline{pipes[0], nil}
 	}
+	return &_UserLocationRedisPipeline{m.Pipeline(), nil}
 }
 
 //! redis relation pair

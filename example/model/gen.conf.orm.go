@@ -46,10 +46,10 @@ type RangeRelation interface {
 }
 
 type Finder interface {
-	FindOne(unique Unique) (string, error)
-	Find(index Index) ([]string, error)
-	Range(scope Range) ([]string, error)
-	RevertRange(scope Range) ([]string, error)
+	FindOne(unique Unique) (interface{}, error)
+	Find(index Index) ([]interface{}, error)
+	Range(scope Range) ([]interface{}, error)
+	RevertRange(scope Range) ([]interface{}, error)
 }
 
 type DBFetcher interface {
@@ -90,15 +90,15 @@ func (rr *ReferenceResult) Limit(n int) *ReferenceResult {
 	return rr
 }
 
-func (rr *ReferenceResult) Result() ([]string, error) {
+func (rr *ReferenceResult) Result() ([]interface{}, error) {
 	return rr.set.Values(rr.times, rr.offset, rr.limit), rr.err
 }
 
-func (rr *ReferenceResult) Values() []string {
+func (rr *ReferenceResult) Values() []interface{} {
 	return rr.set.Values(rr.times, rr.offset, rr.limit)
 }
 
-func (rr *ReferenceResult) Unions() []string {
+func (rr *ReferenceResult) Unions() []interface{} {
 	return rr.set.Values(0, rr.offset, rr.limit)
 }
 

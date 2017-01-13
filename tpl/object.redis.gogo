@@ -2,49 +2,28 @@
 {{$obj := .}}
 {{$primaryField := $obj.PrimaryField}}
 
-	type _{{$obj.Name}}RedisMgr struct {
-		*orm.RedisStore
-	}
-
-	func {{$obj.Name}}RedisMgr() *_{{$obj.Name}}RedisMgr {	
-		return &_{{$obj.Name}}RedisMgr{_redis_store}
-	}
-
-	func New{{$obj.Name}}RedisMgr(cf *RedisConfig) (*_{{$obj.Name}}RedisMgr, error) {
-		store, err := orm.NewRedisStore(cf.Host, cf.Port, cf.Password, 0)
-		if err != nil {
-			return nil, err
-		}
-		return &_{{$obj.Name}}RedisMgr{store}, nil
-	}
-
-	//! pipeline write
-	type _{{$obj.Name}}RedisPipeline struct {
-		*redis.Pipeline
-		Err error
-	}
-
-	func (m *_{{$obj.Name}}RedisMgr) BeginPipeline() *_{{$obj.Name}}RedisPipeline {
-		return &_{{$obj.Name}}RedisPipeline{m.Pipeline(), nil}
-	}
-
+	{{template "object.redis.manager" $obj}}	
+	{{template "object.redis.pipeline" $obj}}
 	{{template "object.redis.sync" $obj}}
 	{{template "object.redis.read" $obj}}
 	{{template "object.redis.write" $obj}}
 
 	//! uniques
 	{{- range $i, $unique := $obj.Uniques}}
-	{{template "object.relation" ($unique.GetRelation "pair" $primaryField.GetType $obj.Name)}}
+	{{$relation := ($unique.GetRelation "pair" $primaryField.GetType $obj.Name)}}
+	{{template "object.relation" $relation}}
 	{{- end}}
 
 	//! indexes
 	{{- range $i, $index := $obj.Indexes}}
-	{{template "object.relation" ($index.GetRelation "set" $primaryField.GetType $obj.Name)}}
+	{{$relation := ($index.GetRelation "set" $primaryField.GetType $obj.Name)}}
+	{{template "object.relation" $relation}}
 	{{- end}}
 
 	//! ranges
 	{{- range $i, $rg := $obj.Ranges}}
-	{{template "object.relation" ($rg.GetRelation "zset" $primaryField.GetType $obj.Name)}}
+	{{$relation := ($rg.GetRelation "zset" $primaryField.GetType $obj.Name)}}
+	{{template "object.relation" $relation}}
 	{{- end}}
 
 	

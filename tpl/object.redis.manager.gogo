@@ -1,0 +1,18 @@
+{{define "object.redis.manager"}}
+{{$obj := .}}
+type _{{$obj.Name}}RedisMgr struct {
+	*orm.RedisStore
+}
+
+func {{$obj.Name}}RedisMgr() *_{{$obj.Name}}RedisMgr {	
+	return &_{{$obj.Name}}RedisMgr{_redis_store}
+}
+
+func New{{$obj.Name}}RedisMgr(cf *RedisConfig) (*_{{$obj.Name}}RedisMgr, error) {
+	store, err := orm.NewRedisStore(cf.Host, cf.Port, cf.Password, 0)
+	if err != nil {
+		return nil, err
+	}
+	return &_{{$obj.Name}}RedisMgr{store}, nil
+}
+{{end}}

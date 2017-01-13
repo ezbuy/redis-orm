@@ -53,6 +53,14 @@ func NewStringSlice(len int, val string) []string {
 	return s
 }
 
+func SliceJoin(objs []interface{}, sep string) string {
+	s := make([]string, 0, len(objs))
+	for _, obj := range objs {
+		s = append(s, fmt.Sprint(obj))
+	}
+	return strings.Join(s, sep)
+}
+
 func ToFloat64(value interface{}) (float64, error) {
 	switch value.(type) {
 	case string:

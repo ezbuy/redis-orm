@@ -1,0 +1,15 @@
+{{define "object.redis.pipeline"}}
+{{$obj := .}}
+//! pipeline 
+type _{{$obj.Name}}RedisPipeline struct {
+	*redis.Pipeline
+	Err error
+}
+
+func (m *_{{$obj.Name}}RedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_{{$obj.Name}}RedisPipeline {
+	if len(pipes) > 0 {
+		return &_{{$obj.Name}}RedisPipeline{pipes[0], nil}	
+	}
+	return &_{{$obj.Name}}RedisPipeline{m.Pipeline(), nil}
+}
+{{end}}

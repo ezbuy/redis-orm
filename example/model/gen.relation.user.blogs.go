@@ -50,20 +50,23 @@ func UserBlogsRedisMgr(stores ...*orm.RedisStore) *_UserBlogsRedisMgr {
 	return &_UserBlogsRedisMgr{_redis_store}
 }
 
-//! pipeline write
+func (m *_UserBlogsRedisMgr) NewUserBlogs(key string) *UserBlogs {
+	return &UserBlogs{
+		Key: key,
+	}
+}
+
+//! pipeline
 type _UserBlogsRedisPipeline struct {
 	*redis.Pipeline
 	Err error
 }
 
-func (m *_UserBlogsRedisMgr) BeginPipeline() *_UserBlogsRedisPipeline {
-	return &_UserBlogsRedisPipeline{m.Pipeline(), nil}
-}
-
-func (m *_UserBlogsRedisMgr) NewUserBlogs(key string) *UserBlogs {
-	return &UserBlogs{
-		Key: key,
+func (m *_UserBlogsRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_UserBlogsRedisPipeline {
+	if len(pipes) > 0 {
+		return &_UserBlogsRedisPipeline{pipes[0], nil}
 	}
+	return &_UserBlogsRedisPipeline{m.Pipeline(), nil}
 }
 
 //! redis relation zset

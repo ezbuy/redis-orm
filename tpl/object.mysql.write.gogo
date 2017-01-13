@@ -67,9 +67,9 @@ func (tx *_{{$obj.Name}}MySQLTx) BatchDelete(objs []*{{$obj.Name}}) error {
 		return nil
 	}
 
-	ids := make([]string, 0, len(objs))
+	ids := make([]interface{}, 0, len(objs))
 	for _, obj := range objs {
-		ids = append(ids, fmt.Sprint(obj.{{$primaryField.Name}}))
+		ids = append(ids, obj.{{$primaryField.Name}})
 	}
 	return tx.DeleteBy{{$primaryField.Name}}s(ids)
 }
@@ -168,13 +168,13 @@ func (tx *_{{$obj.Name}}MySQLTx) Delete(obj *{{$obj.Name}}) error {
 	return tx.err
 }
 
-func (tx *_{{$obj.Name}}MySQLTx) DeleteBy{{$primaryField.Name}}s({{$primaryField.Name | camel2name}}s []string) error { 
+func (tx *_{{$obj.Name}}MySQLTx) DeleteBy{{$primaryField.Name}}s({{$primaryField.Name | camel2name}}s []interface{}) error { 
 	if len({{$primaryField.Name | camel2name}}s) == 0 {
 		return nil
 	}
 
 	q := fmt.Sprintf("DELETE FROM `{{$obj.DbTable}}` WHERE `{{$primaryField.Name | camel2name}}` IN (%s)",
-		 strings.Join({{$primaryField.Name | camel2name}}s, ","))
+		 orm.SliceJoin({{$primaryField.Name | camel2name}}s, ","))
 	result, err := tx.Exec(q)
 	if err != nil {
 		tx.err = err
@@ -193,33 +193,33 @@ func (tx *_{{$obj.Name}}MySQLTx) Close() error {
 }
 
 //! tx read
-func (tx *_{{$obj.Name}}MySQLTx) FindOne(unique Unique) (string, error) {
+func (tx *_{{$obj.Name}}MySQLTx) FindOne(unique Unique) (interface{}, error) {
 	objs, err := tx.queryLimit(unique.SQLFormat(), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
 		tx.err = err
-		return "", err
+		return nil, err
 	}
 	if len(objs) > 0 {
-		return fmt.Sprint(objs[0]), nil
+		return objs[0], nil
 	}
 	tx.err = fmt.Errorf("{{$obj.Name}} find record not found")
-	return "", tx.err
+	return nil, tx.err
 }
 
-func (tx *_{{$obj.Name}}MySQLTx) Find(index Index) ([]string, error) {
+func (tx *_{{$obj.Name}}MySQLTx) Find(index Index) ([]interface{}, error) {
 	return tx.queryLimit(index.SQLFormat(), index.SQLLimit(), index.SQLParams()...)
 }
 
-func (tx *_{{$obj.Name}}MySQLTx) Range(scope Range) ([]string, error) {
+func (tx *_{{$obj.Name}}MySQLTx) Range(scope Range) ([]interface{}, error) {
 	return tx.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (tx *_{{$obj.Name}}MySQLTx) RevertRange(scope Range) ([]string, error) {
+func (tx *_{{$obj.Name}}MySQLTx) RevertRange(scope Range) ([]interface{}, error) {
 	scope.Revert(true)
 	return tx.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (tx *_{{$obj.Name}}MySQLTx) queryLimit(where string, limit int, args ...interface{}) (results []string, err error){
+func (tx *_{{$obj.Name}}MySQLTx) queryLimit(where string, limit int, args ...interface{}) (results []interface{}, err error){
 	query := fmt.Sprintf("SELECT `{{$primaryField.Name | camel2name}}` FROM `{{$obj.DbTable}}`")
 	if where != "" {
 		query += " WHERE " 
@@ -245,7 +245,7 @@ func (tx *_{{$obj.Name}}MySQLTx) queryLimit(where string, limit int, args ...int
 			tx.err = err
 			return nil, err
 		}
-		results = append(results, fmt.Sprint(result))
+		results = append(results, result)
 	}
 	if err := rows.Err() ;err != nil {
 		tx.err = err
@@ -267,13 +267,13 @@ func (tx *_{{$obj.Name}}MySQLTx) Fetch({{$primaryField.Name | camel2name}} inter
 	return nil, fmt.Errorf("{{$obj.Name}} fetch record not found")
 }
 
-func (tx *_{{$obj.Name}}MySQLTx) FetchBy{{$primaryField.Name}}s({{$primaryField.Name | camel2name}}s []string) ( []*{{$obj.Name}}, error) {
+func (tx *_{{$obj.Name}}MySQLTx) FetchBy{{$primaryField.Name}}s({{$primaryField.Name | camel2name}}s []interface{}) ( []*{{$obj.Name}}, error) {
 	if len({{$primaryField.Name | camel2name}}s) == 0 {
 		return []*{{$obj.Name}}{}, nil
 	}
 		
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
-	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbTable}}` WHERE `{{$primaryField.Name}}` IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join({{$primaryField.Name | camel2name}}s, ","))
+	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbTable}}` WHERE `{{$primaryField.Name}}` IN (%s)", strings.Join(obj.GetColumns(), ","), orm.SliceJoin({{$primaryField.Name | camel2name}}s, ","))
 	return tx.FetchBySQL(query)
 }
 
