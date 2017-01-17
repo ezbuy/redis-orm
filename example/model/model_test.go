@@ -414,6 +414,8 @@ var _ = Describe("redis-orm.redis", func() {
 	Describe("load", func() {
 		It("mysql => redis", func() {
 			Ω(UserRedisMgr().Load(UserMySQLMgr())).ShouldNot(HaveOccurred())
+			Ω(UserRedisMgr().Clear()).ShouldNot(HaveOccurred())
+			Ω(UserRedisMgr().Load(UserMySQLMgr())).ShouldNot(HaveOccurred())
 		})
 	})
 

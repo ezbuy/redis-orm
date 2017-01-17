@@ -111,7 +111,10 @@ func (m *_UserLocationRedisMgr) Clear() error {
 	if err != nil {
 		return err
 	}
-	return m.Del(strs...).Err()
+	if len(strs) > 0 {
+		return m.Del(strs...).Err()
+	}
+	return nil
 }
 
 func (m *_UserLocationRedisMgr) Load(db DBFetcher) error {

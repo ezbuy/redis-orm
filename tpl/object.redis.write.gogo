@@ -147,22 +147,34 @@ func (m *_{{$obj.Name}}RedisMgr) Save(obj *{{$obj.Name}}) error {
 
 func (m *_{{$obj.Name}}RedisMgr) Clear() error {
 	if strs, err := m.Keys(pairOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
-		m.Del(strs...)
+		if len(strs) > 0 {
+			m.Del(strs...)
+		}		
 	}
 	if strs, err := m.Keys(hashOfClass("{{$obj.Name}}", "object","*")).Result(); err == nil {
-		m.Del(strs...)
+		if len(strs) > 0 {
+			m.Del(strs...)
+		}
 	}
 	if strs, err := m.Keys(setOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
-		m.Del(strs...)
+		if len(strs) > 0 {
+			m.Del(strs...)
+		}
 	}
 	if strs, err := m.Keys(zsetOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
-		m.Del(strs...)
+		if len(strs) > 0 {
+			m.Del(strs...)
+		}
 	}
 	if strs, err := m.Keys(geoOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
-		m.Del(strs...)
+		if len(strs) > 0 {
+			m.Del(strs...)
+		}
 	}
 	if strs, err := m.Keys(listOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
-		m.Del(strs...)
+		if len(strs) > 0 {
+			m.Del(strs...)
+		}
 	}
 	return nil
 }
