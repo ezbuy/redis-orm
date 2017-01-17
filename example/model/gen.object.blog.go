@@ -82,11 +82,14 @@ func (u *UserIdOfBlogIDX) Key() string {
 	return fmt.Sprintf("%s", strings.Join(strs, ":"))
 }
 
-func (u *UserIdOfBlogIDX) SQLFormat() string {
+func (u *UserIdOfBlogIDX) SQLFormat(limit bool) string {
 	conditions := []string{
 		"user_id = ?",
 	}
-	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOffsetLimit(u.offset, u.limit))
+	if limit {
+		return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOffsetLimit(u.offset, u.limit))
+	}
+	return orm.SQLWhere(conditions)
 }
 
 func (u *UserIdOfBlogIDX) SQLParams() []interface{} {
@@ -169,7 +172,7 @@ func (m *_BlogMySQLMgr) FetchBySQL(sql string, args ...interface{}) (results []i
 	}
 	return
 }
-func (m *_BlogMySQLMgr) Fetch(id string) (*Blog, error) {
+func (m *_BlogMySQLMgr) Fetch(id interface{}) (*Blog, error) {
 	obj := BlogMgr.NewBlog()
 	query := fmt.Sprintf("SELECT %s FROM `blogs` WHERE `Id` = (%s)", strings.Join(obj.GetColumns(), ","), id)
 	objs, err := m.FetchBySQL(query)
@@ -182,13 +185,13 @@ func (m *_BlogMySQLMgr) Fetch(id string) (*Blog, error) {
 	return nil, fmt.Errorf("Blog fetch record not found")
 }
 
-func (m *_BlogMySQLMgr) FetchByIds(ids []string) ([]*Blog, error) {
+func (m *_BlogMySQLMgr) FetchByIds(ids []interface{}) ([]*Blog, error) {
 	if len(ids) == 0 {
 		return []*Blog{}, nil
 	}
 
 	obj := BlogMgr.NewBlog()
-	query := fmt.Sprintf("SELECT %s FROM `blogs` WHERE `Id` IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join(ids, ","))
+	query := fmt.Sprintf("SELECT %s FROM `blogs` WHERE `Id` IN (%s)", strings.Join(obj.GetColumns(), ","), orm.SliceJoin(ids, ","))
 	objs, err := m.FetchBySQL(query)
 	if err != nil {
 		return nil, err
@@ -200,31 +203,85 @@ func (m *_BlogMySQLMgr) FetchByIds(ids []string) ([]*Blog, error) {
 	return results, nil
 }
 
-func (m *_BlogMySQLMgr) FindOne(unique Unique) (string, error) {
-	objs, err := m.queryLimit(unique.SQLFormat(), unique.SQLLimit(), unique.SQLParams()...)
+func (m *_BlogMySQLMgr) FindOne(unique Unique) (interface{}, error) {
+	objs, err := m.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
 		return "", err
 	}
 	if len(objs) > 0 {
-		return fmt.Sprint(objs[0]), nil
+		return objs[0], nil
 	}
 	return "", fmt.Errorf("Blog find record not found")
 }
 
-func (m *_BlogMySQLMgr) Find(index Index) ([]string, error) {
-	return m.queryLimit(index.SQLFormat(), index.SQLLimit(), index.SQLParams()...)
+func (m *_BlogMySQLMgr) FindOneFetch(unique Unique) (*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	query := fmt.Sprintf("SELECT %s FROM `blogs` %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, unique.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0].(*Blog), nil
+	}
+	return nil, fmt.Errorf("none record")
 }
 
-func (m *_BlogMySQLMgr) Range(scope Range) ([]string, error) {
-	return m.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+func (m *_BlogMySQLMgr) Find(index Index) ([]interface{}, error) {
+	return m.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
 }
 
-func (m *_BlogMySQLMgr) RevertRange(scope Range) ([]string, error) {
+func (m *_BlogMySQLMgr) FindFetch(index Index) ([]*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	query := fmt.Sprintf("SELECT %s FROM `blogs` %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, index.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*Blog, 0, len(objs))
+	for _, obj := range objs {
+		results = append(results, obj.(*Blog))
+	}
+	return results, nil
+}
+
+func (m *_BlogMySQLMgr) FindCount(index Index) (int64, error) {
+	return m.queryCount(index.SQLFormat(false), index.SQLParams()...)
+}
+
+func (m *_BlogMySQLMgr) Range(scope Range) ([]interface{}, error) {
+	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
+}
+
+func (m *_BlogMySQLMgr) RangeFetch(scope Range) ([]*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	query := fmt.Sprintf("SELECT %s FROM `blogs` %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, scope.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*Blog, 0, len(objs))
+	for _, obj := range objs {
+		results = append(results, obj.(*Blog))
+	}
+	return results, nil
+}
+
+func (m *_BlogMySQLMgr) RangeCount(scope Range) (int64, error) {
+	return m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
+}
+
+func (m *_BlogMySQLMgr) RangeRevert(scope Range) ([]interface{}, error) {
 	scope.Revert(true)
-	return m.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (m *_BlogMySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []string, err error) {
+func (m *_BlogMySQLMgr) RangeRevertFetch(scope Range) ([]*Blog, error) {
+	scope.Revert(true)
+	return m.RangeFetch(scope)
+}
+
+func (m *_BlogMySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []interface{}, err error) {
 	query := fmt.Sprintf("SELECT `id` FROM `blogs` %s", where)
 	rows, err := m.Query(query, args...)
 	if err != nil {
@@ -243,12 +300,30 @@ func (m *_BlogMySQLMgr) queryLimit(where string, limit int, args ...interface{})
 		if err = rows.Scan(&result); err != nil {
 			return nil, err
 		}
-		results = append(results, fmt.Sprint(result))
+		results = append(results, result)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("Blog query limit result error: %v", err)
 	}
 	return
+}
+
+func (m *_BlogMySQLMgr) queryCount(where string, args ...interface{}) (int64, error) {
+	query := fmt.Sprintf("SELECT count(`id`) FROM `blogs` %s", where)
+	rows, err := m.Query(query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("Blog query count error: %v", err)
+	}
+	defer rows.Close()
+
+	var count int64
+	for rows.Next() {
+		if err = rows.Scan(&count); err != nil {
+			return 0, err
+		}
+		break
+	}
+	return count, nil
 }
 
 //! object.mysql.write
@@ -314,9 +389,9 @@ func (tx *_BlogMySQLTx) BatchDelete(objs []*Blog) error {
 		return nil
 	}
 
-	ids := make([]string, 0, len(objs))
+	ids := make([]interface{}, 0, len(objs))
 	for _, obj := range objs {
-		ids = append(ids, fmt.Sprint(obj.Id))
+		ids = append(ids, obj.Id)
 	}
 	return tx.DeleteByIds(ids)
 }
@@ -403,13 +478,13 @@ func (tx *_BlogMySQLTx) Delete(obj *Blog) error {
 	return tx.err
 }
 
-func (tx *_BlogMySQLTx) DeleteByIds(ids []string) error {
+func (tx *_BlogMySQLTx) DeleteByIds(ids []interface{}) error {
 	if len(ids) == 0 {
 		return nil
 	}
 
 	q := fmt.Sprintf("DELETE FROM `blogs` WHERE `id` IN (%s)",
-		strings.Join(ids, ","))
+		orm.SliceJoin(ids, ","))
 	result, err := tx.Exec(q)
 	if err != nil {
 		tx.err = err
@@ -427,33 +502,71 @@ func (tx *_BlogMySQLTx) Close() error {
 }
 
 //! tx read
-func (tx *_BlogMySQLTx) FindOne(unique Unique) (string, error) {
-	objs, err := tx.queryLimit(unique.SQLFormat(), unique.SQLLimit(), unique.SQLParams()...)
+func (tx *_BlogMySQLTx) FindOne(unique Unique) (interface{}, error) {
+	objs, err := tx.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
 		tx.err = err
-		return "", err
+		return nil, err
 	}
 	if len(objs) > 0 {
-		return fmt.Sprint(objs[0]), nil
+		return objs[0], nil
 	}
 	tx.err = fmt.Errorf("Blog find record not found")
-	return "", tx.err
+	return nil, tx.err
 }
 
-func (tx *_BlogMySQLTx) Find(index Index) ([]string, error) {
-	return tx.queryLimit(index.SQLFormat(), index.SQLLimit(), index.SQLParams()...)
+func (tx *_BlogMySQLTx) FindOneFetch(unique Unique) (*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	query := fmt.Sprintf("SELECT %s FROM `blogs` %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
+	objs, err := tx.FetchBySQL(query, unique.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0], nil
+	}
+	return nil, fmt.Errorf("none record")
 }
 
-func (tx *_BlogMySQLTx) Range(scope Range) ([]string, error) {
-	return tx.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+func (tx *_BlogMySQLTx) Find(index Index) ([]interface{}, error) {
+	return tx.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
 }
 
-func (tx *_BlogMySQLTx) RevertRange(scope Range) ([]string, error) {
+func (tx *_BlogMySQLTx) FindFetch(index Index) ([]*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	query := fmt.Sprintf("SELECT %s FROM `blogs` %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
+	return tx.FetchBySQL(query, index.SQLParams()...)
+}
+
+func (tx *_BlogMySQLTx) FindCount(index Index) (int64, error) {
+	return tx.queryCount(index.SQLFormat(false), index.SQLParams()...)
+}
+
+func (tx *_BlogMySQLTx) Range(scope Range) ([]interface{}, error) {
+	return tx.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
+}
+
+func (tx *_BlogMySQLTx) RangeFetch(scope Range) ([]*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	query := fmt.Sprintf("SELECT %s FROM `blogs` %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
+	return tx.FetchBySQL(query, scope.SQLParams()...)
+}
+
+func (tx *_BlogMySQLTx) RangeCount(scope Range) (int64, error) {
+	return tx.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
+}
+
+func (tx *_BlogMySQLTx) RangeRevert(scope Range) ([]interface{}, error) {
 	scope.Revert(true)
-	return tx.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+	return tx.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (tx *_BlogMySQLTx) queryLimit(where string, limit int, args ...interface{}) (results []string, err error) {
+func (tx *_BlogMySQLTx) RangeRevertFetch(scope Range) ([]*Blog, error) {
+	scope.Revert(true)
+	return tx.RangeFetch(scope)
+}
+
+func (tx *_BlogMySQLTx) queryLimit(where string, limit int, args ...interface{}) (results []interface{}, err error) {
 	query := fmt.Sprintf("SELECT `id` FROM `blogs`")
 	if where != "" {
 		query += " WHERE "
@@ -479,13 +592,39 @@ func (tx *_BlogMySQLTx) queryLimit(where string, limit int, args ...interface{})
 			tx.err = err
 			return nil, err
 		}
-		results = append(results, fmt.Sprint(result))
+		results = append(results, result)
 	}
 	if err := rows.Err(); err != nil {
 		tx.err = err
 		return nil, fmt.Errorf("Blog query limit result error: %v", err)
 	}
 	return
+}
+
+func (tx *_BlogMySQLTx) queryCount(where string, args ...interface{}) (int64, error) {
+	query := fmt.Sprintf("SELECT count(`id`) FROM `blogs`")
+	if where != "" {
+		query += " WHERE "
+		query += where
+	}
+
+	rows, err := tx.Query(query, args...)
+	if err != nil {
+		tx.err = err
+		return 0, fmt.Errorf("Blog query limit error: %v", err)
+	}
+	defer rows.Close()
+
+	var count int64
+	for rows.Next() {
+		if err = rows.Scan(&count); err != nil {
+			tx.err = err
+			return 0, err
+		}
+		break
+	}
+
+	return count, nil
 }
 
 func (tx *_BlogMySQLTx) Fetch(id interface{}) (*Blog, error) {
@@ -501,13 +640,13 @@ func (tx *_BlogMySQLTx) Fetch(id interface{}) (*Blog, error) {
 	return nil, fmt.Errorf("Blog fetch record not found")
 }
 
-func (tx *_BlogMySQLTx) FetchByIds(ids []string) ([]*Blog, error) {
+func (tx *_BlogMySQLTx) FetchByIds(ids []interface{}) ([]*Blog, error) {
 	if len(ids) == 0 {
 		return []*Blog{}, nil
 	}
 
 	obj := BlogMgr.NewBlog()
-	query := fmt.Sprintf("SELECT %s FROM `blogs` WHERE `Id` IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join(ids, ","))
+	query := fmt.Sprintf("SELECT %s FROM `blogs` WHERE `Id` IN (%s)", strings.Join(obj.GetColumns(), ","), orm.SliceJoin(ids, ","))
 	return tx.FetchBySQL(query)
 }
 

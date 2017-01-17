@@ -7,6 +7,7 @@ User:
       flags: [primary, range]
     - Name: string
     - Mailbox: string
+      comment: 邮箱
     - Sex: bool
       flags: [index]
     - Age: int32
@@ -31,6 +32,7 @@ UserBaseInfo:
       flags: [primary]
     - Name: string
       flags: [index]
+      size: 20
     - Mailbox: string
     - Password: string
     - Sex: bool
@@ -44,6 +46,14 @@ UserLocation:
     valuetype: int32
     modeltype: User
   importSQL: "SELECT 'all',`longitude`,`latitude`,`id` FROM users"  
+
+SexUserLocation:
+  dbs: [redis, mysql]
+  relation:
+    storetype: geo
+    valuetype: int32
+    modeltype: User
+  importSQL: "SELECT `sex`,`longitude`,`latitude`,`id` FROM users"  
 
 UserId:
   dbs: [redis, mysql]

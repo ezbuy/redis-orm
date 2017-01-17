@@ -3,7 +3,7 @@
 import "github.com/ezbuy/redis-orm/orm"
 
 type SQL interface{
-	SQLFormat() string
+	SQLFormat(limit bool) string
 	SQLParams() []interface{}
 	SQLLimit() int
 	Offset(n int)
@@ -42,14 +42,16 @@ type Range interface{
 
 type RangeRelation interface {
 	Range(key string, start, end int64) ([]string, error)
-	RevertRange(key string, start, end int64) ([]string, error)
+	RangeRevert(key string, start, end int64) ([]string, error)
 }
 
 type Finder interface{
-	FindOne(unique Unique) (string, error)
-	Find(index Index) ([]string, error)
-	Range(scope Range) ([]string, error)
-	RevertRange(scope Range) ([]string, error)
+	FindOne(unique Unique) (interface{}, error)
+	Find(index Index) ([]interface{}, error)
+	FindCount(index Index) (int64, error)
+	Range(scope Range) ([]interface{}, error)
+	RangeCount(scope Range) (int64, error)
+	RangeRevert(scope Range) ([]interface{}, error)
 }
 
 type DBFetcher interface {
@@ -90,18 +92,17 @@ func (rr *ReferenceResult) Limit(n int) *ReferenceResult {
 	return rr
 }
 
-func (rr *ReferenceResult) Result() ([]string, error){
+func (rr *ReferenceResult) Result() ([]interface{}, error){
 	return rr.set.Values(rr.times, rr.offset, rr.limit), rr.err
 }
 
-func (rr *ReferenceResult) Values() []string {
+func (rr *ReferenceResult) Values() []interface{} {
 	return rr.set.Values(rr.times, rr.offset, rr.limit)
 }
 
-func (rr *ReferenceResult) Unions() []string {
+func (rr *ReferenceResult) Unions() []interface{} {
 	return rr.set.Values(0, rr.offset, rr.limit)
 }
-
 
 func (rr *ReferenceResult) Err() error{
 	return rr.err
@@ -120,7 +121,7 @@ func (rr *ReferenceResult) FindOne(unique Unique) *ReferenceResult {
 func (rr *ReferenceResult) Find(index Index) *ReferenceResult {
 	rr.times = rr.times + 1
 	if strs, err := rr.db.Find(index); err == nil {
-		rr.set.Add(1, strs...)
+		rr.set.Add(strs...)
 	} else {
 		rr.err = err
 	}
@@ -130,17 +131,17 @@ func (rr *ReferenceResult) Find(index Index) *ReferenceResult {
 func (rr *ReferenceResult) Range(scope Range) *ReferenceResult {
 	rr.times = rr.times + 1
 	if strs, err := rr.db.Range(scope); err == nil {
-		rr.set.SortAdd(1, strs...)
+		rr.set.SortAdd(rr.times, strs...)
 	} else {
 		rr.err = err
 	}
 	return rr	
 }
 
-func (rr *ReferenceResult) RevertRange(scope Range) *ReferenceResult {
+func (rr *ReferenceResult) RangeRevert(scope Range) *ReferenceResult {
 	rr.times = rr.times + 1
-	if strs, err := rr.db.RevertRange(scope); err == nil {
-		rr.set.SortAdd(1, strs...)
+	if strs, err := rr.db.RangeRevert(scope); err == nil {
+		rr.set.SortAdd(rr.times, strs...)
 	} else {
 		rr.err = err
 	}

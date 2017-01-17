@@ -27,7 +27,7 @@ model.MySQLSetup(cf)
 model.UserMySQLMgr().FindOne(unique)
 model.UserMySQLMgr().Find(index)
 model.UserMySQLMgr().Range(scope)
-model.UserMySQLMgr().RevertRange(scope)
+model.UserMySQLMgr().RangeRevert(scope)
 
 //! fetch object 
 model.UserMySQLMgr().Fetch(id string) (*User, error)
@@ -40,11 +40,15 @@ model.RedisSetup(cf)
 model.UserRedisMgr().FindOne(unique)
 model.UserRedisMgr().Find(index)
 model.UserRedisMgr().Range(scope)
-model.UserRedisMgr().RevertRange(scope)
+model.UserRedisMgr().RangeRevert(scope)
 
 //! fetch object 
 model.UserRedisMgr().Fetch(id string) (*User, error)
 model.UserRedisMgr().FetchByIds(ids []string) ([]*User, error)
+
+# query in chain
+model.UserMgr.MySQL().Find(index).Range(scope).Result()
+model.UserMgr.Redis().Find(index).Range(scope).Result()
 
 ````
 
@@ -65,7 +69,7 @@ tx.Delete(obj)
 tx.FindOne(unique)
 tx.Find(index)
 tx.Range(scope)
-tx.RevertRange(scope)
+tx.RangeRevert(scope)
 
 tx.Fetch(id string) (*User, error)
 tx.FetchByIds(ids []string) ([]*User, error)

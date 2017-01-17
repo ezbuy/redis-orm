@@ -15,6 +15,10 @@ build:
 install:
 	go install
 
+sql:
+	go install	
+	redis-orm sql -i ./example/yaml/ -o ./example/script/
+
 test:
 	go install
 	redis-orm code -i ./example/yaml/ -o ./example/model/

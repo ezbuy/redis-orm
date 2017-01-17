@@ -49,20 +49,23 @@ func UserIdRedisMgr(stores ...*orm.RedisStore) *_UserIdRedisMgr {
 	return &_UserIdRedisMgr{_redis_store}
 }
 
-//! pipeline write
+func (m *_UserIdRedisMgr) NewUserId(key string) *UserId {
+	return &UserId{
+		Key: key,
+	}
+}
+
+//! pipeline
 type _UserIdRedisPipeline struct {
 	*redis.Pipeline
 	Err error
 }
 
-func (m *_UserIdRedisMgr) BeginPipeline() *_UserIdRedisPipeline {
-	return &_UserIdRedisPipeline{m.Pipeline(), nil}
-}
-
-func (m *_UserIdRedisMgr) NewUserId(key string) *UserId {
-	return &UserId{
-		Key: key,
+func (m *_UserIdRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_UserIdRedisPipeline {
+	if len(pipes) > 0 {
+		return &_UserIdRedisPipeline{pipes[0], nil}
 	}
+	return &_UserIdRedisPipeline{m.Pipeline(), nil}
 }
 
 //! redis relation list

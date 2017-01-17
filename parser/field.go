@@ -29,6 +29,8 @@ var (
 type Field struct {
 	Name    string
 	Type    string
+	sqlType string
+	Size    int
 	Flags   set.Set
 	Attrs   map[string]string
 	Comment string
@@ -47,6 +49,12 @@ var SupportedFieldTypes = map[string]string{
 	"int8":      "int8",
 	"int16":     "int16",
 	"int32":     "int32",
+	"int64":     "int64",
+	"uint":      "uint32",
+	"uint8":     "uint8",
+	"uint16":    "uint16",
+	"uint32":    "uint32",
+	"uint64":    "uint64",
 	"float32":   "float32",
 	"float64":   "float64",
 	"string":    "string",
@@ -110,11 +118,37 @@ func (f *Field) IsFullText() bool {
 
 func (f *Field) IsNumber() bool {
 	if transform := f.GetTransform(); transform != nil {
-		if strings.HasPrefix(transform.TypeOrigin, "int") || strings.HasPrefix(transform.TypeOrigin, "float") {
+		if strings.HasPrefix(transform.TypeOrigin, "uint") ||
+			strings.HasPrefix(transform.TypeOrigin, "int") ||
+			strings.HasPrefix(transform.TypeOrigin, "bool") ||
+			strings.HasPrefix(transform.TypeOrigin, "float") {
 			return true
 		}
 	}
-	if strings.HasPrefix(f.Type, "int") || strings.HasPrefix(f.Type, "float") {
+	if strings.HasPrefix(f.Type, "uint") ||
+		strings.HasPrefix(f.Type, "int") ||
+		strings.HasPrefix(f.Type, "bool") ||
+		strings.HasPrefix(f.Type, "float") {
+		return true
+	}
+	return false
+}
+
+func (f *Field) IsString() bool {
+	if transform := f.GetTransform(); transform != nil {
+		if strings.HasPrefix(transform.TypeOrigin, "string") {
+			return true
+		}
+	}
+	if strings.HasPrefix(f.Type, "string") {
+		return true
+	}
+	return false
+}
+
+func (f *Field) IsTime() bool {
+	switch f.Type {
+	case "datetime", "timestamp", "timeint":
 		return true
 	}
 	return false
@@ -123,8 +157,7 @@ func (f *Field) IsNumber() bool {
 func (f *Field) HasIndex() bool {
 	return f.Flags.Contains("unique") ||
 		f.Flags.Contains("index") ||
-		f.Flags.Contains("range") ||
-		f.Flags.Contains("order")
+		f.Flags.Contains("range")
 }
 
 func (f *Field) GetType() string {
@@ -295,6 +328,10 @@ func (f *Field) Read(data map[interface{}]interface{}) error {
 		}
 
 		switch key {
+		case "size":
+			f.Size = v.(int)
+		case "sqltype":
+			f.sqlType = v.(string)
 		case "comment":
 			f.Comment = v.(string)
 		case "attrs":
@@ -304,7 +341,6 @@ func (f *Field) Read(data map[interface{}]interface{}) error {
 			}
 			f.Attrs = attrs
 		case "flags":
-
 			for _, flag := range v.([]interface{}) {
 				f.Flags.Add(flag.(string))
 			}
@@ -328,4 +364,118 @@ func (f *Field) Read(data map[interface{}]interface{}) error {
 		f.Obj.Ranges = append(f.Obj.Ranges, index)
 	}
 	return nil
+}
+
+//! field SQL script functions
+func (f *Field) SQLColumn(driver string) string {
+	switch strings.ToLower(driver) {
+	case "mysql":
+		columns := make([]string, 0, 6)
+		columns = append(columns, f.SQLName(driver))
+		columns = append(columns, f.SQLType(driver))
+		columns = append(columns, f.SQLNull(driver))
+		if !f.IsPrimary() {
+			columns = append(columns, f.SQLDefault(driver))
+		}
+		if f.IsPrimary() {
+			columns = append(columns, "PRIMARY KEY")
+		}
+		if f.IsAutoIncrement() {
+			columns = append(columns, "AUTO_INCREMENT")
+		}
+		if f.Comment != "" {
+			columns = append(columns, "COMMENT", "'"+f.Comment+"'")
+		}
+		return strings.Join(columns, " ")
+	}
+	return ""
+}
+func (f *Field) SQLName(driver string) string {
+	switch strings.ToLower(driver) {
+	case "mysql":
+		return "`" + Camel2Name(f.Name) + "`"
+	}
+	return ""
+}
+
+func (f *Field) SQLType(driver string) string {
+	if f.sqlType != "" {
+		return strings.ToUpper(f.sqlType)
+	}
+	switch strings.ToLower(driver) {
+	case "mysql":
+		if f.IsNumber() {
+			switch f.GetType() {
+			case "bool":
+				return "TINYINT(1) UNSIGNED"
+			case "uint8":
+				return "SMALLINT UNSIGNED"
+			case "uint16":
+				return "MEDIUMINT UNSIGNED"
+			case "uint32":
+				return "INT(11) UNSIGNED"
+			case "uint64":
+				return "BIGINT UNSIGNED"
+			case "int8":
+				return "SMALLINT"
+			case "int16":
+				return "MEDIUMINT"
+			case "int32", "int":
+				return "INT(11)"
+			case "int64":
+				return "BIGINT(20)"
+			case "float32", "float64":
+				return "FLOAT"
+			case "time.Time", "*time.Time":
+				return "BIGINT(20)"
+			}
+		}
+		if f.IsString() {
+			switch f.Type {
+			case "datetime":
+				return "DATETIME"
+			case "timestamp", "timeint":
+				return "TIMESTAMP"
+			}
+			if f.Size == 0 {
+				return "VARCHAR(100)"
+			}
+			return fmt.Sprintf("VARCHAR(%d)", f.Size)
+		}
+		return f.GetType()
+	}
+	return ""
+}
+
+func (f *Field) SQLNull(driver string) string {
+	switch strings.ToLower(driver) {
+	case "mysql":
+		if f.IsNullable() {
+			return "NULL"
+		}
+		return "NOT NULL"
+	}
+	return ""
+}
+
+func (f *Field) SQLDefault(driver string) string {
+	switch strings.ToLower(driver) {
+	case "mysql":
+		if f.IsTime() {
+			if f.IsString() {
+				return "DEFAULT CURRENT_TIMESTAMP"
+			}
+			if f.IsNumber() {
+				return "DEFAULT '0'"
+			}
+		}
+		if f.IsNumber() {
+			return "DEFAULT '0'"
+		}
+		if f.IsString() {
+			return "DEFAULT ''"
+		}
+		return ""
+	}
+	return ""
 }

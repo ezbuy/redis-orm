@@ -1,0 +1,20 @@
+{{define "relation.manager"}}
+{{$relation := .}}
+type _{{$relation.Name}}RedisMgr struct {
+	*orm.RedisStore
+}
+
+func {{$relation.Name}}RedisMgr(stores ...*orm.RedisStore) *_{{$relation.Name}}RedisMgr {	
+	if len(stores) > 0 {
+		return &_{{$relation.Name}}RedisMgr{stores[0]}
+	}
+	return &_{{$relation.Name}}RedisMgr{_redis_store}
+}
+
+func (m *_{{$relation.Name}}RedisMgr) New{{$relation.Name}}(key string) *{{$relation.Name}} {
+	return &{{$relation.Name}}{
+		Key: key,
+	}
+}
+
+{{end}}

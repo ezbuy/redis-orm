@@ -108,7 +108,7 @@ func (u *MailboxPasswordOfUserUK) Key() string {
 	return fmt.Sprintf("%s", strings.Join(strs, ":"))
 }
 
-func (u *MailboxPasswordOfUserUK) SQLFormat() string {
+func (u *MailboxPasswordOfUserUK) SQLFormat(limit bool) string {
 	conditions := []string{
 		"mailbox = ?",
 		"password = ?",
@@ -153,11 +153,14 @@ func (u *SexOfUserIDX) Key() string {
 	return fmt.Sprintf("%s", strings.Join(strs, ":"))
 }
 
-func (u *SexOfUserIDX) SQLFormat() string {
+func (u *SexOfUserIDX) SQLFormat(limit bool) string {
 	conditions := []string{
 		"sex = ?",
 	}
-	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOffsetLimit(u.offset, u.limit))
+	if limit {
+		return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOffsetLimit(u.offset, u.limit))
+	}
+	return orm.SQLWhere(conditions)
 }
 
 func (u *SexOfUserIDX) SQLParams() []interface{} {
@@ -217,7 +220,7 @@ func (u *IdOfUserRNG) endOp() string {
 	return "<"
 }
 
-func (u *IdOfUserRNG) SQLFormat() string {
+func (u *IdOfUserRNG) SQLFormat(limit bool) string {
 	conditions := []string{}
 	if u.IdBegin != u.IdEnd {
 		if u.IdBegin != -1 {
@@ -227,7 +230,10 @@ func (u *IdOfUserRNG) SQLFormat() string {
 			conditions = append(conditions, fmt.Sprintf("id %s ?", u.endOp()))
 		}
 	}
-	return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Id", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
+	if limit {
+		return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Id", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
+	}
+	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Id", u.revert))
 }
 
 func (u *IdOfUserRNG) SQLParams() []interface{} {
@@ -330,7 +336,7 @@ func (u *AgeOfUserRNG) endOp() string {
 	return "<"
 }
 
-func (u *AgeOfUserRNG) SQLFormat() string {
+func (u *AgeOfUserRNG) SQLFormat(limit bool) string {
 	conditions := []string{}
 	if u.AgeBegin != u.AgeEnd {
 		if u.AgeBegin != -1 {
@@ -340,7 +346,10 @@ func (u *AgeOfUserRNG) SQLFormat() string {
 			conditions = append(conditions, fmt.Sprintf("age %s ?", u.endOp()))
 		}
 	}
-	return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Age", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
+	if limit {
+		return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Age", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
+	}
+	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Age", u.revert))
 }
 
 func (u *AgeOfUserRNG) SQLParams() []interface{} {
@@ -472,7 +481,7 @@ func (m *_UserMySQLMgr) FetchBySQL(sql string, args ...interface{}) (results []i
 	}
 	return
 }
-func (m *_UserMySQLMgr) Fetch(id string) (*User, error) {
+func (m *_UserMySQLMgr) Fetch(id interface{}) (*User, error) {
 	obj := UserMgr.NewUser()
 	query := fmt.Sprintf("SELECT %s FROM `users` WHERE `Id` = (%s)", strings.Join(obj.GetColumns(), ","), id)
 	objs, err := m.FetchBySQL(query)
@@ -485,13 +494,13 @@ func (m *_UserMySQLMgr) Fetch(id string) (*User, error) {
 	return nil, fmt.Errorf("User fetch record not found")
 }
 
-func (m *_UserMySQLMgr) FetchByIds(ids []string) ([]*User, error) {
+func (m *_UserMySQLMgr) FetchByIds(ids []interface{}) ([]*User, error) {
 	if len(ids) == 0 {
 		return []*User{}, nil
 	}
 
 	obj := UserMgr.NewUser()
-	query := fmt.Sprintf("SELECT %s FROM `users` WHERE `Id` IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join(ids, ","))
+	query := fmt.Sprintf("SELECT %s FROM `users` WHERE `Id` IN (%s)", strings.Join(obj.GetColumns(), ","), orm.SliceJoin(ids, ","))
 	objs, err := m.FetchBySQL(query)
 	if err != nil {
 		return nil, err
@@ -503,31 +512,85 @@ func (m *_UserMySQLMgr) FetchByIds(ids []string) ([]*User, error) {
 	return results, nil
 }
 
-func (m *_UserMySQLMgr) FindOne(unique Unique) (string, error) {
-	objs, err := m.queryLimit(unique.SQLFormat(), unique.SQLLimit(), unique.SQLParams()...)
+func (m *_UserMySQLMgr) FindOne(unique Unique) (interface{}, error) {
+	objs, err := m.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
 		return "", err
 	}
 	if len(objs) > 0 {
-		return fmt.Sprint(objs[0]), nil
+		return objs[0], nil
 	}
 	return "", fmt.Errorf("User find record not found")
 }
 
-func (m *_UserMySQLMgr) Find(index Index) ([]string, error) {
-	return m.queryLimit(index.SQLFormat(), index.SQLLimit(), index.SQLParams()...)
+func (m *_UserMySQLMgr) FindOneFetch(unique Unique) (*User, error) {
+	obj := UserMgr.NewUser()
+	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, unique.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0].(*User), nil
+	}
+	return nil, fmt.Errorf("none record")
 }
 
-func (m *_UserMySQLMgr) Range(scope Range) ([]string, error) {
-	return m.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+func (m *_UserMySQLMgr) Find(index Index) ([]interface{}, error) {
+	return m.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
 }
 
-func (m *_UserMySQLMgr) RevertRange(scope Range) ([]string, error) {
+func (m *_UserMySQLMgr) FindFetch(index Index) ([]*User, error) {
+	obj := UserMgr.NewUser()
+	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, index.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*User, 0, len(objs))
+	for _, obj := range objs {
+		results = append(results, obj.(*User))
+	}
+	return results, nil
+}
+
+func (m *_UserMySQLMgr) FindCount(index Index) (int64, error) {
+	return m.queryCount(index.SQLFormat(false), index.SQLParams()...)
+}
+
+func (m *_UserMySQLMgr) Range(scope Range) ([]interface{}, error) {
+	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
+}
+
+func (m *_UserMySQLMgr) RangeFetch(scope Range) ([]*User, error) {
+	obj := UserMgr.NewUser()
+	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, scope.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*User, 0, len(objs))
+	for _, obj := range objs {
+		results = append(results, obj.(*User))
+	}
+	return results, nil
+}
+
+func (m *_UserMySQLMgr) RangeCount(scope Range) (int64, error) {
+	return m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
+}
+
+func (m *_UserMySQLMgr) RangeRevert(scope Range) ([]interface{}, error) {
 	scope.Revert(true)
-	return m.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (m *_UserMySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []string, err error) {
+func (m *_UserMySQLMgr) RangeRevertFetch(scope Range) ([]*User, error) {
+	scope.Revert(true)
+	return m.RangeFetch(scope)
+}
+
+func (m *_UserMySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []interface{}, err error) {
 	query := fmt.Sprintf("SELECT `id` FROM `users` %s", where)
 	rows, err := m.Query(query, args...)
 	if err != nil {
@@ -546,12 +609,30 @@ func (m *_UserMySQLMgr) queryLimit(where string, limit int, args ...interface{})
 		if err = rows.Scan(&result); err != nil {
 			return nil, err
 		}
-		results = append(results, fmt.Sprint(result))
+		results = append(results, result)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("User query limit result error: %v", err)
 	}
 	return
+}
+
+func (m *_UserMySQLMgr) queryCount(where string, args ...interface{}) (int64, error) {
+	query := fmt.Sprintf("SELECT count(`id`) FROM `users` %s", where)
+	rows, err := m.Query(query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("User query count error: %v", err)
+	}
+	defer rows.Close()
+
+	var count int64
+	for rows.Next() {
+		if err = rows.Scan(&count); err != nil {
+			return 0, err
+		}
+		break
+	}
+	return count, nil
 }
 
 //! object.mysql.write
@@ -622,9 +703,9 @@ func (tx *_UserMySQLTx) BatchDelete(objs []*User) error {
 		return nil
 	}
 
-	ids := make([]string, 0, len(objs))
+	ids := make([]interface{}, 0, len(objs))
 	for _, obj := range objs {
-		ids = append(ids, fmt.Sprint(obj.Id))
+		ids = append(ids, obj.Id)
 	}
 	return tx.DeleteByIds(ids)
 }
@@ -716,13 +797,13 @@ func (tx *_UserMySQLTx) Delete(obj *User) error {
 	return tx.err
 }
 
-func (tx *_UserMySQLTx) DeleteByIds(ids []string) error {
+func (tx *_UserMySQLTx) DeleteByIds(ids []interface{}) error {
 	if len(ids) == 0 {
 		return nil
 	}
 
 	q := fmt.Sprintf("DELETE FROM `users` WHERE `id` IN (%s)",
-		strings.Join(ids, ","))
+		orm.SliceJoin(ids, ","))
 	result, err := tx.Exec(q)
 	if err != nil {
 		tx.err = err
@@ -740,33 +821,71 @@ func (tx *_UserMySQLTx) Close() error {
 }
 
 //! tx read
-func (tx *_UserMySQLTx) FindOne(unique Unique) (string, error) {
-	objs, err := tx.queryLimit(unique.SQLFormat(), unique.SQLLimit(), unique.SQLParams()...)
+func (tx *_UserMySQLTx) FindOne(unique Unique) (interface{}, error) {
+	objs, err := tx.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
 		tx.err = err
-		return "", err
+		return nil, err
 	}
 	if len(objs) > 0 {
-		return fmt.Sprint(objs[0]), nil
+		return objs[0], nil
 	}
 	tx.err = fmt.Errorf("User find record not found")
-	return "", tx.err
+	return nil, tx.err
 }
 
-func (tx *_UserMySQLTx) Find(index Index) ([]string, error) {
-	return tx.queryLimit(index.SQLFormat(), index.SQLLimit(), index.SQLParams()...)
+func (tx *_UserMySQLTx) FindOneFetch(unique Unique) (*User, error) {
+	obj := UserMgr.NewUser()
+	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
+	objs, err := tx.FetchBySQL(query, unique.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0], nil
+	}
+	return nil, fmt.Errorf("none record")
 }
 
-func (tx *_UserMySQLTx) Range(scope Range) ([]string, error) {
-	return tx.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+func (tx *_UserMySQLTx) Find(index Index) ([]interface{}, error) {
+	return tx.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
 }
 
-func (tx *_UserMySQLTx) RevertRange(scope Range) ([]string, error) {
+func (tx *_UserMySQLTx) FindFetch(index Index) ([]*User, error) {
+	obj := UserMgr.NewUser()
+	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
+	return tx.FetchBySQL(query, index.SQLParams()...)
+}
+
+func (tx *_UserMySQLTx) FindCount(index Index) (int64, error) {
+	return tx.queryCount(index.SQLFormat(false), index.SQLParams()...)
+}
+
+func (tx *_UserMySQLTx) Range(scope Range) ([]interface{}, error) {
+	return tx.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
+}
+
+func (tx *_UserMySQLTx) RangeFetch(scope Range) ([]*User, error) {
+	obj := UserMgr.NewUser()
+	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
+	return tx.FetchBySQL(query, scope.SQLParams()...)
+}
+
+func (tx *_UserMySQLTx) RangeCount(scope Range) (int64, error) {
+	return tx.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
+}
+
+func (tx *_UserMySQLTx) RangeRevert(scope Range) ([]interface{}, error) {
 	scope.Revert(true)
-	return tx.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+	return tx.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (tx *_UserMySQLTx) queryLimit(where string, limit int, args ...interface{}) (results []string, err error) {
+func (tx *_UserMySQLTx) RangeRevertFetch(scope Range) ([]*User, error) {
+	scope.Revert(true)
+	return tx.RangeFetch(scope)
+}
+
+func (tx *_UserMySQLTx) queryLimit(where string, limit int, args ...interface{}) (results []interface{}, err error) {
 	query := fmt.Sprintf("SELECT `id` FROM `users`")
 	if where != "" {
 		query += " WHERE "
@@ -792,13 +911,39 @@ func (tx *_UserMySQLTx) queryLimit(where string, limit int, args ...interface{})
 			tx.err = err
 			return nil, err
 		}
-		results = append(results, fmt.Sprint(result))
+		results = append(results, result)
 	}
 	if err := rows.Err(); err != nil {
 		tx.err = err
 		return nil, fmt.Errorf("User query limit result error: %v", err)
 	}
 	return
+}
+
+func (tx *_UserMySQLTx) queryCount(where string, args ...interface{}) (int64, error) {
+	query := fmt.Sprintf("SELECT count(`id`) FROM `users`")
+	if where != "" {
+		query += " WHERE "
+		query += where
+	}
+
+	rows, err := tx.Query(query, args...)
+	if err != nil {
+		tx.err = err
+		return 0, fmt.Errorf("User query limit error: %v", err)
+	}
+	defer rows.Close()
+
+	var count int64
+	for rows.Next() {
+		if err = rows.Scan(&count); err != nil {
+			tx.err = err
+			return 0, err
+		}
+		break
+	}
+
+	return count, nil
 }
 
 func (tx *_UserMySQLTx) Fetch(id interface{}) (*User, error) {
@@ -814,13 +959,13 @@ func (tx *_UserMySQLTx) Fetch(id interface{}) (*User, error) {
 	return nil, fmt.Errorf("User fetch record not found")
 }
 
-func (tx *_UserMySQLTx) FetchByIds(ids []string) ([]*User, error) {
+func (tx *_UserMySQLTx) FetchByIds(ids []interface{}) ([]*User, error) {
 	if len(ids) == 0 {
 		return []*User{}, nil
 	}
 
 	obj := UserMgr.NewUser()
-	query := fmt.Sprintf("SELECT %s FROM `users` WHERE `Id` IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join(ids, ","))
+	query := fmt.Sprintf("SELECT %s FROM `users` WHERE `Id` IN (%s)", strings.Join(obj.GetColumns(), ","), orm.SliceJoin(ids, ","))
 	return tx.FetchBySQL(query)
 }
 
@@ -887,21 +1032,24 @@ func NewUserRedisMgr(cf *RedisConfig) (*_UserRedisMgr, error) {
 	return &_UserRedisMgr{store}, nil
 }
 
-//! pipeline write
+//! pipeline
 type _UserRedisPipeline struct {
 	*redis.Pipeline
 	Err error
 }
 
-func (m *_UserRedisMgr) BeginPipeline() *_UserRedisPipeline {
+func (m *_UserRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_UserRedisPipeline {
+	if len(pipes) > 0 {
+		return &_UserRedisPipeline{pipes[0], nil}
+	}
 	return &_UserRedisPipeline{m.Pipeline(), nil}
 }
 
 func (m *_UserRedisMgr) Load(db DBFetcher) error {
-
 	if err := m.Clear(); err != nil {
 		return err
 	}
+
 	return m.AddBySQL(db, "SELECT `id`,`name`,`mailbox`,`sex`, `age`, `longitude`,`latitude`,`description`,`password`,`head_url`,`status`,`created_at`, `updated_at` FROM users")
 
 }
@@ -935,41 +1083,139 @@ func (m *_UserRedisMgr) DelBySQL(db DBFetcher, sql string, args ...interface{}) 
 }
 
 //! redis model read
-func (m *_UserRedisMgr) FindOne(unique Unique) (string, error) {
+func (m *_UserRedisMgr) FindOne(unique Unique) (interface{}, error) {
 	if relation := unique.UKRelation(); relation != nil {
-		return relation.FindOne(unique.Key())
+		str, err := relation.FindOne(unique.Key())
+		if err != nil {
+			return "", err
+		}
+		var val int32
+		if err := m.StringScan(str, &val); err != nil {
+			return nil, err
+		}
+		return val, nil
 	}
-	return "", nil
+	return nil, fmt.Errorf("unique none relation.")
 }
 
-func (m *_UserRedisMgr) Find(index Index) ([]string, error) {
+func (m *_UserRedisMgr) FindOneFetch(unique Unique) (*User, error) {
+	v, err := m.FindOne(unique)
+	if err != nil {
+		return nil, err
+	}
+	return m.Fetch(v)
+}
+
+func (m *_UserRedisMgr) Find(index Index) ([]interface{}, error) {
 	if relation := index.IDXRelation(); relation != nil {
-		return relation.Find(index.Key())
+		strs, err := relation.Find(index.Key())
+		if err != nil {
+			return nil, err
+		}
+		results := make([]interface{}, 0, len(strs))
+		for _, str := range strs {
+			var val int32
+			if err := m.StringScan(str, &val); err != nil {
+				return nil, err
+			}
+			results = append(results, val)
+		}
+		return results, nil
 	}
-	return nil, nil
+	return nil, fmt.Errorf("index none relation.")
 }
 
-func (m *_UserRedisMgr) Range(scope Range) ([]string, error) {
+func (m *_UserRedisMgr) FindFetch(index Index) ([]*User, error) {
+	vs, err := m.Find(index)
+	if err != nil {
+		return nil, err
+	}
+	return m.FetchByIds(vs)
+}
+
+func (m *_UserRedisMgr) FindCount(index Index) (int64, error) {
+	if relation := index.IDXRelation(); relation != nil {
+		strs, err := relation.Find(index.Key())
+		if err != nil {
+			return 0, err
+		}
+		return int64(len(strs)), nil
+	}
+	return 0, fmt.Errorf("index none relation.")
+}
+
+func (m *_UserRedisMgr) Range(scope Range) ([]interface{}, error) {
 	if relation := scope.RNGRelation(); relation != nil {
-		return relation.Range(scope.Key(), scope.Begin(), scope.End())
+		strs, err := relation.Range(scope.Key(), scope.Begin(), scope.End())
+		if err != nil {
+			return nil, err
+		}
+		results := make([]interface{}, 0, len(strs))
+		for _, str := range strs {
+			var val int32
+			if err := m.StringScan(str, &val); err != nil {
+				return nil, err
+			}
+			results = append(results, val)
+		}
+		return results, nil
 	}
-	return nil, nil
+	return nil, fmt.Errorf("range none relation.")
 }
 
-func (m *_UserRedisMgr) RevertRange(scope Range) ([]string, error) {
+func (m *_UserRedisMgr) RangeFetch(scope Range) ([]*User, error) {
+	vs, err := m.Range(scope)
+	if err != nil {
+		return nil, err
+	}
+	return m.FetchByIds(vs)
+}
+
+func (m *_UserRedisMgr) RangeCount(scope Range) (int64, error) {
+	if relation := scope.RNGRelation(); relation != nil {
+		strs, err := relation.Range(scope.Key(), scope.Begin(), scope.End())
+		if err != nil {
+			return 0, err
+		}
+		return int64(len(strs)), nil
+	}
+	return 0, fmt.Errorf("range none relation.")
+}
+
+func (m *_UserRedisMgr) RangeRevert(scope Range) ([]interface{}, error) {
 	if relation := scope.RNGRelation(); relation != nil {
 		scope.Revert(true)
-		return relation.RevertRange(scope.Key(), scope.Begin(), scope.End())
+		strs, err := relation.RangeRevert(scope.Key(), scope.Begin(), scope.End())
+		if err != nil {
+			return nil, err
+		}
+		results := make([]interface{}, 0, len(strs))
+		for _, str := range strs {
+			var val int32
+			if err := m.StringScan(str, &val); err != nil {
+				return nil, err
+			}
+			results = append(results, val)
+		}
+		return results, nil
 	}
-	return nil, nil
+	return nil, fmt.Errorf("revert range none relation.")
 }
 
-func (m *_UserRedisMgr) Fetch(id string) (*User, error) {
+func (m *_UserRedisMgr) RangeRevertFetch(scope Range) ([]*User, error) {
+	vs, err := m.RangeRevert(scope)
+	if err != nil {
+		return nil, err
+	}
+	return m.FetchByIds(vs)
+}
+
+func (m *_UserRedisMgr) Fetch(id interface{}) (*User, error) {
 	obj := UserMgr.NewUser()
 
 	pipe := m.BeginPipeline()
-	pipe.Exists(keyOfObject(obj, id))
-	pipe.HMGet(keyOfObject(obj, id), "Id", "Name", "Mailbox", "Sex", "Age", "Longitude", "Latitude", "Description", "Password", "HeadUrl", "Status", "CreatedAt", "UpdatedAt")
+	pipe.Exists(keyOfObject(obj, fmt.Sprint(id)))
+	pipe.HMGet(keyOfObject(obj, fmt.Sprint(id)), "Id", "Name", "Mailbox", "Sex", "Age", "Longitude", "Latitude", "Description", "Password", "HeadUrl", "Status", "CreatedAt", "UpdatedAt")
 	cmds, err := pipe.Exec()
 	if err != nil {
 		return nil, err
@@ -977,7 +1223,7 @@ func (m *_UserRedisMgr) Fetch(id string) (*User, error) {
 
 	if b, err := cmds[0].(*redis.BoolCmd).Result(); err == nil {
 		if !b {
-			return nil, fmt.Errorf("User Id:(%s) not exist", id)
+			return nil, fmt.Errorf("User Id:(%v) not exist", id)
 		}
 	}
 
@@ -1031,13 +1277,13 @@ func (m *_UserRedisMgr) Fetch(id string) (*User, error) {
 	return obj, nil
 }
 
-func (m *_UserRedisMgr) FetchByIds(ids []string) ([]*User, error) {
+func (m *_UserRedisMgr) FetchByIds(ids []interface{}) ([]*User, error) {
 	objs := make([]*User, 0, len(ids))
 	pipe := m.BeginPipeline()
 	obj := UserMgr.NewUser()
 	for _, id := range ids {
-		pipe.Exists(keyOfObject(obj, id))
-		pipe.HMGet(keyOfObject(obj, id), "Id", "Name", "Mailbox", "Sex", "Age", "Longitude", "Latitude", "Description", "Password", "HeadUrl", "Status", "CreatedAt", "UpdatedAt")
+		pipe.Exists(keyOfObject(obj, fmt.Sprint(id)))
+		pipe.HMGet(keyOfObject(obj, fmt.Sprint(id)), "Id", "Name", "Mailbox", "Sex", "Age", "Longitude", "Latitude", "Description", "Password", "HeadUrl", "Status", "CreatedAt", "UpdatedAt")
 	}
 	cmds, err := pipe.Exec()
 	if err != nil {
@@ -1046,7 +1292,7 @@ func (m *_UserRedisMgr) FetchByIds(ids []string) ([]*User, error) {
 	for i := 0; i < len(ids); i++ {
 		if b, err := cmds[2*i].(*redis.BoolCmd).Result(); err == nil {
 			if !b {
-				return nil, fmt.Errorf("User Id:(%s) not exist", ids[i])
+				return nil, fmt.Errorf("User Id:(%v) not exist", ids[i])
 			}
 		}
 
@@ -1120,7 +1366,7 @@ func (m *_UserRedisMgr) Delete(obj *User) error {
 		"Password",
 		fmt.Sprint(obj.Password),
 	}
-	uk_mgr_0 := MailboxPasswordOfUserUKRelationRedisMgr(m.RedisStore)
+	uk_mgr_0 := MailboxPasswordOfUserUKRelationRedisMgr()
 	if err := uk_mgr_0.PairRem(strings.Join(uk_key_0, ":")); err != nil {
 		return err
 	}
@@ -1130,7 +1376,7 @@ func (m *_UserRedisMgr) Delete(obj *User) error {
 		"Sex",
 		fmt.Sprint(obj.Sex),
 	}
-	idx_mgr_0 := SexOfUserIDXRelationRedisMgr(m.RedisStore)
+	idx_mgr_0 := SexOfUserIDXRelationRedisMgr()
 	idx_rel_0 := idx_mgr_0.NewSexOfUserIDXRelation(strings.Join(idx_key_0, ":"))
 	idx_rel_0.Value = obj.Id
 	if err := idx_mgr_0.SetRem(idx_rel_0); err != nil {
@@ -1141,7 +1387,7 @@ func (m *_UserRedisMgr) Delete(obj *User) error {
 	rg_key_0 := []string{
 		"Id",
 	}
-	rg_mgr_0 := IdOfUserRNGRelationRedisMgr(m.RedisStore)
+	rg_mgr_0 := IdOfUserRNGRelationRedisMgr()
 	rg_rel_0 := rg_mgr_0.NewIdOfUserRNGRelation(strings.Join(rg_key_0, ":"))
 	score_rg_0, err := orm.ToFloat64(obj.Id)
 	if err != nil {
@@ -1155,7 +1401,7 @@ func (m *_UserRedisMgr) Delete(obj *User) error {
 	rg_key_1 := []string{
 		"Age",
 	}
-	rg_mgr_1 := AgeOfUserRNGRelationRedisMgr(m.RedisStore)
+	rg_mgr_1 := AgeOfUserRNGRelationRedisMgr()
 	rg_rel_1 := rg_mgr_1.NewAgeOfUserRNGRelation(strings.Join(rg_key_1, ":"))
 	score_rg_1, err := orm.ToFloat64(obj.Age)
 	if err != nil {
@@ -1186,9 +1432,6 @@ func (m *_UserRedisMgr) Save(obj *User) error {
 	pipe.HSet(keyOfObject(obj, fmt.Sprint(obj.Id)), "Status", fmt.Sprint(obj.Status))
 	pipe.HSet(keyOfObject(obj, fmt.Sprint(obj.Id)), "CreatedAt", fmt.Sprint(orm.TimeFormat(obj.CreatedAt)))
 	pipe.HSet(keyOfObject(obj, fmt.Sprint(obj.Id)), "UpdatedAt", fmt.Sprint(orm.TimeFormat(obj.UpdatedAt)))
-	if _, err := pipe.Exec(); err != nil {
-		return err
-	}
 
 	//! uniques
 	uk_key_0 := []string{
@@ -1197,8 +1440,8 @@ func (m *_UserRedisMgr) Save(obj *User) error {
 		"Password",
 		fmt.Sprint(obj.Password),
 	}
-	uk_mgr_0 := MailboxPasswordOfUserUKRelationRedisMgr(m.RedisStore)
-	uk_rel_0 := uk_mgr_0.NewMailboxPasswordOfUserUKRelation(strings.Join(uk_key_0, ":"))
+	uk_mgr_0 := MailboxPasswordOfUserUKRelationRedisMgr().BeginPipeline(pipe.Pipeline)
+	uk_rel_0 := MailboxPasswordOfUserUKRelationRedisMgr().NewMailboxPasswordOfUserUKRelation(strings.Join(uk_key_0, ":"))
 	uk_rel_0.Value = obj.Id
 	if err := uk_mgr_0.PairAdd(uk_rel_0); err != nil {
 		return err
@@ -1209,7 +1452,7 @@ func (m *_UserRedisMgr) Save(obj *User) error {
 		"Sex",
 		fmt.Sprint(obj.Sex),
 	}
-	idx_mgr_0 := SexOfUserIDXRelationRedisMgr(m.RedisStore)
+	idx_mgr_0 := SexOfUserIDXRelationRedisMgr()
 	idx_rel_0 := idx_mgr_0.NewSexOfUserIDXRelation(strings.Join(idx_key_0, ":"))
 	idx_rel_0.Value = obj.Id
 	if err := idx_mgr_0.SetAdd(idx_rel_0); err != nil {
@@ -1220,7 +1463,7 @@ func (m *_UserRedisMgr) Save(obj *User) error {
 	rg_key_0 := []string{
 		"Id",
 	}
-	rg_mgr_0 := IdOfUserRNGRelationRedisMgr(m.RedisStore)
+	rg_mgr_0 := IdOfUserRNGRelationRedisMgr()
 	rg_rel_0 := rg_mgr_0.NewIdOfUserRNGRelation(strings.Join(rg_key_0, ":"))
 	score_rg_0, err := orm.ToFloat64(obj.Id)
 	if err != nil {
@@ -1234,7 +1477,7 @@ func (m *_UserRedisMgr) Save(obj *User) error {
 	rg_key_1 := []string{
 		"Age",
 	}
-	rg_mgr_1 := AgeOfUserRNGRelationRedisMgr(m.RedisStore)
+	rg_mgr_1 := AgeOfUserRNGRelationRedisMgr()
 	rg_rel_1 := rg_mgr_1.NewAgeOfUserRNGRelation(strings.Join(rg_key_1, ":"))
 	score_rg_1, err := orm.ToFloat64(obj.Age)
 	if err != nil {
@@ -1246,6 +1489,9 @@ func (m *_UserRedisMgr) Save(obj *User) error {
 		return err
 	}
 
+	if _, err := pipe.Exec(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -1307,25 +1553,32 @@ func MailboxPasswordOfUserUKRelationRedisMgr(stores ...*orm.RedisStore) *_Mailbo
 	return &_MailboxPasswordOfUserUKRelationRedisMgr{_redis_store}
 }
 
-//! pipeline write
-type _MailboxPasswordOfUserUKRelationRedisPipeline struct {
-	*redis.Pipeline
-	Err error
-}
-
-func (m *_MailboxPasswordOfUserUKRelationRedisMgr) BeginPipeline() *_MailboxPasswordOfUserUKRelationRedisPipeline {
-	return &_MailboxPasswordOfUserUKRelationRedisPipeline{m.Pipeline(), nil}
-}
-
 func (m *_MailboxPasswordOfUserUKRelationRedisMgr) NewMailboxPasswordOfUserUKRelation(key string) *MailboxPasswordOfUserUKRelation {
 	return &MailboxPasswordOfUserUKRelation{
 		Key: key,
 	}
 }
 
+//! pipeline
+type _MailboxPasswordOfUserUKRelationRedisPipeline struct {
+	*redis.Pipeline
+	Err error
+}
+
+func (m *_MailboxPasswordOfUserUKRelationRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_MailboxPasswordOfUserUKRelationRedisPipeline {
+	if len(pipes) > 0 {
+		return &_MailboxPasswordOfUserUKRelationRedisPipeline{pipes[0], nil}
+	}
+	return &_MailboxPasswordOfUserUKRelationRedisPipeline{m.Pipeline(), nil}
+}
+
 //! redis relation pair
 func (m *_MailboxPasswordOfUserUKRelationRedisMgr) PairAdd(obj *MailboxPasswordOfUserUKRelation) error {
 	return m.Set(pairOfClass("User", obj.GetClassName(), obj.Key), obj.Value, 0).Err()
+}
+
+func (pipe *_MailboxPasswordOfUserUKRelationRedisPipeline) PairAdd(obj *MailboxPasswordOfUserUKRelation) error {
+	return pipe.Set(pairOfClass("User", obj.GetClassName(), obj.Key), obj.Value, 0).Err()
 }
 
 func (m *_MailboxPasswordOfUserUKRelationRedisMgr) PairGet(key string) (*MailboxPasswordOfUserUKRelation, error) {
@@ -1343,6 +1596,10 @@ func (m *_MailboxPasswordOfUserUKRelationRedisMgr) PairGet(key string) (*Mailbox
 
 func (m *_MailboxPasswordOfUserUKRelationRedisMgr) PairRem(key string) error {
 	return m.Del(pairOfClass("User", "MailboxPasswordOfUserUKRelation", key)).Err()
+}
+
+func (pipe *_MailboxPasswordOfUserUKRelationRedisPipeline) PairRem(key string) error {
+	return pipe.Del(pairOfClass("User", "MailboxPasswordOfUserUKRelation", key)).Err()
 }
 
 func (m *_MailboxPasswordOfUserUKRelationRedisMgr) FindOne(key string) (string, error) {
@@ -1393,20 +1650,23 @@ func SexOfUserIDXRelationRedisMgr(stores ...*orm.RedisStore) *_SexOfUserIDXRelat
 	return &_SexOfUserIDXRelationRedisMgr{_redis_store}
 }
 
-//! pipeline write
+func (m *_SexOfUserIDXRelationRedisMgr) NewSexOfUserIDXRelation(key string) *SexOfUserIDXRelation {
+	return &SexOfUserIDXRelation{
+		Key: key,
+	}
+}
+
+//! pipeline
 type _SexOfUserIDXRelationRedisPipeline struct {
 	*redis.Pipeline
 	Err error
 }
 
-func (m *_SexOfUserIDXRelationRedisMgr) BeginPipeline() *_SexOfUserIDXRelationRedisPipeline {
-	return &_SexOfUserIDXRelationRedisPipeline{m.Pipeline(), nil}
-}
-
-func (m *_SexOfUserIDXRelationRedisMgr) NewSexOfUserIDXRelation(key string) *SexOfUserIDXRelation {
-	return &SexOfUserIDXRelation{
-		Key: key,
+func (m *_SexOfUserIDXRelationRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_SexOfUserIDXRelationRedisPipeline {
+	if len(pipes) > 0 {
+		return &_SexOfUserIDXRelationRedisPipeline{pipes[0], nil}
 	}
+	return &_SexOfUserIDXRelationRedisPipeline{m.Pipeline(), nil}
 }
 
 //! redis relation pair
@@ -1488,20 +1748,23 @@ func IdOfUserRNGRelationRedisMgr(stores ...*orm.RedisStore) *_IdOfUserRNGRelatio
 	return &_IdOfUserRNGRelationRedisMgr{_redis_store}
 }
 
-//! pipeline write
+func (m *_IdOfUserRNGRelationRedisMgr) NewIdOfUserRNGRelation(key string) *IdOfUserRNGRelation {
+	return &IdOfUserRNGRelation{
+		Key: key,
+	}
+}
+
+//! pipeline
 type _IdOfUserRNGRelationRedisPipeline struct {
 	*redis.Pipeline
 	Err error
 }
 
-func (m *_IdOfUserRNGRelationRedisMgr) BeginPipeline() *_IdOfUserRNGRelationRedisPipeline {
-	return &_IdOfUserRNGRelationRedisPipeline{m.Pipeline(), nil}
-}
-
-func (m *_IdOfUserRNGRelationRedisMgr) NewIdOfUserRNGRelation(key string) *IdOfUserRNGRelation {
-	return &IdOfUserRNGRelation{
-		Key: key,
+func (m *_IdOfUserRNGRelationRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_IdOfUserRNGRelationRedisPipeline {
+	if len(pipes) > 0 {
+		return &_IdOfUserRNGRelationRedisPipeline{pipes[0], nil}
 	}
+	return &_IdOfUserRNGRelationRedisPipeline{m.Pipeline(), nil}
 }
 
 //! redis relation zset
@@ -1555,7 +1818,7 @@ func (m *_IdOfUserRNGRelationRedisMgr) Range(key string, min, max int64) ([]stri
 	return m.ZRange(zsetOfClass("User", "IdOfUserRNGRelation", key), min, max).Result()
 }
 
-func (m *_IdOfUserRNGRelationRedisMgr) RevertRange(key string, min, max int64) ([]string, error) {
+func (m *_IdOfUserRNGRelationRedisMgr) RangeRevert(key string, min, max int64) ([]string, error) {
 	return m.ZRevRange(zsetOfClass("User", "IdOfUserRNGRelation", key), min, max).Result()
 }
 
@@ -1602,20 +1865,23 @@ func AgeOfUserRNGRelationRedisMgr(stores ...*orm.RedisStore) *_AgeOfUserRNGRelat
 	return &_AgeOfUserRNGRelationRedisMgr{_redis_store}
 }
 
-//! pipeline write
+func (m *_AgeOfUserRNGRelationRedisMgr) NewAgeOfUserRNGRelation(key string) *AgeOfUserRNGRelation {
+	return &AgeOfUserRNGRelation{
+		Key: key,
+	}
+}
+
+//! pipeline
 type _AgeOfUserRNGRelationRedisPipeline struct {
 	*redis.Pipeline
 	Err error
 }
 
-func (m *_AgeOfUserRNGRelationRedisMgr) BeginPipeline() *_AgeOfUserRNGRelationRedisPipeline {
-	return &_AgeOfUserRNGRelationRedisPipeline{m.Pipeline(), nil}
-}
-
-func (m *_AgeOfUserRNGRelationRedisMgr) NewAgeOfUserRNGRelation(key string) *AgeOfUserRNGRelation {
-	return &AgeOfUserRNGRelation{
-		Key: key,
+func (m *_AgeOfUserRNGRelationRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_AgeOfUserRNGRelationRedisPipeline {
+	if len(pipes) > 0 {
+		return &_AgeOfUserRNGRelationRedisPipeline{pipes[0], nil}
 	}
+	return &_AgeOfUserRNGRelationRedisPipeline{m.Pipeline(), nil}
 }
 
 //! redis relation zset
@@ -1669,7 +1935,7 @@ func (m *_AgeOfUserRNGRelationRedisMgr) Range(key string, min, max int64) ([]str
 	return m.ZRange(zsetOfClass("User", "AgeOfUserRNGRelation", key), min, max).Result()
 }
 
-func (m *_AgeOfUserRNGRelationRedisMgr) RevertRange(key string, min, max int64) ([]string, error) {
+func (m *_AgeOfUserRNGRelationRedisMgr) RangeRevert(key string, min, max int64) ([]string, error) {
 	return m.ZRevRange(zsetOfClass("User", "AgeOfUserRNGRelation", key), min, max).Result()
 }
 

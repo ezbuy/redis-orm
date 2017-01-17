@@ -6,6 +6,10 @@ func (m *_{{$relation.Name}}RedisMgr) PairAdd(obj *{{$relation.Name}}) error {
 	return m.Set(pairOfClass("{{$relation.Obj.Name}}", obj.GetClassName(), obj.Key), obj.Value, 0).Err()
 }
 
+func (pipe *_{{$relation.Name}}RedisPipeline) PairAdd(obj *{{$relation.Name}}) error {
+	return pipe.Set(pairOfClass("{{$relation.Obj.Name}}", obj.GetClassName(), obj.Key), obj.Value, 0).Err()
+}
+
 func (m *_{{$relation.Name}}RedisMgr) PairGet(key string) (*{{$relation.Name}}, error) {
 	str, err := m.Get(pairOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Result()
 	if err != nil {
@@ -29,6 +33,10 @@ func (m *_{{$relation.Name}}RedisMgr) PairGet(key string) (*{{$relation.Name}}, 
 
 func (m *_{{$relation.Name}}RedisMgr) PairRem(key string) error {
 	return m.Del(pairOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Err()
+}
+
+func (pipe *_{{$relation.Name}}RedisPipeline) PairRem(key string) error {
+	return pipe.Del(pairOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Err()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) FindOne(key string) (string, error) {

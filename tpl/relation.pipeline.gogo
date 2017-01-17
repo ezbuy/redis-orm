@@ -1,0 +1,15 @@
+{{define "relation.pipeline"}}
+{{$relation := .}}
+//! pipeline 
+type _{{$relation.Name}}RedisPipeline struct {
+	*redis.Pipeline
+	Err error
+}
+
+func (m *_{{$relation.Name}}RedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_{{$relation.Name}}RedisPipeline {
+	if len(pipes) > 0 {
+		return &_{{$relation.Name}}RedisPipeline{pipes[0], nil}	
+	}
+	return &_{{$relation.Name}}RedisPipeline{m.Pipeline(), nil}
+}
+{{end}}
