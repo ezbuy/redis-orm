@@ -82,11 +82,14 @@ func (u *UserIdOfBlogIDX) Key() string {
 	return fmt.Sprintf("%s", strings.Join(strs, ":"))
 }
 
-func (u *UserIdOfBlogIDX) SQLFormat() string {
+func (u *UserIdOfBlogIDX) SQLFormat(limit bool) string {
 	conditions := []string{
 		"user_id = ?",
 	}
-	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOffsetLimit(u.offset, u.limit))
+	if limit {
+		return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOffsetLimit(u.offset, u.limit))
+	}
+	return orm.SQLWhere(conditions)
 }
 
 func (u *UserIdOfBlogIDX) SQLParams() []interface{} {
@@ -201,7 +204,7 @@ func (m *_BlogMySQLMgr) FetchByIds(ids []interface{}) ([]*Blog, error) {
 }
 
 func (m *_BlogMySQLMgr) FindOne(unique Unique) (interface{}, error) {
-	objs, err := m.queryLimit(unique.SQLFormat(), unique.SQLLimit(), unique.SQLParams()...)
+	objs, err := m.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
 		return "", err
 	}
@@ -212,16 +215,24 @@ func (m *_BlogMySQLMgr) FindOne(unique Unique) (interface{}, error) {
 }
 
 func (m *_BlogMySQLMgr) Find(index Index) ([]interface{}, error) {
-	return m.queryLimit(index.SQLFormat(), index.SQLLimit(), index.SQLParams()...)
+	return m.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
+}
+
+func (m *_BlogMySQLMgr) FindCount(index Index) (int64, error) {
+	return m.queryCount(index.SQLFormat(false), index.SQLParams()...)
 }
 
 func (m *_BlogMySQLMgr) Range(scope Range) ([]interface{}, error) {
-	return m.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (m *_BlogMySQLMgr) RevertRange(scope Range) ([]interface{}, error) {
+func (m *_BlogMySQLMgr) RangeCount(scope Range) (int64, error) {
+	return m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
+}
+
+func (m *_BlogMySQLMgr) RangeRevert(scope Range) ([]interface{}, error) {
 	scope.Revert(true)
-	return m.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
 func (m *_BlogMySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []interface{}, err error) {
@@ -249,6 +260,24 @@ func (m *_BlogMySQLMgr) queryLimit(where string, limit int, args ...interface{})
 		return nil, fmt.Errorf("Blog query limit result error: %v", err)
 	}
 	return
+}
+
+func (m *_BlogMySQLMgr) queryCount(where string, args ...interface{}) (int64, error) {
+	query := fmt.Sprintf("SELECT count(`id`) FROM `blogs` %s", where)
+	rows, err := m.Query(query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("Blog query count error: %v", err)
+	}
+	defer rows.Close()
+
+	var count int64
+	for rows.Next() {
+		if err = rows.Scan(&count); err != nil {
+			return 0, err
+		}
+		break
+	}
+	return count, nil
 }
 
 //! object.mysql.write
@@ -428,7 +457,7 @@ func (tx *_BlogMySQLTx) Close() error {
 
 //! tx read
 func (tx *_BlogMySQLTx) FindOne(unique Unique) (interface{}, error) {
-	objs, err := tx.queryLimit(unique.SQLFormat(), unique.SQLLimit(), unique.SQLParams()...)
+	objs, err := tx.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
 		tx.err = err
 		return nil, err
@@ -441,16 +470,24 @@ func (tx *_BlogMySQLTx) FindOne(unique Unique) (interface{}, error) {
 }
 
 func (tx *_BlogMySQLTx) Find(index Index) ([]interface{}, error) {
-	return tx.queryLimit(index.SQLFormat(), index.SQLLimit(), index.SQLParams()...)
+	return tx.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
+}
+
+func (tx *_BlogMySQLTx) FindCount(index Index) (int64, error) {
+	return tx.queryCount(index.SQLFormat(false), index.SQLParams()...)
 }
 
 func (tx *_BlogMySQLTx) Range(scope Range) ([]interface{}, error) {
-	return tx.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+	return tx.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (tx *_BlogMySQLTx) RevertRange(scope Range) ([]interface{}, error) {
+func (tx *_BlogMySQLTx) RangeCount(scope Range) (int64, error) {
+	return tx.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
+}
+
+func (tx *_BlogMySQLTx) RangeRevert(scope Range) ([]interface{}, error) {
 	scope.Revert(true)
-	return tx.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+	return tx.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
 func (tx *_BlogMySQLTx) queryLimit(where string, limit int, args ...interface{}) (results []interface{}, err error) {
@@ -486,6 +523,32 @@ func (tx *_BlogMySQLTx) queryLimit(where string, limit int, args ...interface{})
 		return nil, fmt.Errorf("Blog query limit result error: %v", err)
 	}
 	return
+}
+
+func (tx *_BlogMySQLTx) queryCount(where string, args ...interface{}) (int64, error) {
+	query := fmt.Sprintf("SELECT count(`id`) FROM `blogs`")
+	if where != "" {
+		query += " WHERE "
+		query += where
+	}
+
+	rows, err := tx.Query(query, args...)
+	if err != nil {
+		tx.err = err
+		return 0, fmt.Errorf("Blog query limit error: %v", err)
+	}
+	defer rows.Close()
+
+	var count int64
+	for rows.Next() {
+		if err = rows.Scan(&count); err != nil {
+			tx.err = err
+			return 0, err
+		}
+		break
+	}
+
+	return count, nil
 }
 
 func (tx *_BlogMySQLTx) Fetch(id interface{}) (*Blog, error) {

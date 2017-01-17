@@ -120,7 +120,7 @@ func (m *_UserBlogsRedisMgr) Range(key string, min, max int64) ([]string, error)
 	return m.ZRange(zsetOfClass("UserBlogs", "UserBlogs", key), min, max).Result()
 }
 
-func (m *_UserBlogsRedisMgr) RevertRange(key string, min, max int64) ([]string, error) {
+func (m *_UserBlogsRedisMgr) RangeRevert(key string, min, max int64) ([]string, error) {
 	return m.ZRevRange(zsetOfClass("UserBlogs", "UserBlogs", key), min, max).Result()
 }
 

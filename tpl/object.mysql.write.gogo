@@ -194,7 +194,7 @@ func (tx *_{{$obj.Name}}MySQLTx) Close() error {
 
 //! tx read
 func (tx *_{{$obj.Name}}MySQLTx) FindOne(unique Unique) (interface{}, error) {
-	objs, err := tx.queryLimit(unique.SQLFormat(), unique.SQLLimit(), unique.SQLParams()...)
+	objs, err := tx.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
 		tx.err = err
 		return nil, err
@@ -207,16 +207,24 @@ func (tx *_{{$obj.Name}}MySQLTx) FindOne(unique Unique) (interface{}, error) {
 }
 
 func (tx *_{{$obj.Name}}MySQLTx) Find(index Index) ([]interface{}, error) {
-	return tx.queryLimit(index.SQLFormat(), index.SQLLimit(), index.SQLParams()...)
+	return tx.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
+}
+
+func (tx *_{{$obj.Name}}MySQLTx) FindCount(index Index) (int64, error) {
+	return tx.queryCount(index.SQLFormat(false), index.SQLParams()...)
 }
 
 func (tx *_{{$obj.Name}}MySQLTx) Range(scope Range) ([]interface{}, error) {
-	return tx.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+	return tx.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (tx *_{{$obj.Name}}MySQLTx) RevertRange(scope Range) ([]interface{}, error) {
+func (tx *_{{$obj.Name}}MySQLTx) RangeCount(scope Range) (int64, error) {
+	return tx.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
+}
+
+func (tx *_{{$obj.Name}}MySQLTx) RangeRevert(scope Range) ([]interface{}, error) {
 	scope.Revert(true)
-	return tx.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+	return tx.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
 func (tx *_{{$obj.Name}}MySQLTx) queryLimit(where string, limit int, args ...interface{}) (results []interface{}, err error){
@@ -252,6 +260,32 @@ func (tx *_{{$obj.Name}}MySQLTx) queryLimit(where string, limit int, args ...int
 		return nil, fmt.Errorf("{{$obj.Name}} query limit result error: %v", err)
 	}
 	return
+}
+
+func (tx *_{{$obj.Name}}MySQLTx) queryCount(where string, args ...interface{}) (int64, error){
+	query := fmt.Sprintf("SELECT count(`{{$primaryField.Name | camel2name}}`) FROM `{{$obj.DbTable}}`")
+	if where != "" {
+		query += " WHERE " 
+		query += where
+	}
+
+	rows, err := tx.Query(query, args...)
+	if err != nil {
+		tx.err = err
+		return 0, fmt.Errorf("{{$obj.Name}} query limit error: %v", err)
+	}
+	defer rows.Close()
+
+	var count int64
+	for rows.Next() {
+		if err = rows.Scan(&count); err != nil {
+			tx.err = err
+			return 0, err
+		}
+		break
+	}
+	
+	return count, nil
 }
 
 func (tx *_{{$obj.Name}}MySQLTx) Fetch({{$primaryField.Name | camel2name}} interface{}) (*{{$obj.Name}}, error) {

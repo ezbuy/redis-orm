@@ -68,7 +68,7 @@ func (m *_{{$relation.Name}}RedisMgr) Range(key string, min, max int64) ([]strin
 	return m.ZRange(zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key), min, max).Result()
 }
 
-func (m *_{{$relation.Name}}RedisMgr) RevertRange(key string, min, max int64) ([]string, error) {
+func (m *_{{$relation.Name}}RedisMgr) RangeRevert(key string, min, max int64) ([]string, error) {
 	return m.ZRevRange(zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key), min, max).Result()
 }
 

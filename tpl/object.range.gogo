@@ -43,7 +43,7 @@ func (u *{{$rg.Name}}) endOp() string {
 	return "<"
 }
 
-func (u *{{$rg.Name}}) SQLFormat() string {
+func (u *{{$rg.Name}}) SQLFormat(limit bool) string {
 	conditions := []string{}
 	{{- range $j, $field := $rg.Fields}}
 		{{- if ne (add $j 1) (len $rg.Fields)}}
@@ -58,7 +58,10 @@ func (u *{{$rg.Name}}) SQLFormat() string {
 			conditions = append(conditions, fmt.Sprintf("{{$rg.LastField.Name | camel2name}} %s ?", u.endOp()))
 		}
 	}
-	return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("{{$rg.LastField.Name}}", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
+	if limit {
+		return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("{{$rg.LastField.Name}}", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
+	}
+	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("{{$rg.LastField.Name}}", u.revert))
 }
 
 func (u *{{$rg.Name}}) SQLParams() []interface{} {

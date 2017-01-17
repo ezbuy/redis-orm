@@ -75,7 +75,7 @@ func (u *MailboxPasswordOfUserBaseInfoUK) Key() string {
 	return fmt.Sprintf("%s", strings.Join(strs, ":"))
 }
 
-func (u *MailboxPasswordOfUserBaseInfoUK) SQLFormat() string {
+func (u *MailboxPasswordOfUserBaseInfoUK) SQLFormat(limit bool) string {
 	conditions := []string{
 		"mailbox = ?",
 		"password = ?",
@@ -120,11 +120,14 @@ func (u *NameOfUserBaseInfoIDX) Key() string {
 	return fmt.Sprintf("%s", strings.Join(strs, ":"))
 }
 
-func (u *NameOfUserBaseInfoIDX) SQLFormat() string {
+func (u *NameOfUserBaseInfoIDX) SQLFormat(limit bool) string {
 	conditions := []string{
 		"name = ?",
 	}
-	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOffsetLimit(u.offset, u.limit))
+	if limit {
+		return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOffsetLimit(u.offset, u.limit))
+	}
+	return orm.SQLWhere(conditions)
 }
 
 func (u *NameOfUserBaseInfoIDX) SQLParams() []interface{} {
@@ -231,7 +234,7 @@ func (m *_UserBaseInfoMySQLMgr) FetchByIds(ids []interface{}) ([]*UserBaseInfo, 
 }
 
 func (m *_UserBaseInfoMySQLMgr) FindOne(unique Unique) (interface{}, error) {
-	objs, err := m.queryLimit(unique.SQLFormat(), unique.SQLLimit(), unique.SQLParams()...)
+	objs, err := m.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
 		return "", err
 	}
@@ -242,16 +245,24 @@ func (m *_UserBaseInfoMySQLMgr) FindOne(unique Unique) (interface{}, error) {
 }
 
 func (m *_UserBaseInfoMySQLMgr) Find(index Index) ([]interface{}, error) {
-	return m.queryLimit(index.SQLFormat(), index.SQLLimit(), index.SQLParams()...)
+	return m.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
+}
+
+func (m *_UserBaseInfoMySQLMgr) FindCount(index Index) (int64, error) {
+	return m.queryCount(index.SQLFormat(false), index.SQLParams()...)
 }
 
 func (m *_UserBaseInfoMySQLMgr) Range(scope Range) ([]interface{}, error) {
-	return m.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (m *_UserBaseInfoMySQLMgr) RevertRange(scope Range) ([]interface{}, error) {
+func (m *_UserBaseInfoMySQLMgr) RangeCount(scope Range) (int64, error) {
+	return m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
+}
+
+func (m *_UserBaseInfoMySQLMgr) RangeRevert(scope Range) ([]interface{}, error) {
 	scope.Revert(true)
-	return m.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
 func (m *_UserBaseInfoMySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []interface{}, err error) {
@@ -279,4 +290,22 @@ func (m *_UserBaseInfoMySQLMgr) queryLimit(where string, limit int, args ...inte
 		return nil, fmt.Errorf("UserBaseInfo query limit result error: %v", err)
 	}
 	return
+}
+
+func (m *_UserBaseInfoMySQLMgr) queryCount(where string, args ...interface{}) (int64, error) {
+	query := fmt.Sprintf("SELECT count(`id`) FROM `user_base_info` %s", where)
+	rows, err := m.Query(query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("UserBaseInfo query count error: %v", err)
+	}
+	defer rows.Close()
+
+	var count int64
+	for rows.Next() {
+		if err = rows.Scan(&count); err != nil {
+			return 0, err
+		}
+		break
+	}
+	return count, nil
 }

@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -12,10 +11,8 @@ import (
 	"github.com/spf13/viper"
 )
 
-func GenerateCode() {
-	packageName := viper.GetString("package")
-
-	inputDir, err := filepath.Abs(viper.GetString("code_input"))
+func GenerateSQL() {
+	inputDir, err := filepath.Abs(viper.GetString("sql_input"))
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -26,9 +23,9 @@ func GenerateCode() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	if packageName == "" {
-		_, packageName = path.Split(outputDir)
-	}
+
+	model := viper.GetString("sql_model")
+	driver := viper.GetString("sql_driver")
 
 	yamls, err := fs.GetDirectoryFilesBySuffix(inputDir, ".yaml")
 	if err != nil {
@@ -36,14 +33,13 @@ func GenerateCode() {
 		os.Exit(1)
 	}
 
-	model := viper.GetString("code_model")
 	metaObjs := map[string]*parser.MetaObject{}
 	confTpls := map[string]bool{
 		"orm": true,
 	}
 	i := 0
 	for _, yaml := range yamls {
-		objs, err := parser.ReadYaml(packageName, yaml)
+		objs, err := parser.ReadYaml("script", yaml)
 		if err != nil {
 			fmt.Println("failed: ", err)
 			os.Exit(1)
@@ -76,11 +72,8 @@ func GenerateCode() {
 
 GeneratePoint:
 	for _, metaObj := range metaObjs {
-		fs.ExecuteMetaObjectCodeTemplate(outputDir, metaObj)
+		if metaObj.DbSource() != "" {
+			fs.ExecuteMetaObjectScriptTemplate(outputDir, driver, metaObj)
+		}
 	}
-
-	for conf := range confTpls {
-		fs.ExecuteConfigTemplate(outputDir, conf, packageName)
-	}
-
 }

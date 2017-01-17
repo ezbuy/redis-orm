@@ -86,6 +86,10 @@ func (o *MetaObject) Fields() []*Field {
 	return o.fields
 }
 
+func (o *MetaObject) LastField() *Field {
+	return o.fields[len(o.fields)-1]
+}
+
 func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 	o.Name = name
 	hasType := false

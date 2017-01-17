@@ -46,6 +46,10 @@ model.UserRedisMgr().RevertRange(scope)
 model.UserRedisMgr().Fetch(id string) (*User, error)
 model.UserRedisMgr().FetchByIds(ids []string) ([]*User, error)
 
+# query in chain
+model.UserMgr.MySQL().Find(index).Range(scope).Result()
+model.UserMgr.Redis().Find(index).Range(scope).Result()
+
 ````
 
 ### write access usage

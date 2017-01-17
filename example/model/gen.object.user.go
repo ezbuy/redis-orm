@@ -108,7 +108,7 @@ func (u *MailboxPasswordOfUserUK) Key() string {
 	return fmt.Sprintf("%s", strings.Join(strs, ":"))
 }
 
-func (u *MailboxPasswordOfUserUK) SQLFormat() string {
+func (u *MailboxPasswordOfUserUK) SQLFormat(limit bool) string {
 	conditions := []string{
 		"mailbox = ?",
 		"password = ?",
@@ -153,11 +153,14 @@ func (u *SexOfUserIDX) Key() string {
 	return fmt.Sprintf("%s", strings.Join(strs, ":"))
 }
 
-func (u *SexOfUserIDX) SQLFormat() string {
+func (u *SexOfUserIDX) SQLFormat(limit bool) string {
 	conditions := []string{
 		"sex = ?",
 	}
-	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOffsetLimit(u.offset, u.limit))
+	if limit {
+		return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOffsetLimit(u.offset, u.limit))
+	}
+	return orm.SQLWhere(conditions)
 }
 
 func (u *SexOfUserIDX) SQLParams() []interface{} {
@@ -217,7 +220,7 @@ func (u *IdOfUserRNG) endOp() string {
 	return "<"
 }
 
-func (u *IdOfUserRNG) SQLFormat() string {
+func (u *IdOfUserRNG) SQLFormat(limit bool) string {
 	conditions := []string{}
 	if u.IdBegin != u.IdEnd {
 		if u.IdBegin != -1 {
@@ -227,7 +230,10 @@ func (u *IdOfUserRNG) SQLFormat() string {
 			conditions = append(conditions, fmt.Sprintf("id %s ?", u.endOp()))
 		}
 	}
-	return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Id", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
+	if limit {
+		return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Id", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
+	}
+	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Id", u.revert))
 }
 
 func (u *IdOfUserRNG) SQLParams() []interface{} {
@@ -330,7 +336,7 @@ func (u *AgeOfUserRNG) endOp() string {
 	return "<"
 }
 
-func (u *AgeOfUserRNG) SQLFormat() string {
+func (u *AgeOfUserRNG) SQLFormat(limit bool) string {
 	conditions := []string{}
 	if u.AgeBegin != u.AgeEnd {
 		if u.AgeBegin != -1 {
@@ -340,7 +346,10 @@ func (u *AgeOfUserRNG) SQLFormat() string {
 			conditions = append(conditions, fmt.Sprintf("age %s ?", u.endOp()))
 		}
 	}
-	return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Age", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
+	if limit {
+		return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Age", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
+	}
+	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Age", u.revert))
 }
 
 func (u *AgeOfUserRNG) SQLParams() []interface{} {
@@ -504,7 +513,7 @@ func (m *_UserMySQLMgr) FetchByIds(ids []interface{}) ([]*User, error) {
 }
 
 func (m *_UserMySQLMgr) FindOne(unique Unique) (interface{}, error) {
-	objs, err := m.queryLimit(unique.SQLFormat(), unique.SQLLimit(), unique.SQLParams()...)
+	objs, err := m.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
 		return "", err
 	}
@@ -515,16 +524,24 @@ func (m *_UserMySQLMgr) FindOne(unique Unique) (interface{}, error) {
 }
 
 func (m *_UserMySQLMgr) Find(index Index) ([]interface{}, error) {
-	return m.queryLimit(index.SQLFormat(), index.SQLLimit(), index.SQLParams()...)
+	return m.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
+}
+
+func (m *_UserMySQLMgr) FindCount(index Index) (int64, error) {
+	return m.queryCount(index.SQLFormat(false), index.SQLParams()...)
 }
 
 func (m *_UserMySQLMgr) Range(scope Range) ([]interface{}, error) {
-	return m.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (m *_UserMySQLMgr) RevertRange(scope Range) ([]interface{}, error) {
+func (m *_UserMySQLMgr) RangeCount(scope Range) (int64, error) {
+	return m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
+}
+
+func (m *_UserMySQLMgr) RangeRevert(scope Range) ([]interface{}, error) {
 	scope.Revert(true)
-	return m.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
 func (m *_UserMySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []interface{}, err error) {
@@ -552,6 +569,24 @@ func (m *_UserMySQLMgr) queryLimit(where string, limit int, args ...interface{})
 		return nil, fmt.Errorf("User query limit result error: %v", err)
 	}
 	return
+}
+
+func (m *_UserMySQLMgr) queryCount(where string, args ...interface{}) (int64, error) {
+	query := fmt.Sprintf("SELECT count(`id`) FROM `users` %s", where)
+	rows, err := m.Query(query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("User query count error: %v", err)
+	}
+	defer rows.Close()
+
+	var count int64
+	for rows.Next() {
+		if err = rows.Scan(&count); err != nil {
+			return 0, err
+		}
+		break
+	}
+	return count, nil
 }
 
 //! object.mysql.write
@@ -741,7 +776,7 @@ func (tx *_UserMySQLTx) Close() error {
 
 //! tx read
 func (tx *_UserMySQLTx) FindOne(unique Unique) (interface{}, error) {
-	objs, err := tx.queryLimit(unique.SQLFormat(), unique.SQLLimit(), unique.SQLParams()...)
+	objs, err := tx.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
 		tx.err = err
 		return nil, err
@@ -754,16 +789,24 @@ func (tx *_UserMySQLTx) FindOne(unique Unique) (interface{}, error) {
 }
 
 func (tx *_UserMySQLTx) Find(index Index) ([]interface{}, error) {
-	return tx.queryLimit(index.SQLFormat(), index.SQLLimit(), index.SQLParams()...)
+	return tx.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
+}
+
+func (tx *_UserMySQLTx) FindCount(index Index) (int64, error) {
+	return tx.queryCount(index.SQLFormat(false), index.SQLParams()...)
 }
 
 func (tx *_UserMySQLTx) Range(scope Range) ([]interface{}, error) {
-	return tx.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+	return tx.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (tx *_UserMySQLTx) RevertRange(scope Range) ([]interface{}, error) {
+func (tx *_UserMySQLTx) RangeCount(scope Range) (int64, error) {
+	return tx.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
+}
+
+func (tx *_UserMySQLTx) RangeRevert(scope Range) ([]interface{}, error) {
 	scope.Revert(true)
-	return tx.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+	return tx.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
 func (tx *_UserMySQLTx) queryLimit(where string, limit int, args ...interface{}) (results []interface{}, err error) {
@@ -799,6 +842,32 @@ func (tx *_UserMySQLTx) queryLimit(where string, limit int, args ...interface{})
 		return nil, fmt.Errorf("User query limit result error: %v", err)
 	}
 	return
+}
+
+func (tx *_UserMySQLTx) queryCount(where string, args ...interface{}) (int64, error) {
+	query := fmt.Sprintf("SELECT count(`id`) FROM `users`")
+	if where != "" {
+		query += " WHERE "
+		query += where
+	}
+
+	rows, err := tx.Query(query, args...)
+	if err != nil {
+		tx.err = err
+		return 0, fmt.Errorf("User query limit error: %v", err)
+	}
+	defer rows.Close()
+
+	var count int64
+	for rows.Next() {
+		if err = rows.Scan(&count); err != nil {
+			tx.err = err
+			return 0, err
+		}
+		break
+	}
+
+	return count, nil
 }
 
 func (tx *_UserMySQLTx) Fetch(id interface{}) (*User, error) {
@@ -972,6 +1041,17 @@ func (m *_UserRedisMgr) Find(index Index) ([]interface{}, error) {
 	return nil, fmt.Errorf("index none relation.")
 }
 
+func (m *_UserRedisMgr) FindCount(index Index) (int64, error) {
+	if relation := index.IDXRelation(); relation != nil {
+		strs, err := relation.Find(index.Key())
+		if err != nil {
+			return 0, err
+		}
+		return int64(len(strs)), nil
+	}
+	return 0, fmt.Errorf("index none relation.")
+}
+
 func (m *_UserRedisMgr) Range(scope Range) ([]interface{}, error) {
 	if relation := scope.RNGRelation(); relation != nil {
 		strs, err := relation.Range(scope.Key(), scope.Begin(), scope.End())
@@ -991,10 +1071,21 @@ func (m *_UserRedisMgr) Range(scope Range) ([]interface{}, error) {
 	return nil, fmt.Errorf("range none relation.")
 }
 
-func (m *_UserRedisMgr) RevertRange(scope Range) ([]interface{}, error) {
+func (m *_UserRedisMgr) RangeCount(scope Range) (int64, error) {
+	if relation := scope.RNGRelation(); relation != nil {
+		strs, err := relation.Range(scope.Key(), scope.Begin(), scope.End())
+		if err != nil {
+			return 0, err
+		}
+		return int64(len(strs)), nil
+	}
+	return 0, fmt.Errorf("range none relation.")
+}
+
+func (m *_UserRedisMgr) RangeRevert(scope Range) ([]interface{}, error) {
 	if relation := scope.RNGRelation(); relation != nil {
 		scope.Revert(true)
-		strs, err := relation.RevertRange(scope.Key(), scope.Begin(), scope.End())
+		strs, err := relation.RangeRevert(scope.Key(), scope.Begin(), scope.End())
 		if err != nil {
 			return nil, err
 		}
@@ -1619,7 +1710,7 @@ func (m *_IdOfUserRNGRelationRedisMgr) Range(key string, min, max int64) ([]stri
 	return m.ZRange(zsetOfClass("User", "IdOfUserRNGRelation", key), min, max).Result()
 }
 
-func (m *_IdOfUserRNGRelationRedisMgr) RevertRange(key string, min, max int64) ([]string, error) {
+func (m *_IdOfUserRNGRelationRedisMgr) RangeRevert(key string, min, max int64) ([]string, error) {
 	return m.ZRevRange(zsetOfClass("User", "IdOfUserRNGRelation", key), min, max).Result()
 }
 
@@ -1736,7 +1827,7 @@ func (m *_AgeOfUserRNGRelationRedisMgr) Range(key string, min, max int64) ([]str
 	return m.ZRange(zsetOfClass("User", "AgeOfUserRNGRelation", key), min, max).Result()
 }
 
-func (m *_AgeOfUserRNGRelationRedisMgr) RevertRange(key string, min, max int64) ([]string, error) {
+func (m *_AgeOfUserRNGRelationRedisMgr) RangeRevert(key string, min, max int64) ([]string, error) {
 	return m.ZRevRange(zsetOfClass("User", "AgeOfUserRNGRelation", key), min, max).Result()
 }
 

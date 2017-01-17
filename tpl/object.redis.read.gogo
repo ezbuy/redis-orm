@@ -52,6 +52,17 @@ func (m *_{{$obj.Name}}RedisMgr) Find(index Index) ([]interface{}, error) {
 	return nil, fmt.Errorf("index none relation.")
 }
 
+func (m *_{{$obj.Name}}RedisMgr) FindCount(index Index) (int64, error) {
+	if relation := index.IDXRelation(); relation != nil {
+		strs, err := relation.Find(index.Key())
+		if err != nil {
+			return 0, err
+		}
+		return int64(len(strs)), nil
+	}
+	return 0, fmt.Errorf("index none relation.")
+}
+
 func (m *_{{$obj.Name}}RedisMgr) Range(scope Range) ([]interface{}, error) {
 	if relation := scope.RNGRelation(); relation != nil {
 		strs, err := relation.Range(scope.Key(), scope.Begin(), scope.End())
@@ -79,10 +90,21 @@ func (m *_{{$obj.Name}}RedisMgr) Range(scope Range) ([]interface{}, error) {
 	return nil, fmt.Errorf("range none relation.")
 }
 
-func (m *_{{$obj.Name}}RedisMgr) RevertRange(scope Range) ([]interface{}, error) {
+func (m *_{{$obj.Name}}RedisMgr) RangeCount(scope Range) (int64, error) {
+	if relation := scope.RNGRelation(); relation != nil {
+		strs, err := relation.Range(scope.Key(), scope.Begin(), scope.End())
+		if err != nil {
+			return 0, err
+		}
+		return int64(len(strs)), nil
+	}
+	return 0, fmt.Errorf("range none relation.")
+}
+
+func (m *_{{$obj.Name}}RedisMgr) RangeRevert(scope Range) ([]interface{}, error) {
 	if relation := scope.RNGRelation(); relation != nil {
 		scope.Revert(true)
-		strs, err := relation.RevertRange(scope.Key(), scope.Begin(), scope.End())
+		strs, err := relation.RangeRevert(scope.Key(), scope.Begin(), scope.End())
 		if err != nil {
 			return nil, err
 		}

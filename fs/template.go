@@ -32,7 +32,7 @@ func generate_templates(obj *parser.MetaObject) []string {
 	return tpls
 }
 
-func ExecuteMetaObjectTemplate(output string, obj *parser.MetaObject) error {
+func ExecuteMetaObjectCodeTemplate(output string, obj *parser.MetaObject) error {
 	for _, tpl := range generate_templates(obj) {
 		filename := filepath.Join(output, strings.Join([]string{"gen", tpl, camel2sep(obj.Name, "."), "go"}, "."))
 		fd, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
@@ -47,6 +47,20 @@ func ExecuteMetaObjectTemplate(output string, obj *parser.MetaObject) error {
 		oscmd := exec.Command("gofmt", "-w", filename)
 		oscmd.Run()
 	}
+	return nil
+}
+
+func ExecuteMetaObjectScriptTemplate(output string, driver string, obj *parser.MetaObject) error {
+	filename := filepath.Join(output, strings.Join([]string{"gen", "script", driver, camel2sep(obj.Name, "."), "sql"}, "."))
+	fd, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	defer fd.Close()
+	if err := RedisOrmTemplate.ExecuteTemplate(fd, strings.Join([]string{"script", driver}, "."), obj); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -120,6 +134,7 @@ func init() {
 		"tpl/relation.set.sync.gogo",
 		"tpl/relation.zset.gogo",
 		"tpl/relation.zset.sync.gogo",
+		"tpl/script.mysql.sql",
 		"tpl/view.gogo",
 	}
 	for _, fname := range files {

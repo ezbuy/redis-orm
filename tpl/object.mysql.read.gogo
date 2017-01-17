@@ -101,7 +101,7 @@ func (m *_{{$obj.Name}}MySQLMgr) FetchBy{{$primaryField.Name}}s({{$primaryField.
 }
 
 func (m *_{{$obj.Name}}MySQLMgr) FindOne(unique Unique) (interface{}, error) {
-	objs, err := m.queryLimit(unique.SQLFormat(), unique.SQLLimit(), unique.SQLParams()...)
+	objs, err := m.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
 		return "", err
 	}
@@ -112,16 +112,24 @@ func (m *_{{$obj.Name}}MySQLMgr) FindOne(unique Unique) (interface{}, error) {
 }
 
 func (m *_{{$obj.Name}}MySQLMgr) Find(index Index) ([]interface{}, error) {
-	return m.queryLimit(index.SQLFormat(), index.SQLLimit(), index.SQLParams()...)
+	return m.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
+}
+
+func (m *_{{$obj.Name}}MySQLMgr) FindCount(index Index) (int64, error) {
+	return m.queryCount(index.SQLFormat(false), index.SQLParams()...)
 }
 
 func (m *_{{$obj.Name}}MySQLMgr) Range(scope Range) ([]interface{}, error) {
-	return m.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (m *_{{$obj.Name}}MySQLMgr) RevertRange(scope Range) ([]interface{}, error) {
+func (m *_{{$obj.Name}}MySQLMgr) RangeCount(scope Range) (int64, error) {
+	return m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
+}
+
+func (m *_{{$obj.Name}}MySQLMgr) RangeRevert(scope Range) ([]interface{}, error) {
 	scope.Revert(true)
-	return m.queryLimit(scope.SQLFormat(), scope.SQLLimit(), scope.SQLParams()...)
+	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
 func (m *_{{$obj.Name}}MySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []interface{}, err error){
@@ -149,6 +157,24 @@ func (m *_{{$obj.Name}}MySQLMgr) queryLimit(where string, limit int, args ...int
 		return nil, fmt.Errorf("{{$obj.Name}} query limit result error: %v", err)
 	}
 	return
+}
+
+func (m *_{{$obj.Name}}MySQLMgr) queryCount(where string, args ...interface{}) (int64, error){
+	query := fmt.Sprintf("SELECT count(`{{$primaryField.Name | camel2name}}`) FROM `{{$obj.DbSource}}` %s", where)
+	rows, err := m.Query(query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("{{$obj.Name}} query count error: %v", err)
+	}
+	defer rows.Close()
+
+	var count int64
+	for rows.Next() {
+		if err = rows.Scan(&count); err != nil {
+			return 0, err
+		}
+		break
+	}
+	return count, nil
 }
 {{- end}}
 

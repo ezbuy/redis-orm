@@ -7,6 +7,7 @@ User:
       flags: [primary, range]
     - Name: string
     - Mailbox: string
+      comment: 邮箱
     - Sex: bool
       flags: [index]
     - Age: int32
@@ -31,6 +32,7 @@ UserBaseInfo:
       flags: [primary]
     - Name: string
       flags: [index]
+      size: 20
     - Mailbox: string
     - Password: string
     - Sex: bool
