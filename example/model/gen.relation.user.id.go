@@ -139,7 +139,10 @@ func (m *_UserIdRedisMgr) Clear() error {
 	if err != nil {
 		return err
 	}
-	return m.Del(strs...).Err()
+	if len(strs) > 0 {
+		return m.Del(strs...).Err()
+	}
+	return nil
 }
 
 func (m *_UserIdRedisMgr) Load(db DBFetcher) error {

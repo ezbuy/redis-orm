@@ -1497,22 +1497,34 @@ func (m *_UserRedisMgr) Save(obj *User) error {
 
 func (m *_UserRedisMgr) Clear() error {
 	if strs, err := m.Keys(pairOfClass("User", "*")).Result(); err == nil {
-		m.Del(strs...)
+		if len(strs) > 0 {
+			m.Del(strs...)
+		}
 	}
 	if strs, err := m.Keys(hashOfClass("User", "object", "*")).Result(); err == nil {
-		m.Del(strs...)
+		if len(strs) > 0 {
+			m.Del(strs...)
+		}
 	}
 	if strs, err := m.Keys(setOfClass("User", "*")).Result(); err == nil {
-		m.Del(strs...)
+		if len(strs) > 0 {
+			m.Del(strs...)
+		}
 	}
 	if strs, err := m.Keys(zsetOfClass("User", "*")).Result(); err == nil {
-		m.Del(strs...)
+		if len(strs) > 0 {
+			m.Del(strs...)
+		}
 	}
 	if strs, err := m.Keys(geoOfClass("User", "*")).Result(); err == nil {
-		m.Del(strs...)
+		if len(strs) > 0 {
+			m.Del(strs...)
+		}
 	}
 	if strs, err := m.Keys(listOfClass("User", "*")).Result(); err == nil {
-		m.Del(strs...)
+		if len(strs) > 0 {
+			m.Del(strs...)
+		}
 	}
 	return nil
 }
@@ -1611,7 +1623,10 @@ func (m *_MailboxPasswordOfUserUKRelationRedisMgr) Clear() error {
 	if err != nil {
 		return err
 	}
-	return m.Del(strs...).Err()
+	if len(strs) > 0 {
+		return m.Del(strs...).Err()
+	}
+	return nil
 }
 
 //! indexes
@@ -1708,7 +1723,10 @@ func (m *_SexOfUserIDXRelationRedisMgr) Clear() error {
 	if err != nil {
 		return err
 	}
-	return m.Del(strs...).Err()
+	if len(strs) > 0 {
+		return m.Del(strs...).Err()
+	}
+	return nil
 }
 
 //! ranges
@@ -1827,7 +1845,10 @@ func (m *_IdOfUserRNGRelationRedisMgr) Clear() error {
 	if err != nil {
 		return err
 	}
-	return m.Del(strs...).Err()
+	if len(strs) > 0 {
+		return m.Del(strs...).Err()
+	}
+	return nil
 }
 
 //! relation
@@ -1944,5 +1965,8 @@ func (m *_AgeOfUserRNGRelationRedisMgr) Clear() error {
 	if err != nil {
 		return err
 	}
-	return m.Del(strs...).Err()
+	if len(strs) > 0 {
+		return m.Del(strs...).Err()
+	}
+	return nil
 }
