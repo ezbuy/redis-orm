@@ -47,6 +47,14 @@ UserLocation:
     modeltype: User
   importSQL: "SELECT 'all',`longitude`,`latitude`,`id` FROM users"  
 
+SexUserLocation:
+  dbs: [redis, mysql]
+  relation:
+    storetype: geo
+    valuetype: int32
+    modeltype: User
+  importSQL: "SELECT `sex`,`longitude`,`latitude`,`id` FROM users"  
+
 UserId:
   dbs: [redis, mysql]
   relation:

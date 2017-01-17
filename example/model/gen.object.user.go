@@ -523,8 +523,35 @@ func (m *_UserMySQLMgr) FindOne(unique Unique) (interface{}, error) {
 	return "", fmt.Errorf("User find record not found")
 }
 
+func (m *_UserMySQLMgr) FindOneFetch(unique Unique) (*User, error) {
+	obj := UserMgr.NewUser()
+	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, unique.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0].(*User), nil
+	}
+	return nil, fmt.Errorf("none record")
+}
+
 func (m *_UserMySQLMgr) Find(index Index) ([]interface{}, error) {
 	return m.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
+}
+
+func (m *_UserMySQLMgr) FindFetch(index Index) ([]*User, error) {
+	obj := UserMgr.NewUser()
+	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, index.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*User, 0, len(objs))
+	for _, obj := range objs {
+		results = append(results, obj.(*User))
+	}
+	return results, nil
 }
 
 func (m *_UserMySQLMgr) FindCount(index Index) (int64, error) {
@@ -535,6 +562,20 @@ func (m *_UserMySQLMgr) Range(scope Range) ([]interface{}, error) {
 	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
+func (m *_UserMySQLMgr) RangeFetch(scope Range) ([]*User, error) {
+	obj := UserMgr.NewUser()
+	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, scope.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*User, 0, len(objs))
+	for _, obj := range objs {
+		results = append(results, obj.(*User))
+	}
+	return results, nil
+}
+
 func (m *_UserMySQLMgr) RangeCount(scope Range) (int64, error) {
 	return m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
 }
@@ -542,6 +583,11 @@ func (m *_UserMySQLMgr) RangeCount(scope Range) (int64, error) {
 func (m *_UserMySQLMgr) RangeRevert(scope Range) ([]interface{}, error) {
 	scope.Revert(true)
 	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
+}
+
+func (m *_UserMySQLMgr) RangeRevertFetch(scope Range) ([]*User, error) {
+	scope.Revert(true)
+	return m.RangeFetch(scope)
 }
 
 func (m *_UserMySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []interface{}, err error) {
@@ -788,8 +834,27 @@ func (tx *_UserMySQLTx) FindOne(unique Unique) (interface{}, error) {
 	return nil, tx.err
 }
 
+func (tx *_UserMySQLTx) FindOneFetch(unique Unique) (*User, error) {
+	obj := UserMgr.NewUser()
+	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
+	objs, err := tx.FetchBySQL(query, unique.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0], nil
+	}
+	return nil, fmt.Errorf("none record")
+}
+
 func (tx *_UserMySQLTx) Find(index Index) ([]interface{}, error) {
 	return tx.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
+}
+
+func (tx *_UserMySQLTx) FindFetch(index Index) ([]*User, error) {
+	obj := UserMgr.NewUser()
+	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
+	return tx.FetchBySQL(query, index.SQLParams()...)
 }
 
 func (tx *_UserMySQLTx) FindCount(index Index) (int64, error) {
@@ -800,6 +865,12 @@ func (tx *_UserMySQLTx) Range(scope Range) ([]interface{}, error) {
 	return tx.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
+func (tx *_UserMySQLTx) RangeFetch(scope Range) ([]*User, error) {
+	obj := UserMgr.NewUser()
+	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
+	return tx.FetchBySQL(query, scope.SQLParams()...)
+}
+
 func (tx *_UserMySQLTx) RangeCount(scope Range) (int64, error) {
 	return tx.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
 }
@@ -807,6 +878,11 @@ func (tx *_UserMySQLTx) RangeCount(scope Range) (int64, error) {
 func (tx *_UserMySQLTx) RangeRevert(scope Range) ([]interface{}, error) {
 	scope.Revert(true)
 	return tx.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
+}
+
+func (tx *_UserMySQLTx) RangeRevertFetch(scope Range) ([]*User, error) {
+	scope.Revert(true)
+	return tx.RangeFetch(scope)
 }
 
 func (tx *_UserMySQLTx) queryLimit(where string, limit int, args ...interface{}) (results []interface{}, err error) {
@@ -970,10 +1046,10 @@ func (m *_UserRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_UserRedisPipel
 }
 
 func (m *_UserRedisMgr) Load(db DBFetcher) error {
-
 	if err := m.Clear(); err != nil {
 		return err
 	}
+
 	return m.AddBySQL(db, "SELECT `id`,`name`,`mailbox`,`sex`, `age`, `longitude`,`latitude`,`description`,`password`,`head_url`,`status`,`created_at`, `updated_at` FROM users")
 
 }
@@ -1022,6 +1098,14 @@ func (m *_UserRedisMgr) FindOne(unique Unique) (interface{}, error) {
 	return nil, fmt.Errorf("unique none relation.")
 }
 
+func (m *_UserRedisMgr) FindOneFetch(unique Unique) (*User, error) {
+	v, err := m.FindOne(unique)
+	if err != nil {
+		return nil, err
+	}
+	return m.Fetch(v)
+}
+
 func (m *_UserRedisMgr) Find(index Index) ([]interface{}, error) {
 	if relation := index.IDXRelation(); relation != nil {
 		strs, err := relation.Find(index.Key())
@@ -1039,6 +1123,14 @@ func (m *_UserRedisMgr) Find(index Index) ([]interface{}, error) {
 		return results, nil
 	}
 	return nil, fmt.Errorf("index none relation.")
+}
+
+func (m *_UserRedisMgr) FindFetch(index Index) ([]*User, error) {
+	vs, err := m.Find(index)
+	if err != nil {
+		return nil, err
+	}
+	return m.FetchByIds(vs)
 }
 
 func (m *_UserRedisMgr) FindCount(index Index) (int64, error) {
@@ -1071,6 +1163,14 @@ func (m *_UserRedisMgr) Range(scope Range) ([]interface{}, error) {
 	return nil, fmt.Errorf("range none relation.")
 }
 
+func (m *_UserRedisMgr) RangeFetch(scope Range) ([]*User, error) {
+	vs, err := m.Range(scope)
+	if err != nil {
+		return nil, err
+	}
+	return m.FetchByIds(vs)
+}
+
 func (m *_UserRedisMgr) RangeCount(scope Range) (int64, error) {
 	if relation := scope.RNGRelation(); relation != nil {
 		strs, err := relation.Range(scope.Key(), scope.Begin(), scope.End())
@@ -1100,6 +1200,14 @@ func (m *_UserRedisMgr) RangeRevert(scope Range) ([]interface{}, error) {
 		return results, nil
 	}
 	return nil, fmt.Errorf("revert range none relation.")
+}
+
+func (m *_UserRedisMgr) RangeRevertFetch(scope Range) ([]*User, error) {
+	vs, err := m.RangeRevert(scope)
+	if err != nil {
+		return nil, err
+	}
+	return m.FetchByIds(vs)
 }
 
 func (m *_UserRedisMgr) Fetch(id interface{}) (*User, error) {

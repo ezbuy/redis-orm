@@ -214,8 +214,35 @@ func (m *_BlogMySQLMgr) FindOne(unique Unique) (interface{}, error) {
 	return "", fmt.Errorf("Blog find record not found")
 }
 
+func (m *_BlogMySQLMgr) FindOneFetch(unique Unique) (*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	query := fmt.Sprintf("SELECT %s FROM `blogs` %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, unique.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0].(*Blog), nil
+	}
+	return nil, fmt.Errorf("none record")
+}
+
 func (m *_BlogMySQLMgr) Find(index Index) ([]interface{}, error) {
 	return m.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
+}
+
+func (m *_BlogMySQLMgr) FindFetch(index Index) ([]*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	query := fmt.Sprintf("SELECT %s FROM `blogs` %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, index.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*Blog, 0, len(objs))
+	for _, obj := range objs {
+		results = append(results, obj.(*Blog))
+	}
+	return results, nil
 }
 
 func (m *_BlogMySQLMgr) FindCount(index Index) (int64, error) {
@@ -226,6 +253,20 @@ func (m *_BlogMySQLMgr) Range(scope Range) ([]interface{}, error) {
 	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
+func (m *_BlogMySQLMgr) RangeFetch(scope Range) ([]*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	query := fmt.Sprintf("SELECT %s FROM `blogs` %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, scope.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*Blog, 0, len(objs))
+	for _, obj := range objs {
+		results = append(results, obj.(*Blog))
+	}
+	return results, nil
+}
+
 func (m *_BlogMySQLMgr) RangeCount(scope Range) (int64, error) {
 	return m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
 }
@@ -233,6 +274,11 @@ func (m *_BlogMySQLMgr) RangeCount(scope Range) (int64, error) {
 func (m *_BlogMySQLMgr) RangeRevert(scope Range) ([]interface{}, error) {
 	scope.Revert(true)
 	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
+}
+
+func (m *_BlogMySQLMgr) RangeRevertFetch(scope Range) ([]*Blog, error) {
+	scope.Revert(true)
+	return m.RangeFetch(scope)
 }
 
 func (m *_BlogMySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []interface{}, err error) {
@@ -469,8 +515,27 @@ func (tx *_BlogMySQLTx) FindOne(unique Unique) (interface{}, error) {
 	return nil, tx.err
 }
 
+func (tx *_BlogMySQLTx) FindOneFetch(unique Unique) (*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	query := fmt.Sprintf("SELECT %s FROM `blogs` %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
+	objs, err := tx.FetchBySQL(query, unique.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0], nil
+	}
+	return nil, fmt.Errorf("none record")
+}
+
 func (tx *_BlogMySQLTx) Find(index Index) ([]interface{}, error) {
 	return tx.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
+}
+
+func (tx *_BlogMySQLTx) FindFetch(index Index) ([]*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	query := fmt.Sprintf("SELECT %s FROM `blogs` %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
+	return tx.FetchBySQL(query, index.SQLParams()...)
 }
 
 func (tx *_BlogMySQLTx) FindCount(index Index) (int64, error) {
@@ -481,6 +546,12 @@ func (tx *_BlogMySQLTx) Range(scope Range) ([]interface{}, error) {
 	return tx.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
+func (tx *_BlogMySQLTx) RangeFetch(scope Range) ([]*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	query := fmt.Sprintf("SELECT %s FROM `blogs` %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
+	return tx.FetchBySQL(query, scope.SQLParams()...)
+}
+
 func (tx *_BlogMySQLTx) RangeCount(scope Range) (int64, error) {
 	return tx.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
 }
@@ -488,6 +559,11 @@ func (tx *_BlogMySQLTx) RangeCount(scope Range) (int64, error) {
 func (tx *_BlogMySQLTx) RangeRevert(scope Range) ([]interface{}, error) {
 	scope.Revert(true)
 	return tx.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
+}
+
+func (tx *_BlogMySQLTx) RangeRevertFetch(scope Range) ([]*Blog, error) {
+	scope.Revert(true)
+	return tx.RangeFetch(scope)
 }
 
 func (tx *_BlogMySQLTx) queryLimit(where string, limit int, args ...interface{}) (results []interface{}, err error) {

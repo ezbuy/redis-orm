@@ -2,13 +2,16 @@
 {{$obj := .}}
 {{$primaryField := $obj.PrimaryField}}
 func (m *_{{$obj.Name}}RedisMgr) Load(db DBFetcher) error {
-	{{if ne $obj.ImportSQL ""}}
 	if err := m.Clear(); err != nil {
 		return err
 	}
+	{{if ne $obj.ImportSQL ""}}
 	return m.AddBySQL(db, "{{$obj.ImportSQL}}")
+	{{else if ne $obj.DbSource ""}}
+	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}`", strings.Join(obj.GetColumns(), ","))
+	return m.AddBySQL(db, query)
 	{{else}}
-	return fmt.Errorf("yaml importSQL unset.")
+	return fmt.Errorf("none sql for loading")
 	{{end}}
 }
 

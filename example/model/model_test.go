@@ -296,6 +296,12 @@ var _ = Describe("redis-orm.mysql", func() {
 			for i, obj := range objs {
 				Ω(obj.Name).To(Equal(fmt.Sprintf("name%d", i)))
 			}
+			objs2, err := UserMySQLMgr().RangeFetch(scope)
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(len(objs2)).To(Equal(100))
+			for i, obj := range objs2 {
+				Ω(obj.Name).To(Equal(fmt.Sprintf("name%d", i)))
+			}
 		})
 
 		Measure("mysql.bench", func(b Benchmarker) {
@@ -515,6 +521,25 @@ var _ = Describe("redis-orm.redis", func() {
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(len(us)).To(Equal(100))
 			Ω(us[1].(int32) > us[0].(int32)).To(Equal(false))
+		})
+
+		It("fetch", func() {
+			scope := &IdOfUserRNG{}
+			us, err := UserRedisMgr().Range(scope)
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(len(us)).To(Equal(100))
+			objs, err := UserRedisMgr().FetchByIds(us)
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(len(objs)).To(Equal(100))
+			for i, obj := range objs {
+				Ω(obj.Name).To(Equal(fmt.Sprintf("name%d", i)))
+			}
+			objs2, err := UserRedisMgr().RangeFetch(scope)
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(len(objs2)).To(Equal(100))
+			for i, obj := range objs2 {
+				Ω(obj.Name).To(Equal(fmt.Sprintf("name%d", i)))
+			}
 		})
 
 		Measure("redis.bench", func(b Benchmarker) {

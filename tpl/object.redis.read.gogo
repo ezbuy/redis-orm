@@ -25,6 +25,14 @@ func (m *_{{$obj.Name}}RedisMgr) FindOne(unique Unique) (interface{}, error) {
 	return nil, fmt.Errorf("unique none relation.")
 }
 
+func (m *_{{$obj.Name}}RedisMgr) FindOneFetch(unique Unique) (*{{$obj.Name}}, error) {
+	v, err := m.FindOne(unique)
+	if err != nil {
+		return nil, err
+	}
+	return m.Fetch(v)
+}
+
 func (m *_{{$obj.Name}}RedisMgr) Find(index Index) ([]interface{}, error) {
 	if relation := index.IDXRelation(); relation != nil {
 		strs, err := relation.Find(index.Key())
@@ -50,6 +58,14 @@ func (m *_{{$obj.Name}}RedisMgr) Find(index Index) ([]interface{}, error) {
 		return results, nil
 	}
 	return nil, fmt.Errorf("index none relation.")
+}
+
+func (m *_{{$obj.Name}}RedisMgr) FindFetch(index Index) ([]*{{$obj.Name}}, error) {
+	vs, err := m.Find(index)
+	if err != nil {
+		return nil, err
+	}
+	return m.FetchBy{{$primaryField.Name}}s(vs)
 }
 
 func (m *_{{$obj.Name}}RedisMgr) FindCount(index Index) (int64, error) {
@@ -90,6 +106,14 @@ func (m *_{{$obj.Name}}RedisMgr) Range(scope Range) ([]interface{}, error) {
 	return nil, fmt.Errorf("range none relation.")
 }
 
+func (m *_{{$obj.Name}}RedisMgr) RangeFetch(scope Range) ([]*{{$obj.Name}}, error) {
+	vs, err := m.Range(scope)
+	if err != nil {
+		return nil, err
+	}
+	return m.FetchBy{{$primaryField.Name}}s(vs)
+}
+
 func (m *_{{$obj.Name}}RedisMgr) RangeCount(scope Range) (int64, error) {
 	if relation := scope.RNGRelation(); relation != nil {
 		strs, err := relation.Range(scope.Key(), scope.Begin(), scope.End())
@@ -127,6 +151,14 @@ func (m *_{{$obj.Name}}RedisMgr) RangeRevert(scope Range) ([]interface{}, error)
 		return results, nil
 	}
 	return nil, fmt.Errorf("revert range none relation.")
+}
+
+func (m *_{{$obj.Name}}RedisMgr) RangeRevertFetch(scope Range) ([]*{{$obj.Name}}, error) {
+	vs, err := m.RangeRevert(scope)
+	if err != nil {
+		return nil, err
+	}
+	return m.FetchBy{{$primaryField.Name}}s(vs)
 }
 
 func (m *_{{$obj.Name}}RedisMgr) Fetch({{$primaryField.Name | camel2name}} interface{}) (*{{$obj.Name}}, error) {

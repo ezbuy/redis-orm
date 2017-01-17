@@ -206,8 +206,27 @@ func (tx *_{{$obj.Name}}MySQLTx) FindOne(unique Unique) (interface{}, error) {
 	return nil, tx.err
 }
 
+func (tx *_{{$obj.Name}}MySQLTx) FindOneFetch(unique Unique) (*{{$obj.Name}}, error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
+	objs, err := tx.FetchBySQL(query, unique.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0], nil
+	}
+	return nil, fmt.Errorf("none record")
+}
+
 func (tx *_{{$obj.Name}}MySQLTx) Find(index Index) ([]interface{}, error) {
 	return tx.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
+}
+
+func (tx *_{{$obj.Name}}MySQLTx) FindFetch(index Index) ([]*{{$obj.Name}}, error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
+	return tx.FetchBySQL(query, index.SQLParams()...)
 }
 
 func (tx *_{{$obj.Name}}MySQLTx) FindCount(index Index) (int64, error) {
@@ -218,6 +237,12 @@ func (tx *_{{$obj.Name}}MySQLTx) Range(scope Range) ([]interface{}, error) {
 	return tx.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
+func (tx *_{{$obj.Name}}MySQLTx) RangeFetch(scope Range) ([]*{{$obj.Name}}, error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
+	return tx.FetchBySQL(query, scope.SQLParams()...)
+}
+
 func (tx *_{{$obj.Name}}MySQLTx) RangeCount(scope Range) (int64, error) {
 	return tx.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
 }
@@ -225,6 +250,11 @@ func (tx *_{{$obj.Name}}MySQLTx) RangeCount(scope Range) (int64, error) {
 func (tx *_{{$obj.Name}}MySQLTx) RangeRevert(scope Range) ([]interface{}, error) {
 	scope.Revert(true)
 	return tx.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
+}
+
+func (tx *_{{$obj.Name}}MySQLTx) RangeRevertFetch(scope Range) ([]*{{$obj.Name}}, error) {
+	scope.Revert(true)
+	return tx.RangeFetch(scope)
 }
 
 func (tx *_{{$obj.Name}}MySQLTx) queryLimit(where string, limit int, args ...interface{}) (results []interface{}, err error){

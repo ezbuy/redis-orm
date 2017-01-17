@@ -111,8 +111,35 @@ func (m *_{{$obj.Name}}MySQLMgr) FindOne(unique Unique) (interface{}, error) {
 	return "", fmt.Errorf("{{$obj.Name}} find record not found")
 }
 
+func (m *_{{$obj.Name}}MySQLMgr) FindOneFetch(unique Unique) (*{{$obj.Name}}, error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, unique.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0].(*{{$obj.Name}}), nil
+	}
+	return nil, fmt.Errorf("none record")
+}
+
 func (m *_{{$obj.Name}}MySQLMgr) Find(index Index) ([]interface{}, error) {
 	return m.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
+}
+
+func (m *_{{$obj.Name}}MySQLMgr) FindFetch(index Index) ([]*{{$obj.Name}}, error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, index.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*{{$obj.Name}}, 0, len(objs))
+	for _, obj := range objs {
+		results = append(results, obj.(*{{$obj.Name}}))
+	}
+	return results, nil
 }
 
 func (m *_{{$obj.Name}}MySQLMgr) FindCount(index Index) (int64, error) {
@@ -123,6 +150,20 @@ func (m *_{{$obj.Name}}MySQLMgr) Range(scope Range) ([]interface{}, error) {
 	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
+func (m *_{{$obj.Name}}MySQLMgr) RangeFetch(scope Range) ([]*{{$obj.Name}}, error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, scope.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*{{$obj.Name}}, 0, len(objs))
+	for _, obj := range objs {
+		results = append(results, obj.(*{{$obj.Name}}))
+	}
+	return results, nil
+}
+
 func (m *_{{$obj.Name}}MySQLMgr) RangeCount(scope Range) (int64, error) {
 	return m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
 }
@@ -130,6 +171,11 @@ func (m *_{{$obj.Name}}MySQLMgr) RangeCount(scope Range) (int64, error) {
 func (m *_{{$obj.Name}}MySQLMgr) RangeRevert(scope Range) ([]interface{}, error) {
 	scope.Revert(true)
 	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
+}
+
+func (m *_{{$obj.Name}}MySQLMgr) RangeRevertFetch(scope Range) ([]*{{$obj.Name}}, error) {
+	scope.Revert(true)
+	return m.RangeFetch(scope)
 }
 
 func (m *_{{$obj.Name}}MySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []interface{}, err error){

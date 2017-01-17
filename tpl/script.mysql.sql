@@ -52,7 +52,7 @@ CREATE INDEX `{{$index.Name | camel2name}}` ON `{{$obj.DbTable}}`(
 {{- end}}
 
 {{- if ne $obj.DbView ""}}
-DROP VIEW `{{$obj.DbView}}`;
+DROP VIEW IF EXISTS `{{$obj.DbView}}`;
 CREATE VIEW `{{$obj.DbView}}` AS {{$obj.ImportSQL}};
 {{- end}}
 
