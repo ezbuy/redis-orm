@@ -635,21 +635,6 @@ func (m *_UserMySQLMgr) queryCount(where string, args ...interface{}) (int64, er
 	return count, nil
 }
 
-//! object.mysql.write
-///////////////////////////
-//! 	how to use tx
-//!
-//! 	tx, err := UserMySQLMgr().BeginTx()
-//! 	if err != nil {
-//! 		return err
-//! 	}
-//! 	defer tx.Close()
-//!
-//! 	tx.Create(obj)
-//! 	tx.Update(obj)
-//! 	tx.Delete(obj)
-///////////////////////////
-
 //! tx write
 type _UserMySQLTx struct {
 	*orm.MySQLTx
@@ -842,7 +827,7 @@ func (tx *_UserMySQLTx) FindOneFetch(unique Unique) (*User, error) {
 		return nil, err
 	}
 	if len(objs) > 0 {
-		return objs[0], nil
+		return objs[0].(*User), nil
 	}
 	return nil, fmt.Errorf("none record")
 }
@@ -854,7 +839,15 @@ func (tx *_UserMySQLTx) Find(index Index) ([]interface{}, error) {
 func (tx *_UserMySQLTx) FindFetch(index Index) ([]*User, error) {
 	obj := UserMgr.NewUser()
 	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
-	return tx.FetchBySQL(query, index.SQLParams()...)
+	objs, err := tx.FetchBySQL(query, index.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*User, 0, len(objs))
+	for _, obj := range objs {
+		results = append(results, obj.(*User))
+	}
+	return results, nil
 }
 
 func (tx *_UserMySQLTx) FindCount(index Index) (int64, error) {
@@ -868,7 +861,15 @@ func (tx *_UserMySQLTx) Range(scope Range) ([]interface{}, error) {
 func (tx *_UserMySQLTx) RangeFetch(scope Range) ([]*User, error) {
 	obj := UserMgr.NewUser()
 	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
-	return tx.FetchBySQL(query, scope.SQLParams()...)
+	objs, err := tx.FetchBySQL(query, scope.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*User, 0, len(objs))
+	for _, obj := range objs {
+		results = append(results, obj.(*User))
+	}
+	return results, nil
 }
 
 func (tx *_UserMySQLTx) RangeCount(scope Range) (int64, error) {
@@ -954,7 +955,7 @@ func (tx *_UserMySQLTx) Fetch(id interface{}) (*User, error) {
 		return nil, err
 	}
 	if len(objs) > 0 {
-		return objs[0], nil
+		return objs[0].(*User), nil
 	}
 	return nil, fmt.Errorf("User fetch record not found")
 }
@@ -966,10 +967,18 @@ func (tx *_UserMySQLTx) FetchByIds(ids []interface{}) ([]*User, error) {
 
 	obj := UserMgr.NewUser()
 	query := fmt.Sprintf("SELECT %s FROM `users` WHERE `Id` IN (%s)", strings.Join(obj.GetColumns(), ","), orm.SliceJoin(ids, ","))
-	return tx.FetchBySQL(query)
+	objs, err := tx.FetchBySQL(query)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*User, 0, len(objs))
+	for _, obj := range objs {
+		results = append(results, obj.(*User))
+	}
+	return results, nil
 }
 
-func (tx *_UserMySQLTx) FetchBySQL(sql string, args ...interface{}) (results []*User, err error) {
+func (tx *_UserMySQLTx) FetchBySQL(sql string, args ...interface{}) (results []interface{}, err error) {
 	rows, err := tx.Query(sql, args...)
 	if err != nil {
 		tx.err = err

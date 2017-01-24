@@ -1,21 +1,6 @@
 {{define "object.mysql.write"}}
 {{$obj := .}}
 {{$primaryField := $obj.PrimaryField}}
-//! object.mysql.write
-///////////////////////////
-//! 	how to use tx
-//!
-//! 	tx, err := {{$obj.Name}}MySQLMgr().BeginTx()
-//! 	if err != nil {
-//! 		return err
-//! 	}
-//! 	defer tx.Close()
-//! 
-//! 	tx.Create(obj)
-//! 	tx.Update(obj)
-//! 	tx.Delete(obj)
-///////////////////////////
-
 //! tx write
 type _{{$obj.Name}}MySQLTx struct {
 	*orm.MySQLTx
@@ -214,7 +199,7 @@ func (tx *_{{$obj.Name}}MySQLTx) FindOneFetch(unique Unique) (*{{$obj.Name}}, er
 		return nil, err
 	}
 	if len(objs) > 0 {
-		return objs[0], nil
+		return objs[0].(*{{$obj.Name}}), nil
 	}
 	return nil, fmt.Errorf("none record")
 }
@@ -226,7 +211,15 @@ func (tx *_{{$obj.Name}}MySQLTx) Find(index Index) ([]interface{}, error) {
 func (tx *_{{$obj.Name}}MySQLTx) FindFetch(index Index) ([]*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
-	return tx.FetchBySQL(query, index.SQLParams()...)
+	objs, err := tx.FetchBySQL(query, index.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*{{$obj.Name}}, 0, len(objs))
+	for _, obj := range objs {
+		results = append(results, obj.(*{{$obj.Name}}))
+	}
+	return results, nil
 }
 
 func (tx *_{{$obj.Name}}MySQLTx) FindCount(index Index) (int64, error) {
@@ -240,7 +233,15 @@ func (tx *_{{$obj.Name}}MySQLTx) Range(scope Range) ([]interface{}, error) {
 func (tx *_{{$obj.Name}}MySQLTx) RangeFetch(scope Range) ([]*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
-	return tx.FetchBySQL(query, scope.SQLParams()...)
+	objs, err := tx.FetchBySQL(query, scope.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*{{$obj.Name}}, 0, len(objs))
+	for _, obj := range objs {
+		results = append(results, obj.(*{{$obj.Name}}))
+	}
+	return results, nil
 }
 
 func (tx *_{{$obj.Name}}MySQLTx) RangeCount(scope Range) (int64, error) {
@@ -326,7 +327,7 @@ func (tx *_{{$obj.Name}}MySQLTx) Fetch({{$primaryField.Name | camel2name}} inter
 		return nil, err
 	}
 	if len(objs) > 0 {
-		return objs[0], nil
+	return objs[0].(*{{$obj.Name}}), nil
 	}
 	return nil, fmt.Errorf("{{$obj.Name}} fetch record not found")
 }
@@ -338,10 +339,18 @@ func (tx *_{{$obj.Name}}MySQLTx) FetchBy{{$primaryField.Name}}s({{$primaryField.
 		
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbTable}}` WHERE `{{$primaryField.Name}}` IN (%s)", strings.Join(obj.GetColumns(), ","), orm.SliceJoin({{$primaryField.Name | camel2name}}s, ","))
-	return tx.FetchBySQL(query)
+	objs, err := tx.FetchBySQL(query)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*{{$obj.Name}}, 0, len(objs))
+	for _, obj := range objs {
+		results = append(results, obj.(*{{$obj.Name}}))
+	}
+	return results, nil
 }
 
-func (tx *_{{$obj.Name}}MySQLTx) FetchBySQL(sql string, args ... interface{}) (results []*{{$obj.Name}}, err error) {
+func (tx *_{{$obj.Name}}MySQLTx) FetchBySQL(sql string, args ... interface{}) (results []interface{}, err error) {
 	rows, err := tx.Query(sql, args...)
 	if err != nil {
 		tx.err = err
