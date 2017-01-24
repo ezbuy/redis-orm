@@ -6,6 +6,10 @@ func (m *_{{$relation.Name}}RedisMgr) SetAdd(relation *{{$relation.Name}}) error
 	return m.SAdd(setOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), relation.Value).Err()
 }
 
+func (pipe *_{{$relation.Name}}RedisPipeline) SetAdd(relation *{{$relation.Name}}) error {
+	return pipe.SAdd(setOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), relation.Value).Err()
+}
+
 func (m *_{{$relation.Name}}RedisMgr) SetGet(key string) ([]*{{$relation.Name}}, error) {
 	strs, err := m.SMembers(setOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Result()
 	if err != nil {
@@ -35,8 +39,16 @@ func (m *_{{$relation.Name}}RedisMgr) SetRem(relation *{{$relation.Name}}) error
 	return m.SRem(setOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), relation.Value).Err()
 }
 
+func (pipe *_{{$relation.Name}}RedisPipeline) SetRem(relation *{{$relation.Name}}) error {
+	return pipe.SRem(setOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), relation.Value).Err()
+}
+
 func (m *_{{$relation.Name}}RedisMgr) SetDel(key string) error {
 	return m.Del(setOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Err()
+}
+
+func (pipe *_{{$relation.Name}}RedisPipeline) SetDel(key string) error {
+	return pipe.Del(setOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Err()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) Find(key string) ([]string, error) {
