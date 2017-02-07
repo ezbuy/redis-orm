@@ -304,6 +304,12 @@ var _ = Describe("redis-orm.mysql", func() {
 			}
 		})
 
+		It("search", func() {
+			us, err := UserMySQLMgr().Search("age < 50 and sex = 1")
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(len(us)).To(Equal(25))
+		})
+
 		Measure("mysql.bench", func(b Benchmarker) {
 			b.Time("unique.runtime", func() {
 				unique := &MailboxPasswordOfUserUK{

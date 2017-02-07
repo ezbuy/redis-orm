@@ -137,6 +137,14 @@ func NewBlogMySQLMgr(cf *MySQLConfig) (*_BlogMySQLMgr, error) {
 	}
 	return &_BlogMySQLMgr{store}, nil
 }
+func (m *_BlogMySQLMgr) Search(where string, args ...interface{}) (results []interface{}, err error) {
+	obj := BlogMgr.NewBlog()
+	if where != "" {
+		where = " WHERE " + where
+	}
+	sql := fmt.Sprintf("SELECT %s FROM `blogs` %s", strings.Join(obj.GetColumns(), ","), where)
+	return m.FetchBySQL(sql, args...)
+}
 
 func (m *_BlogMySQLMgr) FetchBySQL(sql string, args ...interface{}) (results []interface{}, err error) {
 	rows, err := m.Query(sql, args...)
@@ -657,6 +665,15 @@ func (tx *_BlogMySQLTx) FetchByIds(ids []interface{}) ([]*Blog, error) {
 		results = append(results, obj.(*Blog))
 	}
 	return results, nil
+}
+
+func (tx *_BlogMySQLTx) Search(where string, args ...interface{}) (results []interface{}, err error) {
+	obj := BlogMgr.NewBlog()
+	if where != "" {
+		where = " WHERE " + where
+	}
+	sql := fmt.Sprintf("SELECT %s FROM `blogs` %s", strings.Join(obj.GetColumns(), ","), where)
+	return tx.FetchBySQL(sql, args...)
 }
 
 func (tx *_BlogMySQLTx) FetchBySQL(sql string, args ...interface{}) (results []interface{}, err error) {

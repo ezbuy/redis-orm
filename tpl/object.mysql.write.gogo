@@ -1,5 +1,6 @@
 {{define "object.mysql.write"}}
 {{$obj := .}}
+{{$relation := $obj.Relation}}
 {{$primaryField := $obj.PrimaryField}}
 //! tx write
 type _{{$obj.Name}}MySQLTx struct {
@@ -348,6 +349,15 @@ func (tx *_{{$obj.Name}}MySQLTx) FetchBy{{$primaryField.Name}}s({{$primaryField.
 		results = append(results, obj.(*{{$obj.Name}}))
 	}
 	return results, nil
+}
+
+func (tx *_{{$obj.Name}}MySQLTx) Search(where string, args ... interface{}) (results []interface{}, err error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	if where != "" {
+	 	where = " WHERE " + where
+	}
+	sql := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(obj.GetColumns(), ","), where)
+	return tx.FetchBySQL(sql, args...)
 }
 
 func (tx *_{{$obj.Name}}MySQLTx) FetchBySQL(sql string, args ... interface{}) (results []interface{}, err error) {

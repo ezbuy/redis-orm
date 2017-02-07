@@ -441,6 +441,14 @@ func NewUserMySQLMgr(cf *MySQLConfig) (*_UserMySQLMgr, error) {
 	}
 	return &_UserMySQLMgr{store}, nil
 }
+func (m *_UserMySQLMgr) Search(where string, args ...interface{}) (results []interface{}, err error) {
+	obj := UserMgr.NewUser()
+	if where != "" {
+		where = " WHERE " + where
+	}
+	sql := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), where)
+	return m.FetchBySQL(sql, args...)
+}
 
 func (m *_UserMySQLMgr) FetchBySQL(sql string, args ...interface{}) (results []interface{}, err error) {
 	rows, err := m.Query(sql, args...)
@@ -976,6 +984,15 @@ func (tx *_UserMySQLTx) FetchByIds(ids []interface{}) ([]*User, error) {
 		results = append(results, obj.(*User))
 	}
 	return results, nil
+}
+
+func (tx *_UserMySQLTx) Search(where string, args ...interface{}) (results []interface{}, err error) {
+	obj := UserMgr.NewUser()
+	if where != "" {
+		where = " WHERE " + where
+	}
+	sql := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), where)
+	return tx.FetchBySQL(sql, args...)
 }
 
 func (tx *_UserMySQLTx) FetchBySQL(sql string, args ...interface{}) (results []interface{}, err error) {
