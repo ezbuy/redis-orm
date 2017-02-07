@@ -347,13 +347,21 @@ func (tx *_{{$obj.Name}}MySQLTx) FetchBy{{$primaryField.Name}}s({{$primaryField.
 	return results, nil
 }
 
-func (tx *_{{$obj.Name}}MySQLTx) Search(where string, args ... interface{}) (results []interface{}, err error) {
+func (tx *_{{$obj.Name}}MySQLTx) Search(where string, args ... interface{}) ([]*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	if where != "" {
 	 	where = " WHERE " + where
 	}
-	sql := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(obj.GetColumns(), ","), where)
-	return tx.FetchBySQL(sql, args...)
+	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(obj.GetColumns(), ","), where)
+	objs, err := tx.FetchBySQL(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*{{$obj.Name}}, 0, len(objs))
+	for _, obj := range objs {
+		results = append(results, obj.(*{{$obj.Name}}))
+	}
+	return results, nil
 }
 
 func (tx *_{{$obj.Name}}MySQLTx) SearchCount(where string, args ... interface{}) (int64, error) {

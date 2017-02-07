@@ -138,13 +138,21 @@ func NewBlogMySQLMgr(cf *MySQLConfig) (*_BlogMySQLMgr, error) {
 	return &_BlogMySQLMgr{store}, nil
 }
 
-func (m *_BlogMySQLMgr) Search(where string, args ...interface{}) (results []interface{}, err error) {
+func (m *_BlogMySQLMgr) Search(where string, args ...interface{}) ([]*Blog, error) {
 	obj := BlogMgr.NewBlog()
 	if where != "" {
 		where = " WHERE " + where
 	}
-	sql := fmt.Sprintf("SELECT %s FROM `blogs` %s", strings.Join(obj.GetColumns(), ","), where)
-	return m.FetchBySQL(sql, args...)
+	query := fmt.Sprintf("SELECT %s FROM `blogs` %s", strings.Join(obj.GetColumns(), ","), where)
+	objs, err := m.FetchBySQL(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*Blog, 0, len(objs))
+	for _, obj := range objs {
+		results = append(results, obj.(*Blog))
+	}
+	return results, nil
 }
 
 func (m *_BlogMySQLMgr) SearchCount(where string, args ...interface{}) (int64, error) {
@@ -671,13 +679,21 @@ func (tx *_BlogMySQLTx) FetchByIds(ids []interface{}) ([]*Blog, error) {
 	return results, nil
 }
 
-func (tx *_BlogMySQLTx) Search(where string, args ...interface{}) (results []interface{}, err error) {
+func (tx *_BlogMySQLTx) Search(where string, args ...interface{}) ([]*Blog, error) {
 	obj := BlogMgr.NewBlog()
 	if where != "" {
 		where = " WHERE " + where
 	}
-	sql := fmt.Sprintf("SELECT %s FROM `blogs` %s", strings.Join(obj.GetColumns(), ","), where)
-	return tx.FetchBySQL(sql, args...)
+	query := fmt.Sprintf("SELECT %s FROM `blogs` %s", strings.Join(obj.GetColumns(), ","), where)
+	objs, err := tx.FetchBySQL(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*Blog, 0, len(objs))
+	for _, obj := range objs {
+		results = append(results, obj.(*Blog))
+	}
+	return results, nil
 }
 
 func (tx *_BlogMySQLTx) SearchCount(where string, args ...interface{}) (int64, error) {
