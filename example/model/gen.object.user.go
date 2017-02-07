@@ -441,6 +441,7 @@ func NewUserMySQLMgr(cf *MySQLConfig) (*_UserMySQLMgr, error) {
 	}
 	return &_UserMySQLMgr{store}, nil
 }
+
 func (m *_UserMySQLMgr) Search(where string, args ...interface{}) (results []interface{}, err error) {
 	obj := UserMgr.NewUser()
 	if where != "" {
@@ -448,6 +449,13 @@ func (m *_UserMySQLMgr) Search(where string, args ...interface{}) (results []int
 	}
 	sql := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), where)
 	return m.FetchBySQL(sql, args...)
+}
+
+func (m *_UserMySQLMgr) SearchCount(where string, args ...interface{}) (int64, error) {
+	if where != "" {
+		where = " WHERE " + where
+	}
+	return m.queryCount(where, args...)
 }
 
 func (m *_UserMySQLMgr) FetchBySQL(sql string, args ...interface{}) (results []interface{}, err error) {
@@ -930,11 +938,7 @@ func (tx *_UserMySQLTx) queryLimit(where string, limit int, args ...interface{})
 }
 
 func (tx *_UserMySQLTx) queryCount(where string, args ...interface{}) (int64, error) {
-	query := fmt.Sprintf("SELECT count(`id`) FROM `users`")
-	if where != "" {
-		query += " WHERE "
-		query += where
-	}
+	query := fmt.Sprintf("SELECT count(`id`) FROM `users` %s", where)
 
 	rows, err := tx.Query(query, args...)
 	if err != nil {
@@ -993,6 +997,13 @@ func (tx *_UserMySQLTx) Search(where string, args ...interface{}) (results []int
 	}
 	sql := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), where)
 	return tx.FetchBySQL(sql, args...)
+}
+
+func (tx *_UserMySQLTx) SearchCount(where string, args ...interface{}) (int64, error) {
+	if where != "" {
+		where = " WHERE " + where
+	}
+	return tx.queryCount(where, args...)
 }
 
 func (tx *_UserMySQLTx) FetchBySQL(sql string, args ...interface{}) (results []interface{}, err error) {

@@ -175,6 +175,7 @@ func NewUserBaseInfoMySQLMgr(cf *MySQLConfig) (*_UserBaseInfoMySQLMgr, error) {
 	}
 	return &_UserBaseInfoMySQLMgr{store}, nil
 }
+
 func (m *_UserBaseInfoMySQLMgr) Search(where string, args ...interface{}) (results []interface{}, err error) {
 	obj := UserBaseInfoMgr.NewUserBaseInfo()
 	if where != "" {
@@ -182,6 +183,13 @@ func (m *_UserBaseInfoMySQLMgr) Search(where string, args ...interface{}) (resul
 	}
 	sql := fmt.Sprintf("SELECT %s FROM `user_base_info` %s", strings.Join(obj.GetColumns(), ","), where)
 	return m.FetchBySQL(sql, args...)
+}
+
+func (m *_UserBaseInfoMySQLMgr) SearchCount(where string, args ...interface{}) (int64, error) {
+	if where != "" {
+		where = " WHERE " + where
+	}
+	return m.queryCount(where, args...)
 }
 
 func (m *_UserBaseInfoMySQLMgr) FetchBySQL(sql string, args ...interface{}) (results []interface{}, err error) {
