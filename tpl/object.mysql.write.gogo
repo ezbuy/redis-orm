@@ -295,12 +295,8 @@ func (tx *_{{$obj.Name}}MySQLTx) queryLimit(where string, limit int, args ...int
 }
 
 func (tx *_{{$obj.Name}}MySQLTx) queryCount(where string, args ...interface{}) (int64, error){
-	query := fmt.Sprintf("SELECT count(`{{$primaryField.Name | camel2name}}`) FROM `{{$obj.DbTable}}`")
-	if where != "" {
-		query += " WHERE " 
-		query += where
-	}
-
+	query := fmt.Sprintf("SELECT count(`{{$primaryField.Name | camel2name}}`) FROM `{{$obj.DbTable}}` %s", where)
+	
 	rows, err := tx.Query(query, args...)
 	if err != nil {
 		tx.err = err
@@ -358,6 +354,13 @@ func (tx *_{{$obj.Name}}MySQLTx) Search(where string, args ... interface{}) (res
 	}
 	sql := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(obj.GetColumns(), ","), where)
 	return tx.FetchBySQL(sql, args...)
+}
+
+func (tx *_{{$obj.Name}}MySQLTx) SearchCount(where string, args ... interface{}) (int64, error) {
+	if where != "" {
+		where = " WHERE " + where
+	}
+	return tx.queryCount(where, args...)
 }
 
 func (tx *_{{$obj.Name}}MySQLTx) FetchBySQL(sql string, args ... interface{}) (results []interface{}, err error) {

@@ -17,7 +17,7 @@ func New{{$obj.Name}}MySQLMgr(cf *MySQLConfig) (*_{{$obj.Name}}MySQLMgr, error) 
 	return &_{{$obj.Name}}MySQLMgr{store}, nil
 }
 
-{{- if not $obj.Relation}}
+{{if not $obj.Relation}}
 func (m *_{{$obj.Name}}MySQLMgr) Search(where string, args ...interface{}) (results []interface{}, err error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	if where != "" {
@@ -25,6 +25,13 @@ func (m *_{{$obj.Name}}MySQLMgr) Search(where string, args ...interface{}) (resu
 	}
 	sql := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(obj.GetColumns(), ","), where)
 	return m.FetchBySQL(sql, args...)
+}
+
+func (m *_{{$obj.Name}}MySQLMgr) SearchCount(where string, args ...interface{}) (int64, error){ 
+	if where != "" {
+		where = " WHERE " + where
+	}
+	return m.queryCount(where, args...)
 }
 {{- end}}
 

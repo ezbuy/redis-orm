@@ -308,6 +308,10 @@ var _ = Describe("redis-orm.mysql", func() {
 			us, err := UserMySQLMgr().Search("age < 50 and sex = 1")
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(len(us)).To(Equal(25))
+
+			cnt, err := UserMySQLMgr().SearchCount("age < 50 and sex = 1")
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(cnt).To(Equal(int64(25)))
 		})
 
 		Measure("mysql.bench", func(b Benchmarker) {
