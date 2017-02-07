@@ -170,8 +170,8 @@ func NewSexUserLocationMySQLMgr(cf *MySQLConfig) (*_SexUserLocationMySQLMgr, err
 	return &_SexUserLocationMySQLMgr{store}, nil
 }
 
-func (m *_SexUserLocationMySQLMgr) FetchBySQL(sql string, args ...interface{}) (results []interface{}, err error) {
-	rows, err := m.Query(sql, args...)
+func (m *_SexUserLocationMySQLMgr) FetchBySQL(q string, args ...interface{}) (results []interface{}, err error) {
+	rows, err := m.Query(q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("SexUserLocation fetch error: %v", err)
 	}

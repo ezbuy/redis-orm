@@ -195,8 +195,8 @@ func NewUserIdMySQLMgr(cf *MySQLConfig) (*_UserIdMySQLMgr, error) {
 	return &_UserIdMySQLMgr{store}, nil
 }
 
-func (m *_UserIdMySQLMgr) FetchBySQL(sql string, args ...interface{}) (results []interface{}, err error) {
-	rows, err := m.Query(sql, args...)
+func (m *_UserIdMySQLMgr) FetchBySQL(q string, args ...interface{}) (results []interface{}, err error) {
+	rows, err := m.Query(q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("UserId fetch error: %v", err)
 	}
