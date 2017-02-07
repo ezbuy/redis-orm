@@ -192,8 +192,8 @@ func (m *_UserBaseInfoMySQLMgr) SearchCount(where string, args ...interface{}) (
 	return m.queryCount(where, args...)
 }
 
-func (m *_UserBaseInfoMySQLMgr) FetchBySQL(sql string, args ...interface{}) (results []interface{}, err error) {
-	rows, err := m.Query(sql, args...)
+func (m *_UserBaseInfoMySQLMgr) FetchBySQL(q string, args ...interface{}) (results []interface{}, err error) {
+	rows, err := m.Query(q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("UserBaseInfo fetch error: %v", err)
 	}

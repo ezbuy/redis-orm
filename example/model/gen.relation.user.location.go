@@ -170,8 +170,8 @@ func NewUserLocationMySQLMgr(cf *MySQLConfig) (*_UserLocationMySQLMgr, error) {
 	return &_UserLocationMySQLMgr{store}, nil
 }
 
-func (m *_UserLocationMySQLMgr) FetchBySQL(sql string, args ...interface{}) (results []interface{}, err error) {
-	rows, err := m.Query(sql, args...)
+func (m *_UserLocationMySQLMgr) FetchBySQL(q string, args ...interface{}) (results []interface{}, err error) {
+	rows, err := m.Query(q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("UserLocation fetch error: %v", err)
 	}

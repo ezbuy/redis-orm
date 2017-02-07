@@ -200,8 +200,8 @@ func NewUserBlogsMySQLMgr(cf *MySQLConfig) (*_UserBlogsMySQLMgr, error) {
 	return &_UserBlogsMySQLMgr{store}, nil
 }
 
-func (m *_UserBlogsMySQLMgr) FetchBySQL(sql string, args ...interface{}) (results []interface{}, err error) {
-	rows, err := m.Query(sql, args...)
+func (m *_UserBlogsMySQLMgr) FetchBySQL(q string, args ...interface{}) (results []interface{}, err error) {
+	rows, err := m.Query(q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("UserBlogs fetch error: %v", err)
 	}

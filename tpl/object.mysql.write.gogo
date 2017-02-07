@@ -363,8 +363,8 @@ func (tx *_{{$obj.Name}}MySQLTx) SearchCount(where string, args ... interface{})
 	return tx.queryCount(where, args...)
 }
 
-func (tx *_{{$obj.Name}}MySQLTx) FetchBySQL(sql string, args ... interface{}) (results []interface{}, err error) {
-	rows, err := tx.Query(sql, args...)
+func (tx *_{{$obj.Name}}MySQLTx) FetchBySQL(q string, args ... interface{}) (results []interface{}, err error) {
+	rows, err := tx.Query(q, args...)
 	if err != nil {
 		tx.err = err
 		return nil, fmt.Errorf("{{$obj.Name}} fetch error: %v", err)

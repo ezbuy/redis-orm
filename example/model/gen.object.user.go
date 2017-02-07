@@ -458,8 +458,8 @@ func (m *_UserMySQLMgr) SearchCount(where string, args ...interface{}) (int64, e
 	return m.queryCount(where, args...)
 }
 
-func (m *_UserMySQLMgr) FetchBySQL(sql string, args ...interface{}) (results []interface{}, err error) {
-	rows, err := m.Query(sql, args...)
+func (m *_UserMySQLMgr) FetchBySQL(q string, args ...interface{}) (results []interface{}, err error) {
+	rows, err := m.Query(q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("User fetch error: %v", err)
 	}
@@ -1006,8 +1006,8 @@ func (tx *_UserMySQLTx) SearchCount(where string, args ...interface{}) (int64, e
 	return tx.queryCount(where, args...)
 }
 
-func (tx *_UserMySQLTx) FetchBySQL(sql string, args ...interface{}) (results []interface{}, err error) {
-	rows, err := tx.Query(sql, args...)
+func (tx *_UserMySQLTx) FetchBySQL(q string, args ...interface{}) (results []interface{}, err error) {
+	rows, err := tx.Query(q, args...)
 	if err != nil {
 		tx.err = err
 		return nil, fmt.Errorf("User fetch error: %v", err)
