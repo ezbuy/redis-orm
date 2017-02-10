@@ -54,7 +54,7 @@ func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
 			{{- else}}
 				"{{$field.Name}}",
 				fmt.Sprint({{$field.GetTransformValue "obj."}}),
-			{{- end}}		
+			{{- end}}
 		{{- end}}
 	}
 	rg_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline)
@@ -69,7 +69,7 @@ func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
 		return err
 	}
 	{{- end}}
-	
+
 	if err := pipe.Del(keyOfObject(obj, fmt.Sprint({{$primaryField.GetTransformValue "obj."}}))).Err(); err != nil {
 		return err
 	}
@@ -80,13 +80,33 @@ func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
 	return nil
 }
 
+
+func (m *_{{$obj.Name}}RedisMgr) SaveBatch(objs []*{{$obj.Name}}) error {
+	pipe := m.BeginPipeline()
+	for _, obj := range objs {
+		m.addToPipeline(pipe, obj)
+	}
+	if _, err := pipe.Exec(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (m *_{{$obj.Name}}RedisMgr) Save(obj *{{$obj.Name}}) error {
 	pipe := m.BeginPipeline()
+	m.addToPipeline(pipe, obj)
+	if _, err := pipe.Exec(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipeline, obj *{{$obj.Name}}) error {
 	//! fields
 	{{- range $i, $field := $obj.Fields}}
 	pipe.HSet(keyOfObject(obj, fmt.Sprint({{$primaryField.GetTransformValue "obj."}})), "{{$field.Name}}", fmt.Sprint({{$field.GetTransformValue "obj."}}))
 	{{- end}}
-	
+
 	//! uniques
 	{{- range $i, $unique := $obj.Uniques}}
 	{{- $relation := ($unique.GetRelation "pair" $primaryField.GetType $obj.Name)}}
@@ -131,7 +151,7 @@ func (m *_{{$obj.Name}}RedisMgr) Save(obj *{{$obj.Name}}) error {
 			{{- else}}
 				"{{$field.Name}}",
 				fmt.Sprint({{$field.GetTransformValue "obj."}}),
-			{{- end}}		
+			{{- end}}
 		{{- end}}
 	}
 	rg_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline)
@@ -147,9 +167,6 @@ func (m *_{{$obj.Name}}RedisMgr) Save(obj *{{$obj.Name}}) error {
 	}
 	{{- end}}
 
-	if _, err := pipe.Exec(); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -157,7 +174,7 @@ func (m *_{{$obj.Name}}RedisMgr) Clear() error {
 	if strs, err := m.Keys(pairOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
 		if len(strs) > 0 {
 			m.Del(strs...)
-		}		
+		}
 	}
 	if strs, err := m.Keys(hashOfClass("{{$obj.Name}}", "object","*")).Result(); err == nil {
 		if len(strs) > 0 {
@@ -188,4 +205,3 @@ func (m *_{{$obj.Name}}RedisMgr) Clear() error {
 }
 
 {{end}}
-

@@ -61,6 +61,8 @@ func ExecuteMetaObjectScriptTemplate(output string, driver string, obj *parser.M
 		return err
 	}
 
+	oscmd := exec.Command("gofmt", "-w", output)
+	oscmd.Run()
 	return nil
 }
 

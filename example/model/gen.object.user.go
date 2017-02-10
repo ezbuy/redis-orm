@@ -1113,13 +1113,12 @@ func (m *_UserRedisMgr) AddBySQL(db DBFetcher, sql string, args ...interface{}) 
 		return err
 	}
 
-	for _, obj := range objs {
-		if err := m.Save(obj.(*User)); err != nil {
-			return err
-		}
+	redisObjs := make([]*User, len(objs))
+	for i, obj := range objs {
+		redisObjs[i] = obj.(*User)
 	}
 
-	return nil
+	return m.SaveBatch(redisObjs)
 }
 func (m *_UserRedisMgr) DelBySQL(db DBFetcher, sql string, args ...interface{}) error {
 	objs, err := db.FetchBySQL(sql, args...)
@@ -1477,8 +1476,27 @@ func (m *_UserRedisMgr) Delete(obj *User) error {
 	return nil
 }
 
+func (m *_UserRedisMgr) SaveBatch(objs []*User) error {
+	pipe := m.BeginPipeline()
+	for _, obj := range objs {
+		m.addToPipeline(pipe, obj)
+	}
+	if _, err := pipe.Exec(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (m *_UserRedisMgr) Save(obj *User) error {
 	pipe := m.BeginPipeline()
+	m.addToPipeline(pipe, obj)
+	if _, err := pipe.Exec(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *_UserRedisMgr) addToPipeline(pipe *_UserRedisPipeline, obj *User) error {
 	//! fields
 	pipe.HSet(keyOfObject(obj, fmt.Sprint(obj.Id)), "Id", fmt.Sprint(obj.Id))
 	pipe.HSet(keyOfObject(obj, fmt.Sprint(obj.Id)), "Name", fmt.Sprint(obj.Name))
@@ -1550,9 +1568,6 @@ func (m *_UserRedisMgr) Save(obj *User) error {
 		return err
 	}
 
-	if _, err := pipe.Exec(); err != nil {
-		return err
-	}
 	return nil
 }
 
