@@ -21,13 +21,13 @@ func (m *_{{$obj.Name}}RedisMgr) AddBySQL(db DBFetcher, sql string, args ...inte
 		return err
 	}
 
-	for _, obj := range objs {
-		if err := m.Save(obj.(*{{$obj.Name}})); err != nil {
-			return err
-		}
+
+	redisObjs := make([]*{{$obj.Name}}, len(objs))
+	for i, obj := range objs {
+		redisObjs[i] = obj.(*{{$obj.Name}})
 	}
 
-	return nil
+	return m.SaveBatch(redisObjs)
 }
 func (m *_{{$obj.Name}}RedisMgr) DelBySQL(db DBFetcher, sql string, args ...interface{}) error {
 	objs, err := db.FetchBySQL(sql, args...)
