@@ -18,19 +18,20 @@ var (
 )
 
 type User struct {
-	Id          int32     `db:"id" json:"id"`
-	Name        string    `db:"name" json:"name"`
-	Mailbox     string    `db:"mailbox" json:"mailbox"`
-	Sex         bool      `db:"sex" json:"sex"`
-	Age         int32     `db:"age" json:"age"`
-	Longitude   float64   `db:"longitude" json:"longitude"`
-	Latitude    float64   `db:"latitude" json:"latitude"`
-	Description string    `db:"description" json:"description"`
-	Password    string    `db:"password" json:"password"`
-	HeadUrl     string    `db:"head_url" json:"head_url"`
-	Status      int32     `db:"status" json:"status"`
-	CreatedAt   time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt   time.Time `db:"updated_at" json:"updated_at"`
+	Id          int32      `db:"id" json:"id"`
+	Name        string     `db:"name" json:"name"`
+	Mailbox     string     `db:"mailbox" json:"mailbox"`
+	Sex         bool       `db:"sex" json:"sex"`
+	Age         int32      `db:"age" json:"age"`
+	Longitude   float64    `db:"longitude" json:"longitude"`
+	Latitude    float64    `db:"latitude" json:"latitude"`
+	Description string     `db:"description" json:"description"`
+	Password    string     `db:"password" json:"password"`
+	HeadUrl     string     `db:"head_url" json:"head_url"`
+	Status      int32      `db:"status" json:"status"`
+	CreatedAt   time.Time  `db:"created_at" json:"created_at"`
+	UpdatedAt   time.Time  `db:"updated_at" json:"updated_at"`
+	DeletedAt   *time.Time `db:"deleted_at" json:"deleted_at"`
 }
 
 type _UserMgr struct {
@@ -71,6 +72,7 @@ func (obj *User) GetColumns() []string {
 		"`status`",
 		"`created_at`",
 		"`updated_at`",
+		"`deleted_at`",
 	}
 	return columns
 }
@@ -92,6 +94,45 @@ func (obj *User) GetPrimaryName() string {
 }
 
 //! uniques
+
+type IdOfUserUK struct {
+	Id int32
+}
+
+func (u *IdOfUserUK) Key() string {
+	strs := []string{
+		"Id",
+		fmt.Sprint(u.Id),
+	}
+	return fmt.Sprintf("%s", strings.Join(strs, ":"))
+}
+
+func (u *IdOfUserUK) SQLFormat(limit bool) string {
+	conditions := []string{
+		"id = ?",
+	}
+	return orm.SQLWhere(conditions)
+}
+
+func (u *IdOfUserUK) SQLParams() []interface{} {
+	return []interface{}{
+		u.Id,
+	}
+}
+
+func (u *IdOfUserUK) SQLLimit() int {
+	return 1
+}
+
+func (u *IdOfUserUK) Limit(n int) {
+}
+
+func (u *IdOfUserUK) Offset(n int) {
+}
+
+func (u *IdOfUserUK) UKRelation() UniqueRelation {
+	return IdOfUserUKRelationRedisMgr()
+}
 
 type MailboxPasswordOfUserUK struct {
 	Mailbox  string
@@ -473,30 +514,35 @@ func (m *_UserMySQLMgr) FetchBySQL(q string, args ...interface{}) (results []int
 	}
 	defer rows.Close()
 
-	var CreatedAt string
-	var UpdatedAt string
+	var Age sql.NullInt64
+	var Description sql.NullString
+	var HeadUrl sql.NullString
+	var CreatedAt int64
+	var UpdatedAt int64
+	var DeletedAt sql.NullInt64
 
 	for rows.Next() {
 		var result User
-		err = rows.Scan(&(result.Id),
-			&(result.Name),
-			&(result.Mailbox),
-			&(result.Sex),
-			&(result.Age),
-			&(result.Longitude),
-			&(result.Latitude),
-			&(result.Description),
-			&(result.Password),
-			&(result.HeadUrl),
-			&(result.Status),
-			&CreatedAt, &UpdatedAt)
+		err = rows.Scan(&(result.Id), &(result.Name), &(result.Mailbox), &(result.Sex), &Age, &(result.Longitude), &(result.Latitude), &Description, &(result.Password), &HeadUrl, &(result.Status), &CreatedAt, &UpdatedAt, &DeletedAt)
 		if err != nil {
 			return nil, err
 		}
 
-		result.CreatedAt = orm.TimeParse(CreatedAt)
+		result.Age = int32(Age.Int64)
 
-		result.UpdatedAt = orm.TimeParse(UpdatedAt)
+		result.Description = Description.String
+
+		result.HeadUrl = HeadUrl.String
+
+		result.CreatedAt = time.Unix(CreatedAt, 0)
+		result.UpdatedAt = time.Unix(UpdatedAt, 0)
+		if DeletedAt.Valid {
+			DeletedAtValue := DeletedAt.Int64
+			DeletedAtPoint := time.Unix(DeletedAtValue, 0)
+			result.DeletedAt = &DeletedAtPoint
+		} else {
+			result.DeletedAt = nil
+		}
 
 		results = append(results, &result)
 	}
@@ -680,9 +726,9 @@ func (tx *_UserMySQLTx) BatchCreate(objs []*User) error {
 	}
 
 	params := make([]string, 0, len(objs))
-	values := make([]interface{}, 0, len(objs)*13)
+	values := make([]interface{}, 0, len(objs)*14)
 	for _, obj := range objs {
-		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice(13, "?"), ",")))
+		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice(14, "?"), ",")))
 		values = append(values, 0)
 		values = append(values, obj.Name)
 		values = append(values, obj.Mailbox)
@@ -694,8 +740,13 @@ func (tx *_UserMySQLTx) BatchCreate(objs []*User) error {
 		values = append(values, obj.Password)
 		values = append(values, obj.HeadUrl)
 		values = append(values, obj.Status)
-		values = append(values, orm.TimeFormat(obj.CreatedAt))
-		values = append(values, orm.TimeFormat(obj.UpdatedAt))
+		values = append(values, obj.CreatedAt.Unix())
+		values = append(values, obj.UpdatedAt.Unix())
+		if obj.DeletedAt == nil {
+			values = append(values, nil)
+		} else {
+			values = append(values, obj.DeletedAt.Unix())
+		}
 	}
 	query := fmt.Sprintf("INSERT INTO `users`(%s) VALUES %s", strings.Join(objs[0].GetColumns(), ","), strings.Join(params, ","))
 	result, err := tx.Exec(query, values...)
@@ -738,12 +789,31 @@ func (tx *_UserMySQLTx) UpdateBySQL(set, where string, args ...interface{}) erro
 }
 
 func (tx *_UserMySQLTx) Create(obj *User) error {
-	params := orm.NewStringSlice(13, "?")
+	params := orm.NewStringSlice(14, "?")
 	q := fmt.Sprintf("INSERT INTO `users`(%s) VALUES(%s)",
 		strings.Join(obj.GetColumns(), ","),
 		strings.Join(params, ","))
 
-	result, err := tx.Exec(q, 0, obj.Name, obj.Mailbox, obj.Sex, obj.Age, obj.Longitude, obj.Latitude, obj.Description, obj.Password, obj.HeadUrl, obj.Status, orm.TimeFormat(obj.CreatedAt), orm.TimeFormat(obj.UpdatedAt))
+	values := make([]interface{}, 0, 14)
+	values = append(values, 0)
+	values = append(values, obj.Name)
+	values = append(values, obj.Mailbox)
+	values = append(values, obj.Sex)
+	values = append(values, obj.Age)
+	values = append(values, obj.Longitude)
+	values = append(values, obj.Latitude)
+	values = append(values, obj.Description)
+	values = append(values, obj.Password)
+	values = append(values, obj.HeadUrl)
+	values = append(values, obj.Status)
+	values = append(values, obj.CreatedAt.Unix())
+	values = append(values, obj.UpdatedAt.Unix())
+	if obj.DeletedAt == nil {
+		values = append(values, nil)
+	} else {
+		values = append(values, obj.DeletedAt.Unix())
+	}
+	result, err := tx.Exec(q, values...)
 	if err != nil {
 		tx.err = err
 		return err
@@ -772,10 +842,31 @@ func (tx *_UserMySQLTx) Update(obj *User) error {
 		"`status` = ?",
 		"`created_at` = ?",
 		"`updated_at` = ?",
+		"`deleted_at` = ?",
 	}
 	q := fmt.Sprintf("UPDATE `users` SET %s WHERE `id`=?",
 		strings.Join(columns, ","))
-	result, err := tx.Exec(q, obj.Name, obj.Mailbox, obj.Sex, obj.Age, obj.Longitude, obj.Latitude, obj.Description, obj.Password, obj.HeadUrl, obj.Status, orm.TimeFormat(obj.CreatedAt), orm.TimeFormat(obj.UpdatedAt), obj.Id)
+	values := make([]interface{}, 0, 14-1)
+	values = append(values, obj.Name)
+	values = append(values, obj.Mailbox)
+	values = append(values, obj.Sex)
+	values = append(values, obj.Age)
+	values = append(values, obj.Longitude)
+	values = append(values, obj.Latitude)
+	values = append(values, obj.Description)
+	values = append(values, obj.Password)
+	values = append(values, obj.HeadUrl)
+	values = append(values, obj.Status)
+	values = append(values, obj.CreatedAt.Unix())
+	values = append(values, obj.UpdatedAt.Unix())
+	if obj.DeletedAt == nil {
+		values = append(values, nil)
+	} else {
+		values = append(values, obj.DeletedAt.Unix())
+	}
+	values = append(values, obj.Id)
+
+	result, err := tx.Exec(q, values...)
 	if err != nil {
 		tx.err = err
 		return err
@@ -1030,31 +1121,35 @@ func (tx *_UserMySQLTx) FetchBySQL(q string, args ...interface{}) (results []int
 	}
 	defer rows.Close()
 
-	var CreatedAt string
-	var UpdatedAt string
+	var Age sql.NullInt64
+	var Description sql.NullString
+	var HeadUrl sql.NullString
+	var CreatedAt int64
+	var UpdatedAt int64
+	var DeletedAt sql.NullInt64
 
 	for rows.Next() {
 		var result User
-		err = rows.Scan(&(result.Id),
-			&(result.Name),
-			&(result.Mailbox),
-			&(result.Sex),
-			&(result.Age),
-			&(result.Longitude),
-			&(result.Latitude),
-			&(result.Description),
-			&(result.Password),
-			&(result.HeadUrl),
-			&(result.Status),
-			&CreatedAt, &UpdatedAt)
+		err = rows.Scan(&(result.Id), &(result.Name), &(result.Mailbox), &(result.Sex), &Age, &(result.Longitude), &(result.Latitude), &Description, &(result.Password), &HeadUrl, &(result.Status), &CreatedAt, &UpdatedAt, &DeletedAt)
 		if err != nil {
-			tx.err = err
 			return nil, err
 		}
 
-		result.CreatedAt = orm.TimeParse(CreatedAt)
+		result.Age = int32(Age.Int64)
 
-		result.UpdatedAt = orm.TimeParse(UpdatedAt)
+		result.Description = Description.String
+
+		result.HeadUrl = HeadUrl.String
+
+		result.CreatedAt = time.Unix(CreatedAt, 0)
+		result.UpdatedAt = time.Unix(UpdatedAt, 0)
+		if DeletedAt.Valid {
+			DeletedAtValue := DeletedAt.Int64
+			DeletedAtPoint := time.Unix(DeletedAtValue, 0)
+			result.DeletedAt = &DeletedAtPoint
+		} else {
+			result.DeletedAt = nil
+		}
 
 		results = append(results, &result)
 	}
@@ -1103,7 +1198,7 @@ func (m *_UserRedisMgr) Load(db DBFetcher) error {
 		return err
 	}
 
-	return m.AddBySQL(db, "SELECT `id`,`name`,`mailbox`,`sex`, `age`, `longitude`,`latitude`,`description`,`password`,`head_url`,`status`,`created_at`, `updated_at` FROM users")
+	return m.AddBySQL(db, "SELECT `id`,`name`,`mailbox`,`sex`, `age`, `longitude`,`latitude`,`description`,`password`,`head_url`,`status`,`created_at`, `updated_at`, `deleted_at` FROM users")
 
 }
 
@@ -1267,7 +1362,7 @@ func (m *_UserRedisMgr) Fetch(id interface{}) (*User, error) {
 
 	pipe := m.BeginPipeline()
 	pipe.Exists(keyOfObject(obj, fmt.Sprint(id)))
-	pipe.HMGet(keyOfObject(obj, fmt.Sprint(id)), "Id", "Name", "Mailbox", "Sex", "Age", "Longitude", "Latitude", "Description", "Password", "HeadUrl", "Status", "CreatedAt", "UpdatedAt")
+	pipe.HMGet(keyOfObject(obj, fmt.Sprint(id)), "Id", "Name", "Mailbox", "Sex", "Age", "Longitude", "Latitude", "Description", "Password", "HeadUrl", "Status", "CreatedAt", "UpdatedAt", "DeletedAt")
 	cmds, err := pipe.Exec()
 	if err != nil {
 		return nil, err
@@ -1316,16 +1411,26 @@ func (m *_UserRedisMgr) Fetch(id interface{}) (*User, error) {
 	if err := m.StringScan(strs[10].(string), &obj.Status); err != nil {
 		return nil, err
 	}
-	var val11 string
+	var val11 int64
 	if err := m.StringScan(strs[11].(string), &val11); err != nil {
 		return nil, err
 	}
-	obj.CreatedAt = orm.TimeParse(val11)
-	var val12 string
+	obj.CreatedAt = time.Unix(val11, 0)
+	var val12 int64
 	if err := m.StringScan(strs[12].(string), &val12); err != nil {
 		return nil, err
 	}
-	obj.UpdatedAt = orm.TimeParse(val12)
+	obj.UpdatedAt = time.Unix(val12, 0)
+	if strs[13].(string) == "nil" {
+		obj.DeletedAt = nil
+	} else {
+		var val13 int64
+		if err := m.StringScan(strs[13].(string), &val13); err != nil {
+			return nil, err
+		}
+		DeletedAtValue := time.Unix(val13, 0)
+		obj.DeletedAt = &DeletedAtValue
+	}
 	return obj, nil
 }
 
@@ -1335,7 +1440,7 @@ func (m *_UserRedisMgr) FetchByIds(ids []interface{}) ([]*User, error) {
 	obj := UserMgr.NewUser()
 	for _, id := range ids {
 		pipe.Exists(keyOfObject(obj, fmt.Sprint(id)))
-		pipe.HMGet(keyOfObject(obj, fmt.Sprint(id)), "Id", "Name", "Mailbox", "Sex", "Age", "Longitude", "Latitude", "Description", "Password", "HeadUrl", "Status", "CreatedAt", "UpdatedAt")
+		pipe.HMGet(keyOfObject(obj, fmt.Sprint(id)), "Id", "Name", "Mailbox", "Sex", "Age", "Longitude", "Latitude", "Description", "Password", "HeadUrl", "Status", "CreatedAt", "UpdatedAt", "DeletedAt")
 	}
 	cmds, err := pipe.Exec()
 	if err != nil {
@@ -1387,16 +1492,26 @@ func (m *_UserRedisMgr) FetchByIds(ids []interface{}) ([]*User, error) {
 		if err := m.StringScan(strs[10].(string), &obj.Status); err != nil {
 			return nil, err
 		}
-		var val11 string
+		var val11 int64
 		if err := m.StringScan(strs[11].(string), &val11); err != nil {
 			return nil, err
 		}
-		obj.CreatedAt = orm.TimeParse(val11)
-		var val12 string
+		obj.CreatedAt = time.Unix(val11, 0)
+		var val12 int64
 		if err := m.StringScan(strs[12].(string), &val12); err != nil {
 			return nil, err
 		}
-		obj.UpdatedAt = orm.TimeParse(val12)
+		obj.UpdatedAt = time.Unix(val12, 0)
+		if strs[13].(string) == "nil" {
+			obj.DeletedAt = nil
+		} else {
+			var val13 int64
+			if err := m.StringScan(strs[13].(string), &val13); err != nil {
+				return nil, err
+			}
+			DeletedAtValue := time.Unix(val13, 0)
+			obj.DeletedAt = &DeletedAtValue
+		}
 		objs = append(objs, obj)
 	}
 	return objs, nil
@@ -1414,13 +1529,21 @@ func (m *_UserRedisMgr) Delete(obj *User) error {
 	pipe := m.BeginPipeline()
 	//! uniques
 	uk_key_0 := []string{
+		"Id",
+		fmt.Sprint(obj.Id),
+	}
+	uk_pip_0 := IdOfUserUKRelationRedisMgr().BeginPipeline(pipe.Pipeline)
+	if err := uk_pip_0.PairRem(strings.Join(uk_key_0, ":")); err != nil {
+		return err
+	}
+	uk_key_1 := []string{
 		"Mailbox",
 		fmt.Sprint(obj.Mailbox),
 		"Password",
 		fmt.Sprint(obj.Password),
 	}
-	uk_pip_0 := MailboxPasswordOfUserUKRelationRedisMgr().BeginPipeline(pipe.Pipeline)
-	if err := uk_pip_0.PairRem(strings.Join(uk_key_0, ":")); err != nil {
+	uk_pip_1 := MailboxPasswordOfUserUKRelationRedisMgr().BeginPipeline(pipe.Pipeline)
+	if err := uk_pip_1.PairRem(strings.Join(uk_key_1, ":")); err != nil {
 		return err
 	}
 
@@ -1509,20 +1632,35 @@ func (m *_UserRedisMgr) addToPipeline(pipe *_UserRedisPipeline, obj *User) error
 	pipe.HSet(keyOfObject(obj, fmt.Sprint(obj.Id)), "Password", fmt.Sprint(obj.Password))
 	pipe.HSet(keyOfObject(obj, fmt.Sprint(obj.Id)), "HeadUrl", fmt.Sprint(obj.HeadUrl))
 	pipe.HSet(keyOfObject(obj, fmt.Sprint(obj.Id)), "Status", fmt.Sprint(obj.Status))
-	pipe.HSet(keyOfObject(obj, fmt.Sprint(obj.Id)), "CreatedAt", fmt.Sprint(orm.TimeFormat(obj.CreatedAt)))
-	pipe.HSet(keyOfObject(obj, fmt.Sprint(obj.Id)), "UpdatedAt", fmt.Sprint(orm.TimeFormat(obj.UpdatedAt)))
+	pipe.HSet(keyOfObject(obj, fmt.Sprint(obj.Id)), "CreatedAt", fmt.Sprint(obj.CreatedAt.Unix()))
+	pipe.HSet(keyOfObject(obj, fmt.Sprint(obj.Id)), "UpdatedAt", fmt.Sprint(obj.UpdatedAt.Unix()))
+	if obj.DeletedAt != nil {
+		pipe.HSet(keyOfObject(obj, fmt.Sprint(obj.Id)), "DeletedAt", fmt.Sprint(obj.DeletedAt.Unix()))
+	} else {
+		pipe.HSet(keyOfObject(obj, fmt.Sprint(obj.Id)), "DeletedAt", "nil")
+	}
 
 	//! uniques
 	uk_key_0 := []string{
+		"Id",
+		fmt.Sprint(obj.Id),
+	}
+	uk_pip_0 := IdOfUserUKRelationRedisMgr().BeginPipeline(pipe.Pipeline)
+	uk_rel_0 := IdOfUserUKRelationRedisMgr().NewIdOfUserUKRelation(strings.Join(uk_key_0, ":"))
+	uk_rel_0.Value = obj.Id
+	if err := uk_pip_0.PairAdd(uk_rel_0); err != nil {
+		return err
+	}
+	uk_key_1 := []string{
 		"Mailbox",
 		fmt.Sprint(obj.Mailbox),
 		"Password",
 		fmt.Sprint(obj.Password),
 	}
-	uk_pip_0 := MailboxPasswordOfUserUKRelationRedisMgr().BeginPipeline(pipe.Pipeline)
-	uk_rel_0 := MailboxPasswordOfUserUKRelationRedisMgr().NewMailboxPasswordOfUserUKRelation(strings.Join(uk_key_0, ":"))
-	uk_rel_0.Value = obj.Id
-	if err := uk_pip_0.PairAdd(uk_rel_0); err != nil {
+	uk_pip_1 := MailboxPasswordOfUserUKRelationRedisMgr().BeginPipeline(pipe.Pipeline)
+	uk_rel_1 := MailboxPasswordOfUserUKRelationRedisMgr().NewMailboxPasswordOfUserUKRelation(strings.Join(uk_key_1, ":"))
+	uk_rel_1.Value = obj.Id
+	if err := uk_pip_1.PairAdd(uk_rel_1); err != nil {
 		return err
 	}
 
@@ -1606,6 +1744,104 @@ func (m *_UserRedisMgr) Clear() error {
 }
 
 //! uniques
+
+//! relation
+type IdOfUserUKRelation struct {
+	Key   string `db:"key" json:"key"`
+	Value int32  `db:"value" json:"value"`
+}
+
+func (relation *IdOfUserUKRelation) GetClassName() string {
+	return "IdOfUserUKRelation"
+}
+
+func (relation *IdOfUserUKRelation) GetIndexes() []string {
+	idx := []string{}
+	return idx
+}
+
+func (relation *IdOfUserUKRelation) GetStoreType() string {
+	return "pair"
+}
+
+func (relation *IdOfUserUKRelation) GetPrimaryName() string {
+	return "Key"
+}
+
+type _IdOfUserUKRelationRedisMgr struct {
+	*orm.RedisStore
+}
+
+func IdOfUserUKRelationRedisMgr(stores ...*orm.RedisStore) *_IdOfUserUKRelationRedisMgr {
+	if len(stores) > 0 {
+		return &_IdOfUserUKRelationRedisMgr{stores[0]}
+	}
+	return &_IdOfUserUKRelationRedisMgr{_redis_store}
+}
+
+func (m *_IdOfUserUKRelationRedisMgr) NewIdOfUserUKRelation(key string) *IdOfUserUKRelation {
+	return &IdOfUserUKRelation{
+		Key: key,
+	}
+}
+
+//! pipeline
+type _IdOfUserUKRelationRedisPipeline struct {
+	*redis.Pipeline
+	Err error
+}
+
+func (m *_IdOfUserUKRelationRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_IdOfUserUKRelationRedisPipeline {
+	if len(pipes) > 0 {
+		return &_IdOfUserUKRelationRedisPipeline{pipes[0], nil}
+	}
+	return &_IdOfUserUKRelationRedisPipeline{m.Pipeline(), nil}
+}
+
+//! redis relation pair
+func (m *_IdOfUserUKRelationRedisMgr) PairAdd(obj *IdOfUserUKRelation) error {
+	return m.Set(pairOfClass("User", obj.GetClassName(), obj.Key), obj.Value, 0).Err()
+}
+
+func (pipe *_IdOfUserUKRelationRedisPipeline) PairAdd(obj *IdOfUserUKRelation) error {
+	return pipe.Set(pairOfClass("User", obj.GetClassName(), obj.Key), obj.Value, 0).Err()
+}
+
+func (m *_IdOfUserUKRelationRedisMgr) PairGet(key string) (*IdOfUserUKRelation, error) {
+	str, err := m.Get(pairOfClass("User", "IdOfUserUKRelation", key)).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	obj := m.NewIdOfUserUKRelation(key)
+	if err := m.StringScan(str, &obj.Value); err != nil {
+		return nil, err
+	}
+	return obj, nil
+}
+
+func (m *_IdOfUserUKRelationRedisMgr) PairRem(key string) error {
+	return m.Del(pairOfClass("User", "IdOfUserUKRelation", key)).Err()
+}
+
+func (pipe *_IdOfUserUKRelationRedisPipeline) PairRem(key string) error {
+	return pipe.Del(pairOfClass("User", "IdOfUserUKRelation", key)).Err()
+}
+
+func (m *_IdOfUserUKRelationRedisMgr) FindOne(key string) (string, error) {
+	return m.Get(pairOfClass("User", "IdOfUserUKRelation", key)).Result()
+}
+
+func (m *_IdOfUserUKRelationRedisMgr) Clear() error {
+	strs, err := m.Keys(pairOfClass("User", "IdOfUserUKRelation", "*")).Result()
+	if err != nil {
+		return err
+	}
+	if len(strs) > 0 {
+		return m.Del(strs...).Err()
+	}
+	return nil
+}
 
 //! relation
 type MailboxPasswordOfUserUKRelation struct {

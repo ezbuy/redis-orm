@@ -104,7 +104,15 @@ func (m *_{{$obj.Name}}RedisMgr) Save(obj *{{$obj.Name}}) error {
 func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipeline, obj *{{$obj.Name}}) error {
 	//! fields
 	{{- range $i, $field := $obj.Fields}}
-	pipe.HSet(keyOfObject(obj, fmt.Sprint({{$primaryField.GetTransformValue "obj."}})), "{{$field.Name}}", fmt.Sprint({{$field.GetTransformValue "obj."}}))
+		{{- if and $field.IsNullable $field.IsNeedTransform}}
+			if obj.{{$field.Name}} != nil {
+				pipe.HSet(keyOfObject(obj, fmt.Sprint({{$primaryField.GetTransformValue "obj."}})), "{{$field.Name}}", fmt.Sprint({{$field.GetTransformValue "obj."}}))
+			} else {
+				pipe.HSet(keyOfObject(obj, fmt.Sprint({{$primaryField.GetTransformValue "obj."}})), "{{$field.Name}}", "nil")
+			}
+		{{- else}}
+			pipe.HSet(keyOfObject(obj, fmt.Sprint({{$primaryField.GetTransformValue "obj."}})), "{{$field.Name}}", fmt.Sprint({{$field.GetTransformValue "obj."}}))
+		{{- end}}	
 	{{- end}}
 
 	//! uniques

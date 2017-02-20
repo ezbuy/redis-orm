@@ -14,7 +14,6 @@ CREATE TABLE `blogs` (
 
 
 
-DROP INDEX `user_id_of_blog_i_d_x` ON `blogs`;
 CREATE INDEX `user_id_of_blog_i_d_x` ON `blogs`(`user_id`);
 
 

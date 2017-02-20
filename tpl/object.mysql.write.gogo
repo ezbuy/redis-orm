@@ -31,12 +31,20 @@ func (tx *_{{$obj.Name}}MySQLTx) BatchCreate(objs []*{{$obj.Name}}) error {
 				{{- if $field.IsAutoIncrement}}
 				values = append(values, 0)
 				{{- else}}
-				values = append(values, {{$field.GetTransformValue "obj."}})	
+				values = append(values, {{$field.GetTransformValue "obj."}})
 				{{- end}}			
 			{{- else}}
-			values = append(values, {{$field.GetTransformValue "obj."}})
+				{{- if and $field.IsNullable $field.IsNeedTransform}}
+					if obj.{{$field.Name}} == nil {
+						values = append(values, nil)
+					} else {
+						values = append(values, {{$field.GetTransformValue "obj."}})
+					}	
+				{{- else}}
+					values = append(values, {{$field.GetTransformValue "obj."}})
+				{{- end}}
 			{{- end}}			
-		{{- end -}}
+		{{- end}}
 	}
 	query := fmt.Sprintf("INSERT INTO `{{$obj.DbTable}}`(%s) VALUES %s", strings.Join(objs[0].GetColumns(), ","), strings.Join(params, ","))
 	result, err := tx.Exec(query, values...)
@@ -84,15 +92,27 @@ func (tx *_{{$obj.Name}}MySQLTx) Create(obj *{{$obj.Name}}) error {
 		strings.Join(obj.GetColumns(), ","), 
 		strings.Join(params, ","))
 
-	result, err := tx.Exec(q 
-		{{- range $i, $field := $obj.Fields -}}
-			{{- if $field.IsAutoIncrement -}}
-			, 0
-			{{- else -}}
-			, {{$field.GetTransformValue "obj."}}
-			{{- end -}}			
-		{{- end -}}
-	)
+	values := make([]interface{}, 0, {{len $obj.Fields}})
+	{{- range $i, $field := $obj.Fields -}}
+			{{- if $field.IsPrimary}}
+				{{- if $field.IsAutoIncrement}}
+				values = append(values, 0)
+				{{- else}}
+				values = append(values, {{$field.GetTransformValue "obj."}})
+				{{- end}}			
+			{{- else}}
+				{{- if and $field.IsNullable $field.IsNeedTransform}}
+					if obj.{{$field.Name}} == nil {
+						values = append(values, nil)
+					} else {
+						values = append(values, {{$field.GetTransformValue "obj."}})
+					}	
+				{{- else}}
+					values = append(values, {{$field.GetTransformValue "obj."}})
+				{{- end}}
+			{{- end}}			
+		{{- end}}
+	result, err := tx.Exec(q, values...)
 	if err != nil {
 		tx.err = err
 		return err
@@ -114,16 +134,26 @@ func (tx *_{{$obj.Name}}MySQLTx) Update(obj *{{$obj.Name}}) error {
 		"`{{$field.Name | camel2name}}` = ?",
 		{{- end}}
 	{{- end}}
-	}
+	}	
 	q := fmt.Sprintf("UPDATE `{{$obj.DbTable}}` SET %s WHERE `{{$primaryField.Name | camel2name}}`=?", 
 		strings.Join(columns, ","))
-	result, err := tx.Exec(q 
-		{{- range $i, $field := $obj.Fields -}}
-			{{- if not $field.IsPrimary -}}
-			, {{$field.GetTransformValue "obj."}}
-			{{- end -}}
-		{{- end -}}
-		, {{$primaryField.GetTransformValue "obj."}})
+	values := make([]interface{}, 0, {{len $obj.Fields}} - 1)
+	{{- range $i, $field := $obj.Fields -}}
+			{{- if not $field.IsPrimary}}
+				{{- if and $field.IsNullable $field.IsNeedTransform}}
+					if obj.{{$field.Name}} == nil {
+						values = append(values, nil)
+					} else {
+						values = append(values, {{$field.GetTransformValue "obj."}})
+					}	
+				{{- else}}
+					values = append(values, {{$field.GetTransformValue "obj."}})
+				{{- end}}
+			{{- end}}			
+		{{- end}}
+	values = append(values, {{$primaryField.GetTransformValue "obj."}})
+
+	result, err := tx.Exec(q, values...)
 	if err != nil {
 		tx.err = err
 		return err
@@ -380,41 +410,53 @@ func (tx *_{{$obj.Name}}MySQLTx) FetchBySQL(q string, args ... interface{}) (res
 	defer rows.Close()
 
 	{{range $index, $field := $obj.Fields}}
-	{{- if $field.IsNullablePrimitive }}
-	var {{$field.Name}} sql.{{$field.GetNullSQLType}}
-	{{- else if $field.IsNeedTransform }}
-	var {{$field.Name}} {{$field.GetTransform.TypeOrigin}}
-	{{- end -}}
+		{{- if $field.IsNullable }}
+			var {{$field.Name}} sql.{{$field.GetNullSQLType}}
+		{{- else if $field.IsNeedTransform }}
+			var {{$field.Name}} {{$field.GetTransform.TypeOrigin}}
+		{{- end -}}
 	{{- end }}
 
 	for rows.Next() {
 		var result {{$obj.Name}}
 		err = rows.Scan(
 		{{- range $index, $field := $obj.Fields -}}
-		{{- if or $field.IsNullablePrimitive $field.IsNeedTransform -}}
+		{{- if or $field.IsNullable $field.IsNeedTransform -}}
 			&{{$field.Name}},
 		{{- else -}}
 			&(result.{{$field.Name}}),
-		{{ end }}
+		{{- end }}
 		{{- end -}}
 		)
 		if err != nil {
-			tx.err = err
 			return nil, err
 		}
 
 		{{range $index, $field := $obj.Fields}}
-		{{- if $field.IsNullablePrimitive}}
-			result.{{$field.Name}} =
-			{{- if $field.NullSQLTypeNeedCast -}}
-				{{$field.GetType}}({{$field.Name}}.{{$field.NullSQLTypeValue}})
-			{{- else -}}
-			{{$field.Name}}.{{$field.NullSQLTypeValue}}
-			{{- end -}}
-		{{- else if $field.IsNeedTransform }}
-		   result.{{$field.Name}} =
-		   {{- printf $field.GetTransform.ConvertTo $field.Name}}
-		{{end -}}
+			{{- if $field.IsNeedTransform }}
+				{{- if $field.IsNullable -}}
+					if {{$field.Name}}.Valid {
+						{{- with $v := (printf "%sValue" $field.Name)}}
+						{{$field.Name}}Value := {{$field.Name}}.{{$field.NullSQLTypeValue}}
+						{{$field.Name}}Point := {{- printf $field.GetTransform.ConvertTo $v}}
+						result.{{$field.Name}} = &{{$field.Name}}Point	
+						{{- end}}
+					} else {
+						result.{{$field.Name}} = nil
+					}					
+				{{- else -}}
+				result.{{$field.Name}} = {{- printf $field.GetTransform.ConvertTo $field.Name}}
+				{{- end -}}
+			{{- else }}				
+				{{- if $field.IsNullable -}}
+					result.{{$field.Name}} =
+					{{- if $field.NullSQLTypeNeedCast -}}
+					{{$field.GetType}}({{$field.Name}}.{{$field.NullSQLTypeValue}})
+					{{- else -}}
+					{{$field.Name}}.{{$field.NullSQLTypeValue}}
+					{{- end -}}
+				{{- end -}}
+			{{- end}}
 		{{end}}
 
 		results = append(results, &result)

@@ -204,9 +204,7 @@ func (m *_UserIdMySQLMgr) FetchBySQL(q string, args ...interface{}) (results []i
 
 	for rows.Next() {
 		var result UserId
-		err = rows.Scan(&(result.Key),
-			&(result.Value),
-		)
+		err = rows.Scan(&(result.Key), &(result.Value))
 		if err != nil {
 			return nil, err
 		}

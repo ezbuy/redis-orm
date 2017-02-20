@@ -209,10 +209,7 @@ func (m *_UserBlogsMySQLMgr) FetchBySQL(q string, args ...interface{}) (results 
 
 	for rows.Next() {
 		var result UserBlogs
-		err = rows.Scan(&(result.Key),
-			&(result.Score),
-			&(result.Value),
-		)
+		err = rows.Scan(&(result.Key), &(result.Score), &(result.Value))
 		if err != nil {
 			return nil, err
 		}
