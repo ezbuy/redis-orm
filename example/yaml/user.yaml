@@ -11,7 +11,7 @@ User:
     - Sex: bool
       flags: [index]
     - Age: int32
-      flags: [range, order, nullable]
+      flags: [range, order]
     - Longitude: float64
     - Latitude: float64
     - Description: string

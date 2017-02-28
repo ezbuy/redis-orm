@@ -23,7 +23,7 @@ CREATE UNIQUE INDEX `{{$unique.Name | camel2name}}` ON `{{$obj.DbTable}}`(
 );
 {{- end}}
 
-{{range $i, $index := $obj.Indexes}}
+{{- range $i, $index := $obj.Indexes}}
 CREATE INDEX `{{$index.Name | camel2name}}` ON `{{$obj.DbTable}}`(
 	{{- range $i, $f := $index.Fields -}}
 		{{- if eq (add $i 1) (len $index.Fields) -}}
@@ -35,7 +35,7 @@ CREATE INDEX `{{$index.Name | camel2name}}` ON `{{$obj.DbTable}}`(
 );
 {{- end}}
 
-{{range $i, $index := $obj.Ranges}}
+{{- range $i, $index := $obj.Ranges}}
 CREATE INDEX `{{$index.Name | camel2name}}` ON `{{$obj.DbTable}}`(
 	{{- range $i, $f := $index.Fields -}}
 		{{- if eq (add $i 1) (len $index.Fields) -}}

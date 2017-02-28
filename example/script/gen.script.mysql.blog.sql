@@ -12,9 +12,7 @@ CREATE TABLE `blogs` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
-
-
-CREATE INDEX `user_id_of_blog_i_d_x` ON `blogs`(`user_id`);
-
-
+CREATE UNIQUE INDEX `id_of_blog_uk` ON `blogs`(`id`);
+CREATE INDEX `user_id_of_blog_idx` ON `blogs`(`user_id`);
+CREATE INDEX `id_of_blog_rng` ON `blogs`(`id`);
 

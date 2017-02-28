@@ -178,6 +178,12 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 		}
 	}
 
+	for _, field := range o.fields {
+		if field.HasIndex() && field.IsNullable() {
+			return fmt.Errorf("field <%s> should not be nullable for indexing", field.Name)
+		}
+	}
+
 	for _, unique := range o.Uniques {
 		if err := unique.buildUnique(); err != nil {
 			return err

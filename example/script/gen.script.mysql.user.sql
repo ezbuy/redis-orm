@@ -18,12 +18,9 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
-CREATE UNIQUE INDEX `mailbox_password_of_user_u_k` ON `users`(`mailbox`,`password`);
-
-
-CREATE INDEX `sex_of_user_i_d_x` ON `users`(`sex`);
-
-
-CREATE INDEX `id_of_user_r_n_g` ON `users`(`id`);
-CREATE INDEX `age_of_user_r_n_g` ON `users`(`age`);
+CREATE UNIQUE INDEX `id_of_user_uk` ON `users`(`id`);
+CREATE UNIQUE INDEX `mailbox_password_of_user_uk` ON `users`(`mailbox`,`password`);
+CREATE INDEX `sex_of_user_idx` ON `users`(`sex`);
+CREATE INDEX `id_of_user_rng` ON `users`(`id`);
+CREATE INDEX `age_of_user_rng` ON `users`(`age`);
 

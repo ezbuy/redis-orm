@@ -292,7 +292,7 @@ func (f *Field) GetTag() string {
 		case "redis":
 			tags["json"] = false
 		case "elastic":
-			tags["json"] = false
+			tags["json"] = true
 		case "mysql":
 			tags["db"] = false
 		case "mssql":

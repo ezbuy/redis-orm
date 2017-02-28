@@ -514,7 +514,6 @@ func (m *_UserMySQLMgr) FetchBySQL(q string, args ...interface{}) (results []int
 	}
 	defer rows.Close()
 
-	var Age sql.NullInt64
 	var Description sql.NullString
 	var HeadUrl sql.NullString
 	var CreatedAt int64
@@ -523,12 +522,10 @@ func (m *_UserMySQLMgr) FetchBySQL(q string, args ...interface{}) (results []int
 
 	for rows.Next() {
 		var result User
-		err = rows.Scan(&(result.Id), &(result.Name), &(result.Mailbox), &(result.Sex), &Age, &(result.Longitude), &(result.Latitude), &Description, &(result.Password), &HeadUrl, &(result.Status), &CreatedAt, &UpdatedAt, &DeletedAt)
+		err = rows.Scan(&(result.Id), &(result.Name), &(result.Mailbox), &(result.Sex), &(result.Age), &(result.Longitude), &(result.Latitude), &Description, &(result.Password), &HeadUrl, &(result.Status), &CreatedAt, &UpdatedAt, &DeletedAt)
 		if err != nil {
 			return nil, err
 		}
-
-		result.Age = int32(Age.Int64)
 
 		result.Description = Description.String
 
@@ -1121,7 +1118,6 @@ func (tx *_UserMySQLTx) FetchBySQL(q string, args ...interface{}) (results []int
 	}
 	defer rows.Close()
 
-	var Age sql.NullInt64
 	var Description sql.NullString
 	var HeadUrl sql.NullString
 	var CreatedAt int64
@@ -1130,12 +1126,10 @@ func (tx *_UserMySQLTx) FetchBySQL(q string, args ...interface{}) (results []int
 
 	for rows.Next() {
 		var result User
-		err = rows.Scan(&(result.Id), &(result.Name), &(result.Mailbox), &(result.Sex), &Age, &(result.Longitude), &(result.Latitude), &Description, &(result.Password), &HeadUrl, &(result.Status), &CreatedAt, &UpdatedAt, &DeletedAt)
+		err = rows.Scan(&(result.Id), &(result.Name), &(result.Mailbox), &(result.Sex), &(result.Age), &(result.Longitude), &(result.Latitude), &Description, &(result.Password), &HeadUrl, &(result.Status), &CreatedAt, &UpdatedAt, &DeletedAt)
 		if err != nil {
 			return nil, err
 		}
-
-		result.Age = int32(Age.Int64)
 
 		result.Description = Description.String
 
