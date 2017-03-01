@@ -1,6 +1,6 @@
 
 DROP TABLE IF EXISTS `blogs`;
-CREATE TABLE `blogs` (
+CREATE TABLE IF NOT EXISTS  `blogs` (
 	`id` INT(11) NOT NULL PRIMARY KEY AUTO_INCREMENT,
 	`user_id` INT(11) NOT NULL DEFAULT '0',
 	`title` VARCHAR(100) NOT NULL DEFAULT '',
@@ -12,10 +12,7 @@ CREATE TABLE `blogs` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
-
-
-DROP INDEX `user_id_of_blog_i_d_x` ON `blogs`;
-CREATE INDEX `user_id_of_blog_i_d_x` ON `blogs`(`user_id`);
-
-
+CREATE UNIQUE INDEX `id_of_blog_uk` ON `blogs`(`id`);
+CREATE INDEX `user_id_of_blog_idx` ON `blogs`(`user_id`);
+CREATE INDEX `id_of_blog_rng` ON `blogs`(`id`);
 

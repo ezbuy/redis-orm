@@ -66,6 +66,45 @@ func (obj *Blog) GetColumns() []string {
 
 //! uniques
 
+type IdOfBlogUK struct {
+	Id int32
+}
+
+func (u *IdOfBlogUK) Key() string {
+	strs := []string{
+		"Id",
+		fmt.Sprint(u.Id),
+	}
+	return fmt.Sprintf("%s", strings.Join(strs, ":"))
+}
+
+func (u *IdOfBlogUK) SQLFormat(limit bool) string {
+	conditions := []string{
+		"id = ?",
+	}
+	return orm.SQLWhere(conditions)
+}
+
+func (u *IdOfBlogUK) SQLParams() []interface{} {
+	return []interface{}{
+		u.Id,
+	}
+}
+
+func (u *IdOfBlogUK) SQLLimit() int {
+	return 1
+}
+
+func (u *IdOfBlogUK) Limit(n int) {
+}
+
+func (u *IdOfBlogUK) Offset(n int) {
+}
+
+func (u *IdOfBlogUK) UKRelation() UniqueRelation {
+	return nil
+}
+
 //! indexes
 
 type UserIdOfBlogIDX struct {
@@ -118,6 +157,123 @@ func (u *UserIdOfBlogIDX) IDXRelation() IndexRelation {
 }
 
 //! ranges
+
+type IdOfBlogRNG struct {
+	IdBegin      int64
+	IdEnd        int64
+	offset       int
+	limit        int
+	includeBegin bool
+	includeEnd   bool
+	revert       bool
+}
+
+func (u *IdOfBlogRNG) Key() string {
+	strs := []string{
+		"Id",
+	}
+	return fmt.Sprintf("%s", strings.Join(strs, ":"))
+}
+
+func (u *IdOfBlogRNG) beginOp() string {
+	if u.includeBegin {
+		return ">="
+	}
+	return ">"
+}
+func (u *IdOfBlogRNG) endOp() string {
+	if u.includeBegin {
+		return "<="
+	}
+	return "<"
+}
+
+func (u *IdOfBlogRNG) SQLFormat(limit bool) string {
+	conditions := []string{}
+	if u.IdBegin != u.IdEnd {
+		if u.IdBegin != -1 {
+			conditions = append(conditions, fmt.Sprintf("id %s ?", u.beginOp()))
+		}
+		if u.IdEnd != -1 {
+			conditions = append(conditions, fmt.Sprintf("id %s ?", u.endOp()))
+		}
+	}
+	if limit {
+		return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Id", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
+	}
+	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Id", u.revert))
+}
+
+func (u *IdOfBlogRNG) SQLParams() []interface{} {
+	params := []interface{}{}
+	if u.IdBegin != u.IdEnd {
+		if u.IdBegin != -1 {
+			params = append(params, u.IdBegin)
+		}
+		if u.IdEnd != -1 {
+			params = append(params, u.IdEnd)
+		}
+	}
+	return params
+}
+
+func (u *IdOfBlogRNG) SQLLimit() int {
+	if u.limit > 0 {
+		return u.limit
+	}
+	return -1
+}
+
+func (u *IdOfBlogRNG) Limit(n int) {
+	u.limit = n
+}
+
+func (u *IdOfBlogRNG) Offset(n int) {
+	u.offset = n
+}
+
+func (u *IdOfBlogRNG) Begin() int64 {
+	start := u.IdBegin
+	if start == -1 || start == 0 {
+		start = 0
+	}
+	if start > 0 {
+		if !u.includeBegin {
+			start = start + 1
+		}
+	}
+	return start
+}
+
+func (u *IdOfBlogRNG) End() int64 {
+	stop := u.IdEnd
+	if stop == 0 || stop == -1 {
+		stop = -1
+	}
+	if stop > 0 {
+		if !u.includeBegin {
+			stop = stop - 1
+		}
+	}
+	return stop
+}
+
+func (u *IdOfBlogRNG) Revert(b bool) {
+	u.revert = b
+}
+
+func (u *IdOfBlogRNG) IncludeBegin(f bool) {
+	u.includeBegin = f
+}
+
+func (u *IdOfBlogRNG) IncludeEnd(f bool) {
+	u.includeEnd = f
+}
+
+func (u *IdOfBlogRNG) RNGRelation() RangeRelation {
+	return nil
+}
+
 func (m *_BlogMgr) MySQL() *ReferenceResult {
 	return NewReferenceResult(BlogMySQLMgr())
 }
@@ -174,19 +330,12 @@ func (m *_BlogMySQLMgr) FetchBySQL(q string, args ...interface{}) (results []int
 
 	for rows.Next() {
 		var result Blog
-		err = rows.Scan(&(result.Id),
-			&(result.UserId),
-			&(result.Title),
-			&(result.Content),
-			&(result.Status),
-			&(result.Readed),
-			&CreatedAt, &UpdatedAt)
+		err = rows.Scan(&(result.Id), &(result.UserId), &(result.Title), &(result.Content), &(result.Status), &(result.Readed), &CreatedAt, &UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
 
 		result.CreatedAt = orm.TimeParse(CreatedAt)
-
 		result.UpdatedAt = orm.TimeParse(UpdatedAt)
 
 		results = append(results, &result)
@@ -429,7 +578,16 @@ func (tx *_BlogMySQLTx) Create(obj *Blog) error {
 		strings.Join(obj.GetColumns(), ","),
 		strings.Join(params, ","))
 
-	result, err := tx.Exec(q, 0, obj.UserId, obj.Title, obj.Content, obj.Status, obj.Readed, orm.TimeFormat(obj.CreatedAt), orm.TimeFormat(obj.UpdatedAt))
+	values := make([]interface{}, 0, 8)
+	values = append(values, 0)
+	values = append(values, obj.UserId)
+	values = append(values, obj.Title)
+	values = append(values, obj.Content)
+	values = append(values, obj.Status)
+	values = append(values, obj.Readed)
+	values = append(values, orm.TimeFormat(obj.CreatedAt))
+	values = append(values, orm.TimeFormat(obj.UpdatedAt))
+	result, err := tx.Exec(q, values...)
 	if err != nil {
 		tx.err = err
 		return err
@@ -456,7 +614,17 @@ func (tx *_BlogMySQLTx) Update(obj *Blog) error {
 	}
 	q := fmt.Sprintf("UPDATE `blogs` SET %s WHERE `id`=?",
 		strings.Join(columns, ","))
-	result, err := tx.Exec(q, obj.UserId, obj.Title, obj.Content, obj.Status, obj.Readed, orm.TimeFormat(obj.CreatedAt), orm.TimeFormat(obj.UpdatedAt), obj.Id)
+	values := make([]interface{}, 0, 8-1)
+	values = append(values, obj.UserId)
+	values = append(values, obj.Title)
+	values = append(values, obj.Content)
+	values = append(values, obj.Status)
+	values = append(values, obj.Readed)
+	values = append(values, orm.TimeFormat(obj.CreatedAt))
+	values = append(values, orm.TimeFormat(obj.UpdatedAt))
+	values = append(values, obj.Id)
+
+	result, err := tx.Exec(q, values...)
 	if err != nil {
 		tx.err = err
 		return err
@@ -716,20 +884,12 @@ func (tx *_BlogMySQLTx) FetchBySQL(q string, args ...interface{}) (results []int
 
 	for rows.Next() {
 		var result Blog
-		err = rows.Scan(&(result.Id),
-			&(result.UserId),
-			&(result.Title),
-			&(result.Content),
-			&(result.Status),
-			&(result.Readed),
-			&CreatedAt, &UpdatedAt)
+		err = rows.Scan(&(result.Id), &(result.UserId), &(result.Title), &(result.Content), &(result.Status), &(result.Readed), &CreatedAt, &UpdatedAt)
 		if err != nil {
-			tx.err = err
 			return nil, err
 		}
 
 		result.CreatedAt = orm.TimeParse(CreatedAt)
-
 		result.UpdatedAt = orm.TimeParse(UpdatedAt)
 
 		results = append(results, &result)

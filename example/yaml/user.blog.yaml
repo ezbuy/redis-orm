@@ -1,7 +1,7 @@
 UserBlogs:
   dbs: [redis, mysql]
   relation:
-    storetype: zset 
+    storetype: set 
     valuetype: int32
     modeltype: Blog
-  importSQL: "SELECT `id`,`name`,`mailbox`,`sex` FROM users"
+  importSQL: "SELECT `user_id`, `id` FROM blogs"

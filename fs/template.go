@@ -60,9 +60,6 @@ func ExecuteMetaObjectScriptTemplate(output string, driver string, obj *parser.M
 	if err := RedisOrmTemplate.ExecuteTemplate(fd, strings.Join([]string{"script", driver}, "."), obj); err != nil {
 		return err
 	}
-
-	oscmd := exec.Command("gofmt", "-w", output)
-	oscmd.Run()
 	return nil
 }
 

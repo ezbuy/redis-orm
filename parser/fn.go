@@ -48,13 +48,17 @@ func isUpperCase(c string) bool {
 ////////////////////////////////////////////////////////////////////////
 func Camel2Name(s string) string {
 	nameBuf := bytes.NewBuffer(nil)
+	before := false
 	for i := range s {
 		n := rune(s[i]) // always ASCII?
 		if unicode.IsUpper(n) {
-			if i > 0 {
+			if !before && i > 0 {
 				nameBuf.WriteRune('_')
 			}
 			n = unicode.ToLower(n)
+			before = true
+		} else {
+			before = false
 		}
 		nameBuf.WriteRune(n)
 	}

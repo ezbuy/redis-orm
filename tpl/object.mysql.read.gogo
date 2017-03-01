@@ -51,22 +51,22 @@ func (m *_{{$obj.Name}}MySQLMgr) FetchBySQL(q string, args ... interface{}) (res
 	defer rows.Close()
 
 	{{range $index, $field := $obj.Fields}}
-	{{- if $field.IsNullablePrimitive }}
-	var {{$field.Name}} sql.{{$field.GetNullSQLType}}
-	{{- else if $field.IsNeedTransform }}
-	var {{$field.Name}} {{$field.GetTransform.TypeOrigin}}
-	{{- end -}}
+		{{- if $field.IsNullable }}
+			var {{$field.Name}} sql.{{$field.GetNullSQLType}}
+		{{- else if $field.IsNeedTransform }}
+			var {{$field.Name}} {{$field.GetTransform.TypeOrigin}}
+		{{- end -}}
 	{{- end }}
 
 	for rows.Next() {
 		var result {{$obj.Name}}
 		err = rows.Scan(
 		{{- range $index, $field := $obj.Fields -}}
-		{{- if or $field.IsNullablePrimitive $field.IsNeedTransform -}}
+		{{- if or $field.IsNullable $field.IsNeedTransform -}}
 			&{{$field.Name}},
 		{{- else -}}
 			&(result.{{$field.Name}}),
-		{{ end }}
+		{{- end }}
 		{{- end -}}
 		)
 		if err != nil {
@@ -74,16 +74,30 @@ func (m *_{{$obj.Name}}MySQLMgr) FetchBySQL(q string, args ... interface{}) (res
 		}
 
 		{{range $index, $field := $obj.Fields}}
-		{{- if $field.IsNullablePrimitive}}
-			result.{{$field.Name}} =
-			{{- if $field.NullSQLTypeNeedCast -}}
-				{{$field.GetType}}({{$field.Name}}.{{$field.NullSQLTypeValue}})
-			{{- else -}}
-			{{$field.Name}}.{{$field.NullSQLTypeValue}}
-			{{- end -}}
-		{{- else if $field.IsNeedTransform }}
-		   	result.{{$field.Name}} = {{- printf $field.GetTransform.ConvertTo $field.Name}}
-		{{end -}}
+			{{- if $field.IsNeedTransform }}
+				{{- if $field.IsNullable -}}
+					if {{$field.Name}}.Valid {
+						{{- with $v := (printf "%sValue" $field.Name)}}
+						{{$field.Name}}Value := {{$field.Name}}.{{$field.NullSQLTypeValue}}
+						{{$field.Name}}Point := {{- printf $field.GetTransform.ConvertTo $v}}
+						result.{{$field.Name}} = &{{$field.Name}}Point	
+						{{- end}}
+					} else {
+						result.{{$field.Name}} = nil
+					}					
+				{{- else -}}
+				result.{{$field.Name}} = {{- printf $field.GetTransform.ConvertTo $field.Name}}
+				{{- end -}}
+			{{- else }}				
+				{{- if $field.IsNullable -}}
+					result.{{$field.Name}} =
+					{{- if $field.NullSQLTypeNeedCast -}}
+					{{$field.GetType}}({{$field.Name}}.{{$field.NullSQLTypeValue}})
+					{{- else -}}
+					{{$field.Name}}.{{$field.NullSQLTypeValue}}
+					{{- end -}}
+				{{- end -}}
+			{{- end}}
 		{{end}}
 
 		results = append(results, &result)

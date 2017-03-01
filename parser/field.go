@@ -179,31 +179,40 @@ func (f *Field) IsNullablePrimitive() bool {
 }
 
 func (f *Field) GetNullSQLType() string {
-	t := f.GetType()
-	if t == "bool" {
-		return "NullBool"
-	} else if t == "string" {
-		return "NullString"
-	} else if strings.HasPrefix(t, "int") {
-		return "NullInt64"
-	} else if strings.HasPrefix(t, "float") {
-		return "NullFloat64"
+	origin_type := f.Type
+	if transform := f.GetTransform(); transform != nil {
+		origin_type = transform.TypeOrigin
 	}
-	return t
+
+	if f.IsNullable() {
+		if origin_type == "bool" {
+			return "NullBool"
+		} else if origin_type == "string" {
+			return "NullString"
+		} else if strings.HasPrefix(origin_type, "int") {
+			return "NullInt64"
+		} else if strings.HasPrefix(origin_type, "float") {
+			return "NullFloat64"
+		}
+	}
+	return origin_type
 }
 
 func (f *Field) NullSQLTypeValue() string {
-	t := f.GetType()
-	if t == "bool" {
+	origin_type := f.Type
+	if transform := f.GetTransform(); transform != nil {
+		origin_type = transform.TypeOrigin
+	}
+	if origin_type == "bool" {
 		return "Bool"
-	} else if t == "string" {
+	} else if origin_type == "string" {
 		return "String"
-	} else if strings.HasPrefix(t, "int") {
+	} else if strings.HasPrefix(origin_type, "int") {
 		return "Int64"
-	} else if strings.HasPrefix(t, "float") {
+	} else if strings.HasPrefix(origin_type, "float") {
 		return "Float64"
 	}
-	panic("unsupported null sql type: " + t)
+	panic("unsupported null sql type: " + origin_type)
 }
 
 func (f *Field) NullSQLTypeNeedCast() bool {
@@ -283,7 +292,7 @@ func (f *Field) GetTag() string {
 		case "redis":
 			tags["json"] = false
 		case "elastic":
-			tags["json"] = false
+			tags["json"] = true
 		case "mysql":
 			tags["db"] = false
 		case "mssql":
@@ -347,6 +356,10 @@ func (f *Field) Read(data map[interface{}]interface{}) error {
 		default:
 			return errors.New("invalid field name: " + key)
 		}
+	}
+	if f.IsPrimary() {
+		f.Flags.Add("unique")
+		f.Flags.Add("range")
 	}
 	if f.IsUnique() {
 		index := NewIndex(f.Obj)
@@ -459,6 +472,9 @@ func (f *Field) SQLNull(driver string) string {
 }
 
 func (f *Field) SQLDefault(driver string) string {
+	if f.IsNullable() {
+		return ""
+	}
 	switch strings.ToLower(driver) {
 	case "mysql":
 		if f.IsTime() {

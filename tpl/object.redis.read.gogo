@@ -188,15 +188,28 @@ func (m *_{{$obj.Name}}RedisMgr) Fetch({{$primaryField.Name | camel2name}} inter
 
 	{{- range $i, $field := $obj.Fields}}		
 		{{- if $field.IsNeedTransform}}
-			var val{{$i}} {{$field.GetTransform.TypeOrigin}}
-			if err := m.StringScan(strs[{{$i}}].(string), &val{{$i}}); err != nil {
+			{{- if $field.IsNullable }}
+				if strs[{{$i}}].(string) == "nil" {
+					obj.{{$field.Name}} = nil	
+				} else {
+					var val{{$i}} {{$field.GetTransform.TypeOrigin}}
+					if err := m.StringScan(strs[{{$i}}].(string), &val{{$i}}); err != nil {
+						return nil, err
+					}
+					{{$field.Name}}Value := {{- printf $field.GetTransform.ConvertTo (printf "val%d" $i)}}
+					obj.{{$field.Name}} = &{{$field.Name}}Value 
+				}				
+			{{- else}}
+				var val{{$i}} {{$field.GetTransform.TypeOrigin}}
+				if err := m.StringScan(strs[{{$i}}].(string), &val{{$i}}); err != nil {
+					return nil, err
+				}
+				obj.{{$field.Name}} = {{- printf $field.GetTransform.ConvertTo (printf "val%d" $i)}}
+			{{- end}}
+		{{- else}}
+			if err := m.StringScan(strs[{{$i}}].(string), &obj.{{$field.Name}}); err != nil {
 				return nil, err
 			}
-			obj.{{$field.Name}} = {{- printf $field.GetTransform.ConvertTo (printf "val%d" $i)}}
-		{{- else}}
-		if err := m.StringScan(strs[{{$i}}].(string), &obj.{{$field.Name}}); err != nil {
-			return nil, err
-		}
 		{{- end}}
 	{{- end}}
 	return obj, nil
@@ -232,15 +245,28 @@ func (m *_{{$obj.Name}}RedisMgr) FetchBy{{$primaryField.Name}}s({{$primaryField.
 		obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 		{{- range $i, $field := $obj.Fields}}		
 			{{- if $field.IsNeedTransform}}
-				var val{{$i}} {{$field.GetTransform.TypeOrigin}}
-				if err := m.StringScan(strs[{{$i}}].(string), &val{{$i}}); err != nil {
+				{{- if $field.IsNullable }}
+					if strs[{{$i}}].(string) == "nil" {
+						obj.{{$field.Name}} = nil	
+					} else {
+						var val{{$i}} {{$field.GetTransform.TypeOrigin}}
+						if err := m.StringScan(strs[{{$i}}].(string), &val{{$i}}); err != nil {
+							return nil, err
+						}
+						{{$field.Name}}Value := {{- printf $field.GetTransform.ConvertTo (printf "val%d" $i)}}
+						obj.{{$field.Name}} = &{{$field.Name}}Value 
+					}				
+				{{- else}}
+					var val{{$i}} {{$field.GetTransform.TypeOrigin}}
+					if err := m.StringScan(strs[{{$i}}].(string), &val{{$i}}); err != nil {
+						return nil, err
+					}
+					obj.{{$field.Name}} = {{- printf $field.GetTransform.ConvertTo (printf "val%d" $i)}}
+				{{- end}}
+			{{- else}}
+				if err := m.StringScan(strs[{{$i}}].(string), &obj.{{$field.Name}}); err != nil {
 					return nil, err
 				}
-				obj.{{$field.Name}} = {{- printf $field.GetTransform.ConvertTo (printf "val%d" $i)}}
-			{{- else}}
-			if err := m.StringScan(strs[{{$i}}].(string), &obj.{{$field.Name}}); err != nil {
-				return nil, err
-			}
 			{{- end}}
 		{{- end}}
 		objs = append(objs, obj)

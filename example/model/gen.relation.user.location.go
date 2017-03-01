@@ -179,11 +179,7 @@ func (m *_UserLocationMySQLMgr) FetchBySQL(q string, args ...interface{}) (resul
 
 	for rows.Next() {
 		var result UserLocation
-		err = rows.Scan(&(result.Key),
-			&(result.Longitude),
-			&(result.Latitude),
-			&(result.Value),
-		)
+		err = rows.Scan(&(result.Key), &(result.Longitude), &(result.Latitude), &(result.Value))
 		if err != nil {
 			return nil, err
 		}

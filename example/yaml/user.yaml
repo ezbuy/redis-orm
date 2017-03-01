@@ -15,13 +15,17 @@ User:
     - Longitude: float64
     - Latitude: float64
     - Description: string
+      flags: [nullable]
     - Password: string
     - HeadUrl: string
+      flags: [nullable]
     - Status: int32
-    - CreatedAt: timestamp
-    - UpdatedAt: timestamp
+    - CreatedAt: timeint
+    - UpdatedAt: timeint
+    - DeletedAt: timeint
+      flags: [nullable]
   uniques: [[Mailbox, Password]]
-  importSQL: "SELECT `id`,`name`,`mailbox`,`sex`, `age`, `longitude`,`latitude`,`description`,`password`,`head_url`,`status`,`created_at`, `updated_at` FROM users"
+  importSQL: "SELECT `id`,`name`,`mailbox`,`sex`, `age`, `longitude`,`latitude`,`description`,`password`,`head_url`,`status`,`created_at`, `updated_at`, `deleted_at` FROM users"
 
 UserBaseInfo:
   dbs: [mysql]

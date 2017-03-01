@@ -60,6 +60,45 @@ func (obj *UserBaseInfo) GetColumns() []string {
 
 //! uniques
 
+type IdOfUserBaseInfoUK struct {
+	Id int32
+}
+
+func (u *IdOfUserBaseInfoUK) Key() string {
+	strs := []string{
+		"Id",
+		fmt.Sprint(u.Id),
+	}
+	return fmt.Sprintf("%s", strings.Join(strs, ":"))
+}
+
+func (u *IdOfUserBaseInfoUK) SQLFormat(limit bool) string {
+	conditions := []string{
+		"id = ?",
+	}
+	return orm.SQLWhere(conditions)
+}
+
+func (u *IdOfUserBaseInfoUK) SQLParams() []interface{} {
+	return []interface{}{
+		u.Id,
+	}
+}
+
+func (u *IdOfUserBaseInfoUK) SQLLimit() int {
+	return 1
+}
+
+func (u *IdOfUserBaseInfoUK) Limit(n int) {
+}
+
+func (u *IdOfUserBaseInfoUK) Offset(n int) {
+}
+
+func (u *IdOfUserBaseInfoUK) UKRelation() UniqueRelation {
+	return nil
+}
+
 type MailboxPasswordOfUserBaseInfoUK struct {
 	Mailbox  string
 	Password string
@@ -156,6 +195,123 @@ func (u *NameOfUserBaseInfoIDX) IDXRelation() IndexRelation {
 }
 
 //! ranges
+
+type IdOfUserBaseInfoRNG struct {
+	IdBegin      int64
+	IdEnd        int64
+	offset       int
+	limit        int
+	includeBegin bool
+	includeEnd   bool
+	revert       bool
+}
+
+func (u *IdOfUserBaseInfoRNG) Key() string {
+	strs := []string{
+		"Id",
+	}
+	return fmt.Sprintf("%s", strings.Join(strs, ":"))
+}
+
+func (u *IdOfUserBaseInfoRNG) beginOp() string {
+	if u.includeBegin {
+		return ">="
+	}
+	return ">"
+}
+func (u *IdOfUserBaseInfoRNG) endOp() string {
+	if u.includeBegin {
+		return "<="
+	}
+	return "<"
+}
+
+func (u *IdOfUserBaseInfoRNG) SQLFormat(limit bool) string {
+	conditions := []string{}
+	if u.IdBegin != u.IdEnd {
+		if u.IdBegin != -1 {
+			conditions = append(conditions, fmt.Sprintf("id %s ?", u.beginOp()))
+		}
+		if u.IdEnd != -1 {
+			conditions = append(conditions, fmt.Sprintf("id %s ?", u.endOp()))
+		}
+	}
+	if limit {
+		return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Id", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
+	}
+	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Id", u.revert))
+}
+
+func (u *IdOfUserBaseInfoRNG) SQLParams() []interface{} {
+	params := []interface{}{}
+	if u.IdBegin != u.IdEnd {
+		if u.IdBegin != -1 {
+			params = append(params, u.IdBegin)
+		}
+		if u.IdEnd != -1 {
+			params = append(params, u.IdEnd)
+		}
+	}
+	return params
+}
+
+func (u *IdOfUserBaseInfoRNG) SQLLimit() int {
+	if u.limit > 0 {
+		return u.limit
+	}
+	return -1
+}
+
+func (u *IdOfUserBaseInfoRNG) Limit(n int) {
+	u.limit = n
+}
+
+func (u *IdOfUserBaseInfoRNG) Offset(n int) {
+	u.offset = n
+}
+
+func (u *IdOfUserBaseInfoRNG) Begin() int64 {
+	start := u.IdBegin
+	if start == -1 || start == 0 {
+		start = 0
+	}
+	if start > 0 {
+		if !u.includeBegin {
+			start = start + 1
+		}
+	}
+	return start
+}
+
+func (u *IdOfUserBaseInfoRNG) End() int64 {
+	stop := u.IdEnd
+	if stop == 0 || stop == -1 {
+		stop = -1
+	}
+	if stop > 0 {
+		if !u.includeBegin {
+			stop = stop - 1
+		}
+	}
+	return stop
+}
+
+func (u *IdOfUserBaseInfoRNG) Revert(b bool) {
+	u.revert = b
+}
+
+func (u *IdOfUserBaseInfoRNG) IncludeBegin(f bool) {
+	u.includeBegin = f
+}
+
+func (u *IdOfUserBaseInfoRNG) IncludeEnd(f bool) {
+	u.includeEnd = f
+}
+
+func (u *IdOfUserBaseInfoRNG) RNGRelation() RangeRelation {
+	return nil
+}
+
 func (m *_UserBaseInfoMgr) MySQL() *ReferenceResult {
 	return NewReferenceResult(UserBaseInfoMySQLMgr())
 }
@@ -209,12 +365,7 @@ func (m *_UserBaseInfoMySQLMgr) FetchBySQL(q string, args ...interface{}) (resul
 
 	for rows.Next() {
 		var result UserBaseInfo
-		err = rows.Scan(&(result.Id),
-			&(result.Name),
-			&(result.Mailbox),
-			&(result.Password),
-			&(result.Sex),
-		)
+		err = rows.Scan(&(result.Id), &(result.Name), &(result.Mailbox), &(result.Password), &(result.Sex))
 		if err != nil {
 			return nil, err
 		}
