@@ -82,21 +82,25 @@ func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
 
 
 func (m *_{{$obj.Name}}RedisMgr) SaveBatch(objs []*{{$obj.Name}}) error {
-	pipe := m.BeginPipeline()
-	for _, obj := range objs {
-		m.addToPipeline(pipe, obj)
-	}
-	if _, err := pipe.Exec(); err != nil {
-		return err
-	}
+	if len(objs) > 0 {
+		pipe := m.BeginPipeline()
+		for _, obj := range objs {
+			m.addToPipeline(pipe, obj)
+		}
+		if _, err := pipe.Exec(); err != nil {
+			return err
+		}	
+	}	
 	return nil
 }
 
 func (m *_{{$obj.Name}}RedisMgr) Save(obj *{{$obj.Name}}) error {
-	pipe := m.BeginPipeline()
-	m.addToPipeline(pipe, obj)
-	if _, err := pipe.Exec(); err != nil {
-		return err
+	if obj != nil {
+		pipe := m.BeginPipeline()
+		m.addToPipeline(pipe, obj)
+		if _, err := pipe.Exec(); err != nil {
+			return err
+		}
 	}
 	return nil
 }

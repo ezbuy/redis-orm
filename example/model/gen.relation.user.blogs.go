@@ -17,9 +17,8 @@ var (
 
 //! relation
 type UserBlogs struct {
-	Key   string  `db:"key" json:"key"`
-	Score float64 `db:"score" json:"score"`
-	Value int32   `db:"value" json:"value"`
+	Key   string `db:"key" json:"key"`
+	Value int32  `db:"value" json:"value"`
 }
 
 func (relation *UserBlogs) GetClassName() string {
@@ -32,7 +31,7 @@ func (relation *UserBlogs) GetIndexes() []string {
 }
 
 func (relation *UserBlogs) GetStoreType() string {
-	return "zset"
+	return "set"
 }
 
 func (relation *UserBlogs) GetPrimaryName() string {
@@ -69,17 +68,17 @@ func (m *_UserBlogsRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_UserBlogs
 	return &_UserBlogsRedisPipeline{m.Pipeline(), nil}
 }
 
-//! redis relation zset
-func (m *_UserBlogsRedisMgr) ZSetAdd(relation *UserBlogs) error {
-	return m.ZAdd(zsetOfClass("UserBlogs", "UserBlogs", relation.Key), redis.Z{Score: relation.Score, Member: relation.Value}).Err()
+//! redis relation pair
+func (m *_UserBlogsRedisMgr) SetAdd(relation *UserBlogs) error {
+	return m.SAdd(setOfClass("UserBlogs", "UserBlogs", relation.Key), relation.Value).Err()
 }
 
-func (pipe *_UserBlogsRedisPipeline) ZSetAdd(relation *UserBlogs) error {
-	return pipe.ZAdd(zsetOfClass("UserBlogs", "UserBlogs", relation.Key), redis.Z{Score: relation.Score, Member: relation.Value}).Err()
+func (pipe *_UserBlogsRedisPipeline) SetAdd(relation *UserBlogs) error {
+	return pipe.SAdd(setOfClass("UserBlogs", "UserBlogs", relation.Key), relation.Value).Err()
 }
 
-func (m *_UserBlogsRedisMgr) ZSetRange(key string, min, max int64) ([]*UserBlogs, error) {
-	strs, err := m.ZRange(zsetOfClass("UserBlogs", key), min, max).Result()
+func (m *_UserBlogsRedisMgr) SetGet(key string) ([]*UserBlogs, error) {
+	strs, err := m.SMembers(setOfClass("UserBlogs", "UserBlogs", key)).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -95,49 +94,28 @@ func (m *_UserBlogsRedisMgr) ZSetRange(key string, min, max int64) ([]*UserBlogs
 	return relations, nil
 }
 
-func (m *_UserBlogsRedisMgr) ZSetRevertRange(key string, min, max int64) ([]*UserBlogs, error) {
-	strs, err := m.ZRevRange(zsetOfClass("UserBlogs", key), min, max).Result()
-	if err != nil {
-		return nil, err
-	}
-
-	relations := make([]*UserBlogs, 0, len(strs))
-	for _, str := range strs {
-		relation := m.NewUserBlogs(key)
-		if err := m.StringScan(str, &relation.Value); err != nil {
-			return nil, err
-		}
-		relations = append(relations, relation)
-	}
-	return relations, nil
+func (m *_UserBlogsRedisMgr) SetRem(relation *UserBlogs) error {
+	return m.SRem(setOfClass("UserBlogs", "UserBlogs", relation.Key), relation.Value).Err()
 }
 
-func (m *_UserBlogsRedisMgr) ZSetRem(relation *UserBlogs) error {
-	return m.ZRem(zsetOfClass("UserBlogs", "UserBlogs", relation.Key), relation.Value).Err()
+func (pipe *_UserBlogsRedisPipeline) SetRem(relation *UserBlogs) error {
+	return pipe.SRem(setOfClass("UserBlogs", "UserBlogs", relation.Key), relation.Value).Err()
 }
 
-func (pipe *_UserBlogsRedisPipeline) ZSetRem(relation *UserBlogs) error {
-	return pipe.ZRem(zsetOfClass("UserBlogs", "UserBlogs", relation.Key), relation.Value).Err()
-}
-
-func (m *_UserBlogsRedisMgr) ZSetDel(key string) error {
+func (m *_UserBlogsRedisMgr) SetDel(key string) error {
 	return m.Del(setOfClass("UserBlogs", "UserBlogs", key)).Err()
 }
 
-func (pipe *_UserBlogsRedisPipeline) ZSetDel(key string) error {
+func (pipe *_UserBlogsRedisPipeline) SetDel(key string) error {
 	return pipe.Del(setOfClass("UserBlogs", "UserBlogs", key)).Err()
 }
 
-func (m *_UserBlogsRedisMgr) Range(key string, min, max int64) ([]string, error) {
-	return m.ZRange(zsetOfClass("UserBlogs", "UserBlogs", key), min, max).Result()
-}
-
-func (m *_UserBlogsRedisMgr) RangeRevert(key string, min, max int64) ([]string, error) {
-	return m.ZRevRange(zsetOfClass("UserBlogs", "UserBlogs", key), min, max).Result()
+func (m *_UserBlogsRedisMgr) Find(key string) ([]string, error) {
+	return m.SMembers(setOfClass("UserBlogs", "UserBlogs", key)).Result()
 }
 
 func (m *_UserBlogsRedisMgr) Clear() error {
-	strs, err := m.Keys(zsetOfClass("UserBlogs", "UserBlogs", "*")).Result()
+	strs, err := m.Keys(setOfClass("UserBlogs", "UserBlogs", "*")).Result()
 	if err != nil {
 		return err
 	}
@@ -152,7 +130,7 @@ func (m *_UserBlogsRedisMgr) Load(db DBFetcher) error {
 	if err := m.Clear(); err != nil {
 		return err
 	}
-	return m.AddBySQL(db, "SELECT `id`,`name`,`mailbox`,`sex` FROM users")
+	return m.AddBySQL(db, "SELECT `user_id`, `id` FROM blogs")
 
 }
 
@@ -163,7 +141,7 @@ func (m *_UserBlogsRedisMgr) AddBySQL(db DBFetcher, sql string, args ...interfac
 	}
 
 	for _, obj := range objs {
-		if err := m.ZSetAdd(obj.(*UserBlogs)); err != nil {
+		if err := m.SetAdd(obj.(*UserBlogs)); err != nil {
 			return err
 		}
 	}
@@ -177,7 +155,7 @@ func (m *_UserBlogsRedisMgr) DelBySQL(db DBFetcher, sql string, args ...interfac
 	}
 
 	for _, obj := range objs {
-		if err := m.ZSetRem(obj.(*UserBlogs)); err != nil {
+		if err := m.SetRem(obj.(*UserBlogs)); err != nil {
 			return err
 		}
 	}
@@ -209,7 +187,7 @@ func (m *_UserBlogsMySQLMgr) FetchBySQL(q string, args ...interface{}) (results 
 
 	for rows.Next() {
 		var result UserBlogs
-		err = rows.Scan(&(result.Key), &(result.Score), &(result.Value))
+		err = rows.Scan(&(result.Key), &(result.Value))
 		if err != nil {
 			return nil, err
 		}

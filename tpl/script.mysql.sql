@@ -1,7 +1,6 @@
 {{- define "script.mysql"}}{{- $obj := . -}}
 {{- if ne $obj.DbTable ""}}
-DROP TABLE IF EXISTS `{{$obj.DbTable}}`;
-CREATE TABLE `{{$obj.DbTable}}` (
+CREATE TABLE IF NOT EXISTS `{{$obj.DbTable}}` (
 	{{- range $i, $field := $obj.Fields}}
 		{{- if eq (add $i 1) (len $obj.Fields)}}
 	{{$field.SQLColumn "mysql"}}

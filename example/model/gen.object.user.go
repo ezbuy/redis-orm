@@ -1594,21 +1594,25 @@ func (m *_UserRedisMgr) Delete(obj *User) error {
 }
 
 func (m *_UserRedisMgr) SaveBatch(objs []*User) error {
-	pipe := m.BeginPipeline()
-	for _, obj := range objs {
-		m.addToPipeline(pipe, obj)
-	}
-	if _, err := pipe.Exec(); err != nil {
-		return err
+	if len(objs) > 0 {
+		pipe := m.BeginPipeline()
+		for _, obj := range objs {
+			m.addToPipeline(pipe, obj)
+		}
+		if _, err := pipe.Exec(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func (m *_UserRedisMgr) Save(obj *User) error {
-	pipe := m.BeginPipeline()
-	m.addToPipeline(pipe, obj)
-	if _, err := pipe.Exec(); err != nil {
-		return err
+	if obj != nil {
+		pipe := m.BeginPipeline()
+		m.addToPipeline(pipe, obj)
+		if _, err := pipe.Exec(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
