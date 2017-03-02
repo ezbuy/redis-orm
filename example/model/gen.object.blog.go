@@ -506,12 +506,16 @@ type _BlogMySQLTx struct {
 	rowsAffected int64
 }
 
-func (m *_BlogMySQLMgr) BeginTx() (*_BlogMySQLTx, error) {
-	tx, err := m.Begin()
-	if err != nil {
-		return nil, err
+func (m *_BlogMySQLMgr) BeginTx(tx *orm.MySQLTx) (*_BlogMySQLTx, error) {
+	ux := tx
+	if ux == nil {
+		tx, err := m.MySQLStore.BeginTx()
+		if err != nil {
+			return nil, err
+		}
+		ux = tx
 	}
-	return &_BlogMySQLTx{orm.NewMySQLTx(tx), nil, 0}, nil
+	return &_BlogMySQLTx{ux, nil, 0}, nil
 }
 
 func (tx *_BlogMySQLTx) BatchCreate(objs []*Blog) error {

@@ -33,7 +33,7 @@ func (idx *Index) buildRange() error {
 		return err
 	}
 	if !idx.LastField().IsNumber() {
-		return fmt.Errorf("range field <%s> is not number type", idx.LastField().Name)
+		return fmt.Errorf("range <%s> field <%s> is not number type", idx.Name, idx.LastField().Name)
 	}
 	return nil
 }
