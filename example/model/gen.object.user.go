@@ -709,12 +709,16 @@ type _UserMySQLTx struct {
 	rowsAffected int64
 }
 
-func (m *_UserMySQLMgr) BeginTx() (*_UserMySQLTx, error) {
-	tx, err := m.Begin()
-	if err != nil {
-		return nil, err
+func (m *_UserMySQLMgr) BeginTx(tx *orm.MySQLTx) (*_UserMySQLTx, error) {
+	ux := tx
+	if ux == nil {
+		tx, err := m.MySQLStore.BeginTx()
+		if err != nil {
+			return nil, err
+		}
+		ux = tx
 	}
-	return &_UserMySQLTx{orm.NewMySQLTx(tx), nil, 0}, nil
+	return &_UserMySQLTx{ux, nil, 0}, nil
 }
 
 func (tx *_UserMySQLTx) BatchCreate(objs []*User) error {

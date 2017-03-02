@@ -28,7 +28,7 @@ var _ = Describe("manager", func() {
 	})
 
 	BeforeEach(func() {
-		tx, err := UserMySQLMgr().BeginTx()
+		tx, err := UserMySQLMgr().BeginTx(nil)
 		Ω(err).ShouldNot(HaveOccurred())
 		defer tx.Close()
 		users := []*User{}
@@ -50,13 +50,11 @@ var _ = Describe("manager", func() {
 			user.Latitude = 1.3282
 			users = append(users, user)
 		}
-		//! debug sql
-		UserMySQLMgr().Debug(false)
 		Ω(tx.BatchCreate(users)).ShouldNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		tx, err := UserMySQLMgr().BeginTx()
+		tx, err := UserMySQLMgr().BeginTx(nil)
 		Ω(err).ShouldNot(HaveOccurred())
 		defer tx.Close()
 
@@ -114,6 +112,8 @@ var _ = Describe("redis-orm.mysql", func() {
 			Password: "ezorm_pass",
 			Database: "ezorm",
 		})
+		d, _ := time.ParseDuration("6ms")
+		UserMySQLMgr().SlowLog(d)
 	})
 
 	Describe("CRUD", func() {
@@ -127,11 +127,9 @@ var _ = Describe("redis-orm.mysql", func() {
 			user.UpdatedAt = user.CreatedAt
 			user.Longitude = 103.754
 			user.Latitude = 1.3282
-			tx, err := UserMySQLMgr().BeginTx()
+			tx, err := UserMySQLMgr().BeginTx(nil)
 			Ω(err).ShouldNot(HaveOccurred())
 			defer tx.Close()
-			//! debug sql
-			tx.Debug(false)
 
 			//! create
 			Ω(tx.Create(user)).ShouldNot(HaveOccurred())
@@ -171,11 +169,9 @@ var _ = Describe("redis-orm.mysql", func() {
 				user.UpdatedAt = user.CreatedAt
 				user.Longitude = 103.754
 				user.Latitude = 1.3282
-				tx, err := UserMySQLMgr().BeginTx()
+				tx, err := UserMySQLMgr().BeginTx(nil)
 				Ω(err).ShouldNot(HaveOccurred())
 				defer tx.Close()
-				//! debug sql
-				tx.Debug(false)
 
 				//! create
 				Ω(tx.Create(user)).ShouldNot(HaveOccurred())
@@ -209,7 +205,8 @@ var _ = Describe("redis-orm.mysql", func() {
 	Describe("Finder", func() {
 
 		BeforeEach(func() {
-			tx, err := UserMySQLMgr().BeginTx()
+
+			tx, err := UserMySQLMgr().BeginTx(nil)
 			Ω(err).ShouldNot(HaveOccurred())
 			defer tx.Close()
 			users := []*User{}
@@ -231,13 +228,12 @@ var _ = Describe("redis-orm.mysql", func() {
 				user.Latitude = 1.3282
 				users = append(users, user)
 			}
-			//! debug sql
-			UserMySQLMgr().Debug(false)
+
 			Ω(tx.BatchCreate(users)).ShouldNot(HaveOccurred())
 
 		})
 		AfterEach(func() {
-			tx, err := UserMySQLMgr().BeginTx()
+			tx, err := UserMySQLMgr().BeginTx(nil)
 			Ω(err).ShouldNot(HaveOccurred())
 			defer tx.Close()
 
@@ -252,6 +248,7 @@ var _ = Describe("redis-orm.mysql", func() {
 				Mailbox:  "name20@ezbuy.com",
 				Password: "pwd20",
 			}
+
 			obj, err := UserMySQLMgr().FindOne(unique)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(obj).ShouldNot(BeNil())
@@ -339,7 +336,6 @@ var _ = Describe("redis-orm.mysql", func() {
 				}
 				us, err := UserMySQLMgr().Range(scope)
 				Ω(err).ShouldNot(HaveOccurred())
-				UserMySQLMgr().Debug(true)
 				count, err := UserMySQLMgr().RangeCount(scope)
 				fmt.Println("err=>", err)
 				Ω(len(us)).To(Equal(int(count)))
@@ -383,7 +379,7 @@ var _ = Describe("redis-orm.redis", func() {
 	})
 
 	BeforeEach(func() {
-		tx, err := UserMySQLMgr().BeginTx()
+		tx, err := UserMySQLMgr().BeginTx(nil)
 		Ω(err).ShouldNot(HaveOccurred())
 		defer tx.Close()
 		users := []*User{}
@@ -405,13 +401,12 @@ var _ = Describe("redis-orm.redis", func() {
 			user.Latitude = 1.3282
 			users = append(users, user)
 		}
-		//! debug sql
-		UserMySQLMgr().Debug(false)
+
 		Ω(tx.BatchCreate(users)).ShouldNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		tx, err := UserMySQLMgr().BeginTx()
+		tx, err := UserMySQLMgr().BeginTx(nil)
 		Ω(err).ShouldNot(HaveOccurred())
 		defer tx.Close()
 
