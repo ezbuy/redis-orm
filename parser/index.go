@@ -5,6 +5,17 @@ import (
 	"strings"
 )
 
+type IndexArray []*Index
+
+func (a IndexArray) Len() int      { return len(a) }
+func (a IndexArray) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a IndexArray) Less(i, j int) bool {
+	if strings.Compare(a[i].Name, a[j].Name) > 0 {
+		return true
+	}
+	return false
+}
+
 type Index struct {
 	Name       string
 	Fields     []*Field

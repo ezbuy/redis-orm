@@ -95,45 +95,6 @@ func (obj *User) GetPrimaryName() string {
 
 //! uniques
 
-type IdOfUserUK struct {
-	Id int32
-}
-
-func (u *IdOfUserUK) Key() string {
-	strs := []string{
-		"Id",
-		fmt.Sprint(u.Id),
-	}
-	return fmt.Sprintf("%s", strings.Join(strs, ":"))
-}
-
-func (u *IdOfUserUK) SQLFormat(limit bool) string {
-	conditions := []string{
-		"id = ?",
-	}
-	return orm.SQLWhere(conditions)
-}
-
-func (u *IdOfUserUK) SQLParams() []interface{} {
-	return []interface{}{
-		u.Id,
-	}
-}
-
-func (u *IdOfUserUK) SQLLimit() int {
-	return 1
-}
-
-func (u *IdOfUserUK) Limit(n int) {
-}
-
-func (u *IdOfUserUK) Offset(n int) {
-}
-
-func (u *IdOfUserUK) UKRelation() UniqueRelation {
-	return IdOfUserUKRelationRedisMgr()
-}
-
 type MailboxPasswordOfUserUK struct {
 	Mailbox  string
 	Password string
@@ -176,6 +137,45 @@ func (u *MailboxPasswordOfUserUK) Offset(n int) {
 
 func (u *MailboxPasswordOfUserUK) UKRelation() UniqueRelation {
 	return MailboxPasswordOfUserUKRelationRedisMgr()
+}
+
+type IdOfUserUK struct {
+	Id int32
+}
+
+func (u *IdOfUserUK) Key() string {
+	strs := []string{
+		"Id",
+		fmt.Sprint(u.Id),
+	}
+	return fmt.Sprintf("%s", strings.Join(strs, ":"))
+}
+
+func (u *IdOfUserUK) SQLFormat(limit bool) string {
+	conditions := []string{
+		"id = ?",
+	}
+	return orm.SQLWhere(conditions)
+}
+
+func (u *IdOfUserUK) SQLParams() []interface{} {
+	return []interface{}{
+		u.Id,
+	}
+}
+
+func (u *IdOfUserUK) SQLLimit() int {
+	return 1
+}
+
+func (u *IdOfUserUK) Limit(n int) {
+}
+
+func (u *IdOfUserUK) Offset(n int) {
+}
+
+func (u *IdOfUserUK) UKRelation() UniqueRelation {
+	return IdOfUserUKRelationRedisMgr()
 }
 
 //! indexes
@@ -1527,20 +1527,20 @@ func (m *_UserRedisMgr) Delete(obj *User) error {
 	pipe := m.BeginPipeline()
 	//! uniques
 	uk_key_0 := []string{
-		"Id",
-		fmt.Sprint(obj.Id),
-	}
-	uk_pip_0 := IdOfUserUKRelationRedisMgr().BeginPipeline(pipe.Pipeline)
-	if err := uk_pip_0.PairRem(strings.Join(uk_key_0, ":")); err != nil {
-		return err
-	}
-	uk_key_1 := []string{
 		"Mailbox",
 		fmt.Sprint(obj.Mailbox),
 		"Password",
 		fmt.Sprint(obj.Password),
 	}
-	uk_pip_1 := MailboxPasswordOfUserUKRelationRedisMgr().BeginPipeline(pipe.Pipeline)
+	uk_pip_0 := MailboxPasswordOfUserUKRelationRedisMgr().BeginPipeline(pipe.Pipeline)
+	if err := uk_pip_0.PairRem(strings.Join(uk_key_0, ":")); err != nil {
+		return err
+	}
+	uk_key_1 := []string{
+		"Id",
+		fmt.Sprint(obj.Id),
+	}
+	uk_pip_1 := IdOfUserUKRelationRedisMgr().BeginPipeline(pipe.Pipeline)
 	if err := uk_pip_1.PairRem(strings.Join(uk_key_1, ":")); err != nil {
 		return err
 	}
@@ -1644,23 +1644,23 @@ func (m *_UserRedisMgr) addToPipeline(pipe *_UserRedisPipeline, obj *User) error
 
 	//! uniques
 	uk_key_0 := []string{
-		"Id",
-		fmt.Sprint(obj.Id),
-	}
-	uk_pip_0 := IdOfUserUKRelationRedisMgr().BeginPipeline(pipe.Pipeline)
-	uk_rel_0 := IdOfUserUKRelationRedisMgr().NewIdOfUserUKRelation(strings.Join(uk_key_0, ":"))
-	uk_rel_0.Value = obj.Id
-	if err := uk_pip_0.PairAdd(uk_rel_0); err != nil {
-		return err
-	}
-	uk_key_1 := []string{
 		"Mailbox",
 		fmt.Sprint(obj.Mailbox),
 		"Password",
 		fmt.Sprint(obj.Password),
 	}
-	uk_pip_1 := MailboxPasswordOfUserUKRelationRedisMgr().BeginPipeline(pipe.Pipeline)
-	uk_rel_1 := MailboxPasswordOfUserUKRelationRedisMgr().NewMailboxPasswordOfUserUKRelation(strings.Join(uk_key_1, ":"))
+	uk_pip_0 := MailboxPasswordOfUserUKRelationRedisMgr().BeginPipeline(pipe.Pipeline)
+	uk_rel_0 := MailboxPasswordOfUserUKRelationRedisMgr().NewMailboxPasswordOfUserUKRelation(strings.Join(uk_key_0, ":"))
+	uk_rel_0.Value = obj.Id
+	if err := uk_pip_0.PairAdd(uk_rel_0); err != nil {
+		return err
+	}
+	uk_key_1 := []string{
+		"Id",
+		fmt.Sprint(obj.Id),
+	}
+	uk_pip_1 := IdOfUserUKRelationRedisMgr().BeginPipeline(pipe.Pipeline)
+	uk_rel_1 := IdOfUserUKRelationRedisMgr().NewIdOfUserUKRelation(strings.Join(uk_key_1, ":"))
 	uk_rel_1.Value = obj.Id
 	if err := uk_pip_1.PairAdd(uk_rel_1); err != nil {
 		return err
@@ -1746,104 +1746,6 @@ func (m *_UserRedisMgr) Clear() error {
 }
 
 //! uniques
-
-//! relation
-type IdOfUserUKRelation struct {
-	Key   string `db:"key" json:"key"`
-	Value int32  `db:"value" json:"value"`
-}
-
-func (relation *IdOfUserUKRelation) GetClassName() string {
-	return "IdOfUserUKRelation"
-}
-
-func (relation *IdOfUserUKRelation) GetIndexes() []string {
-	idx := []string{}
-	return idx
-}
-
-func (relation *IdOfUserUKRelation) GetStoreType() string {
-	return "pair"
-}
-
-func (relation *IdOfUserUKRelation) GetPrimaryName() string {
-	return "Key"
-}
-
-type _IdOfUserUKRelationRedisMgr struct {
-	*orm.RedisStore
-}
-
-func IdOfUserUKRelationRedisMgr(stores ...*orm.RedisStore) *_IdOfUserUKRelationRedisMgr {
-	if len(stores) > 0 {
-		return &_IdOfUserUKRelationRedisMgr{stores[0]}
-	}
-	return &_IdOfUserUKRelationRedisMgr{_redis_store}
-}
-
-func (m *_IdOfUserUKRelationRedisMgr) NewIdOfUserUKRelation(key string) *IdOfUserUKRelation {
-	return &IdOfUserUKRelation{
-		Key: key,
-	}
-}
-
-//! pipeline
-type _IdOfUserUKRelationRedisPipeline struct {
-	*redis.Pipeline
-	Err error
-}
-
-func (m *_IdOfUserUKRelationRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_IdOfUserUKRelationRedisPipeline {
-	if len(pipes) > 0 {
-		return &_IdOfUserUKRelationRedisPipeline{pipes[0], nil}
-	}
-	return &_IdOfUserUKRelationRedisPipeline{m.Pipeline(), nil}
-}
-
-//! redis relation pair
-func (m *_IdOfUserUKRelationRedisMgr) PairAdd(obj *IdOfUserUKRelation) error {
-	return m.Set(pairOfClass("User", obj.GetClassName(), obj.Key), obj.Value, 0).Err()
-}
-
-func (pipe *_IdOfUserUKRelationRedisPipeline) PairAdd(obj *IdOfUserUKRelation) error {
-	return pipe.Set(pairOfClass("User", obj.GetClassName(), obj.Key), obj.Value, 0).Err()
-}
-
-func (m *_IdOfUserUKRelationRedisMgr) PairGet(key string) (*IdOfUserUKRelation, error) {
-	str, err := m.Get(pairOfClass("User", "IdOfUserUKRelation", key)).Result()
-	if err != nil {
-		return nil, err
-	}
-
-	obj := m.NewIdOfUserUKRelation(key)
-	if err := m.StringScan(str, &obj.Value); err != nil {
-		return nil, err
-	}
-	return obj, nil
-}
-
-func (m *_IdOfUserUKRelationRedisMgr) PairRem(key string) error {
-	return m.Del(pairOfClass("User", "IdOfUserUKRelation", key)).Err()
-}
-
-func (pipe *_IdOfUserUKRelationRedisPipeline) PairRem(key string) error {
-	return pipe.Del(pairOfClass("User", "IdOfUserUKRelation", key)).Err()
-}
-
-func (m *_IdOfUserUKRelationRedisMgr) FindOne(key string) (string, error) {
-	return m.Get(pairOfClass("User", "IdOfUserUKRelation", key)).Result()
-}
-
-func (m *_IdOfUserUKRelationRedisMgr) Clear() error {
-	strs, err := m.Keys(pairOfClass("User", "IdOfUserUKRelation", "*")).Result()
-	if err != nil {
-		return err
-	}
-	if len(strs) > 0 {
-		return m.Del(strs...).Err()
-	}
-	return nil
-}
 
 //! relation
 type MailboxPasswordOfUserUKRelation struct {
@@ -1934,6 +1836,104 @@ func (m *_MailboxPasswordOfUserUKRelationRedisMgr) FindOne(key string) (string, 
 
 func (m *_MailboxPasswordOfUserUKRelationRedisMgr) Clear() error {
 	strs, err := m.Keys(pairOfClass("User", "MailboxPasswordOfUserUKRelation", "*")).Result()
+	if err != nil {
+		return err
+	}
+	if len(strs) > 0 {
+		return m.Del(strs...).Err()
+	}
+	return nil
+}
+
+//! relation
+type IdOfUserUKRelation struct {
+	Key   string `db:"key" json:"key"`
+	Value int32  `db:"value" json:"value"`
+}
+
+func (relation *IdOfUserUKRelation) GetClassName() string {
+	return "IdOfUserUKRelation"
+}
+
+func (relation *IdOfUserUKRelation) GetIndexes() []string {
+	idx := []string{}
+	return idx
+}
+
+func (relation *IdOfUserUKRelation) GetStoreType() string {
+	return "pair"
+}
+
+func (relation *IdOfUserUKRelation) GetPrimaryName() string {
+	return "Key"
+}
+
+type _IdOfUserUKRelationRedisMgr struct {
+	*orm.RedisStore
+}
+
+func IdOfUserUKRelationRedisMgr(stores ...*orm.RedisStore) *_IdOfUserUKRelationRedisMgr {
+	if len(stores) > 0 {
+		return &_IdOfUserUKRelationRedisMgr{stores[0]}
+	}
+	return &_IdOfUserUKRelationRedisMgr{_redis_store}
+}
+
+func (m *_IdOfUserUKRelationRedisMgr) NewIdOfUserUKRelation(key string) *IdOfUserUKRelation {
+	return &IdOfUserUKRelation{
+		Key: key,
+	}
+}
+
+//! pipeline
+type _IdOfUserUKRelationRedisPipeline struct {
+	*redis.Pipeline
+	Err error
+}
+
+func (m *_IdOfUserUKRelationRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_IdOfUserUKRelationRedisPipeline {
+	if len(pipes) > 0 {
+		return &_IdOfUserUKRelationRedisPipeline{pipes[0], nil}
+	}
+	return &_IdOfUserUKRelationRedisPipeline{m.Pipeline(), nil}
+}
+
+//! redis relation pair
+func (m *_IdOfUserUKRelationRedisMgr) PairAdd(obj *IdOfUserUKRelation) error {
+	return m.Set(pairOfClass("User", obj.GetClassName(), obj.Key), obj.Value, 0).Err()
+}
+
+func (pipe *_IdOfUserUKRelationRedisPipeline) PairAdd(obj *IdOfUserUKRelation) error {
+	return pipe.Set(pairOfClass("User", obj.GetClassName(), obj.Key), obj.Value, 0).Err()
+}
+
+func (m *_IdOfUserUKRelationRedisMgr) PairGet(key string) (*IdOfUserUKRelation, error) {
+	str, err := m.Get(pairOfClass("User", "IdOfUserUKRelation", key)).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	obj := m.NewIdOfUserUKRelation(key)
+	if err := m.StringScan(str, &obj.Value); err != nil {
+		return nil, err
+	}
+	return obj, nil
+}
+
+func (m *_IdOfUserUKRelationRedisMgr) PairRem(key string) error {
+	return m.Del(pairOfClass("User", "IdOfUserUKRelation", key)).Err()
+}
+
+func (pipe *_IdOfUserUKRelationRedisPipeline) PairRem(key string) error {
+	return pipe.Del(pairOfClass("User", "IdOfUserUKRelation", key)).Err()
+}
+
+func (m *_IdOfUserUKRelationRedisMgr) FindOne(key string) (string, error) {
+	return m.Get(pairOfClass("User", "IdOfUserUKRelation", key)).Result()
+}
+
+func (m *_IdOfUserUKRelationRedisMgr) Clear() error {
+	strs, err := m.Keys(pairOfClass("User", "IdOfUserUKRelation", "*")).Result()
 	if err != nil {
 		return err
 	}

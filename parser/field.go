@@ -359,22 +359,24 @@ func (f *Field) Read(data map[interface{}]interface{}) error {
 	}
 	if f.IsPrimary() {
 		f.Flags.Add("unique")
-		f.Flags.Add("range")
+		if f.IsNumber() {
+			f.Flags.Add("range")
+		}
 	}
 	if f.IsUnique() {
 		index := NewIndex(f.Obj)
 		index.FieldNames = []string{f.Name}
-		f.Obj.Uniques = append(f.Obj.Uniques, index)
+		f.Obj.uniques = append(f.Obj.uniques, index)
 	}
 	if f.IsIndex() {
 		index := NewIndex(f.Obj)
 		index.FieldNames = []string{f.Name}
-		f.Obj.Indexes = append(f.Obj.Indexes, index)
+		f.Obj.indexes = append(f.Obj.indexes, index)
 	}
 	if f.IsRange() {
 		index := NewIndex(f.Obj)
 		index.FieldNames = []string{f.Name}
-		f.Obj.Ranges = append(f.Obj.Ranges, index)
+		f.Obj.ranges = append(f.Obj.ranges, index)
 	}
 	return nil
 }

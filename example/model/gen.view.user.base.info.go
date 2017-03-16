@@ -60,45 +60,6 @@ func (obj *UserBaseInfo) GetColumns() []string {
 
 //! uniques
 
-type IdOfUserBaseInfoUK struct {
-	Id int32
-}
-
-func (u *IdOfUserBaseInfoUK) Key() string {
-	strs := []string{
-		"Id",
-		fmt.Sprint(u.Id),
-	}
-	return fmt.Sprintf("%s", strings.Join(strs, ":"))
-}
-
-func (u *IdOfUserBaseInfoUK) SQLFormat(limit bool) string {
-	conditions := []string{
-		"id = ?",
-	}
-	return orm.SQLWhere(conditions)
-}
-
-func (u *IdOfUserBaseInfoUK) SQLParams() []interface{} {
-	return []interface{}{
-		u.Id,
-	}
-}
-
-func (u *IdOfUserBaseInfoUK) SQLLimit() int {
-	return 1
-}
-
-func (u *IdOfUserBaseInfoUK) Limit(n int) {
-}
-
-func (u *IdOfUserBaseInfoUK) Offset(n int) {
-}
-
-func (u *IdOfUserBaseInfoUK) UKRelation() UniqueRelation {
-	return nil
-}
-
 type MailboxPasswordOfUserBaseInfoUK struct {
 	Mailbox  string
 	Password string
@@ -140,6 +101,45 @@ func (u *MailboxPasswordOfUserBaseInfoUK) Offset(n int) {
 }
 
 func (u *MailboxPasswordOfUserBaseInfoUK) UKRelation() UniqueRelation {
+	return nil
+}
+
+type IdOfUserBaseInfoUK struct {
+	Id int32
+}
+
+func (u *IdOfUserBaseInfoUK) Key() string {
+	strs := []string{
+		"Id",
+		fmt.Sprint(u.Id),
+	}
+	return fmt.Sprintf("%s", strings.Join(strs, ":"))
+}
+
+func (u *IdOfUserBaseInfoUK) SQLFormat(limit bool) string {
+	conditions := []string{
+		"id = ?",
+	}
+	return orm.SQLWhere(conditions)
+}
+
+func (u *IdOfUserBaseInfoUK) SQLParams() []interface{} {
+	return []interface{}{
+		u.Id,
+	}
+}
+
+func (u *IdOfUserBaseInfoUK) SQLLimit() int {
+	return 1
+}
+
+func (u *IdOfUserBaseInfoUK) Limit(n int) {
+}
+
+func (u *IdOfUserBaseInfoUK) Offset(n int) {
+}
+
+func (u *IdOfUserBaseInfoUK) UKRelation() UniqueRelation {
 	return nil
 }
 

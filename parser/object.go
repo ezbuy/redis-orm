@@ -3,6 +3,7 @@ package parser
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -23,10 +24,12 @@ type MetaObject struct {
 	//! fields
 	fields       []*Field
 	fieldNameMap map[string]*Field
+	//! primary
+	primary []*Field
 	//! indexes
-	Uniques []*Index
-	Indexes []*Index
-	Ranges  []*Index
+	uniques []*Index
+	indexes []*Index
+	ranges  []*Index
 	//! relation
 	Relation *Relation
 	//! importSQL
@@ -38,9 +41,10 @@ func NewMetaObject(packageName string) *MetaObject {
 		Package:      packageName,
 		GoPackage:    packageName,
 		fieldNameMap: make(map[string]*Field),
-		Uniques:      []*Index{},
-		Indexes:      []*Index{},
-		Ranges:       []*Index{},
+		primary:      []*Field{},
+		uniques:      []*Index{},
+		indexes:      []*Index{},
+		ranges:       []*Index{},
 	}
 }
 
@@ -58,6 +62,10 @@ func (o *MetaObject) PrimaryField() *Field {
 		}
 	}
 	return nil
+}
+
+func (o *MetaObject) PrimaryKey() []*Field {
+	return o.primary
 }
 
 func (o *MetaObject) DbContains(db string) bool {
@@ -86,6 +94,20 @@ func (o *MetaObject) Fields() []*Field {
 	return o.fields
 }
 
+func (o *MetaObject) Uniques() []*Index {
+	sort.Sort(IndexArray(o.uniques))
+	return o.uniques
+}
+
+func (o *MetaObject) Indexes() []*Index {
+	sort.Sort(IndexArray(o.indexes))
+	return o.indexes
+}
+
+func (o *MetaObject) Ranges() []*Index {
+	sort.Sort(IndexArray(o.ranges))
+	return o.ranges
+}
 func (o *MetaObject) LastField() *Field {
 	return o.fields[len(o.fields)-1]
 }
@@ -141,6 +163,13 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 				o.fields[i] = f
 				o.fieldNameMap[f.Name] = f
 			}
+		case "primary":
+			fields := toStringSlice(val.([]interface{}))
+			for _, field := range fields {
+				if f := o.FieldByName(field); f != nil {
+					o.primary = append(o.primary, f)
+				}
+			}
 		case "uniques":
 			for _, i := range val.([]interface{}) {
 				if len(i.([]interface{})) == 0 {
@@ -148,7 +177,7 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 				}
 				index := NewIndex(o)
 				index.FieldNames = toStringSlice(i.([]interface{}))
-				o.Uniques = append(o.Uniques, index)
+				o.uniques = append(o.uniques, index)
 			}
 		case "indexes":
 			for _, i := range val.([]interface{}) {
@@ -157,7 +186,7 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 				}
 				index := NewIndex(o)
 				index.FieldNames = toStringSlice(i.([]interface{}))
-				o.Indexes = append(o.Indexes, index)
+				o.indexes = append(o.indexes, index)
 			}
 		case "ranges":
 			for _, i := range val.([]interface{}) {
@@ -166,7 +195,7 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 				}
 				index := NewIndex(o)
 				index.FieldNames = toStringSlice(i.([]interface{}))
-				o.Ranges = append(o.Ranges, index)
+				o.ranges = append(o.ranges, index)
 			}
 		case "relation":
 			relation := NewRelation(o)
@@ -179,22 +208,28 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 	}
 
 	for _, field := range o.fields {
+		if field.IsPrimary() {
+			if len(o.primary) != 0 {
+				return fmt.Errorf("primary key already defined: <%s> ", field.Name)
+			}
+			o.primary = append(o.primary, field)
+		}
 		if field.HasIndex() && field.IsNullable() {
 			return fmt.Errorf("field <%s> should not be nullable for indexing", field.Name)
 		}
 	}
 
-	for _, unique := range o.Uniques {
+	for _, unique := range o.uniques {
 		if err := unique.buildUnique(); err != nil {
 			return err
 		}
 	}
-	for _, index := range o.Indexes {
+	for _, index := range o.indexes {
 		if err := index.buildIndex(); err != nil {
 			return err
 		}
 	}
-	for _, rg := range o.Ranges {
+	for _, rg := range o.ranges {
 		if err := rg.buildRange(); err != nil {
 			return err
 		}
