@@ -1,7 +1,11 @@
 UserBlogs:
-  dbs: [redis, mysql]
-  relation:
-    storetype: set 
-    valuetype: int32
-    modeltype: Blog
-  importSQL: "SELECT `user_id`, `id` FROM blogs"
+UserBlogs:
+  dbs: [mysql]
+  dbname: ezorm
+  dbtable: user_blogs
+  fields:
+    - UserId: int32
+      flags: [autoinc, primary]
+    - BlogId: int32
+      flags: [primary]
+  

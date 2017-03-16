@@ -730,7 +730,7 @@ func (tx *_UserMySQLTx) BatchCreate(objs []*User) error {
 	values := make([]interface{}, 0, len(objs)*14)
 	for _, obj := range objs {
 		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice(14, "?"), ",")))
-		values = append(values, 0)
+		values = append(values, obj.Id)
 		values = append(values, obj.Name)
 		values = append(values, obj.Mailbox)
 		values = append(values, obj.Sex)
@@ -796,7 +796,7 @@ func (tx *_UserMySQLTx) Create(obj *User) error {
 		strings.Join(params, ","))
 
 	values := make([]interface{}, 0, 14)
-	values = append(values, 0)
+	values = append(values, obj.Id)
 	values = append(values, obj.Name)
 	values = append(values, obj.Mailbox)
 	values = append(values, obj.Sex)

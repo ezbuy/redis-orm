@@ -2,17 +2,15 @@
 {{- if ne $obj.DbTable ""}}
 CREATE TABLE IF NOT EXISTS `{{$obj.DbTable}}` (
 	{{- range $i, $field := $obj.Fields}}
-		{{- if eq (add $i 1) (len $obj.Fields)}}
-	{{$field.SQLColumn "mysql"}}
-		{{- else}}
 	{{$field.SQLColumn "mysql"}}, 
-		{{- end}}
 	{{- end}}
+	{{$obj.PrimaryKey.SQLColumn "mysql"}}
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 {{range $i, $unique := $obj.Uniques}}
+{{- if not $unique.HasPrimaryKey}}
 CREATE UNIQUE INDEX `{{$unique.Name | camel2name}}` ON `{{$obj.DbTable}}`(
-	{{- range $i, $f := $unique.Fields -}}
+	{{- range $i, $f := $unique.Fields -}}		
 		{{- if eq (add $i 1) (len $unique.Fields) -}}
 			`{{- $f.Name | camel2name -}}`
 		{{- else -}}
@@ -21,8 +19,10 @@ CREATE UNIQUE INDEX `{{$unique.Name | camel2name}}` ON `{{$obj.DbTable}}`(
 	{{- end -}}
 );
 {{- end}}
+{{- end}}
 
 {{- range $i, $index := $obj.Indexes}}
+{{- if not $index.HasPrimaryKey}}
 CREATE INDEX `{{$index.Name | camel2name}}` ON `{{$obj.DbTable}}`(
 	{{- range $i, $f := $index.Fields -}}
 		{{- if eq (add $i 1) (len $index.Fields) -}}
@@ -33,8 +33,10 @@ CREATE INDEX `{{$index.Name | camel2name}}` ON `{{$obj.DbTable}}`(
 	{{- end -}}
 );
 {{- end}}
+{{- end}}
 
 {{- range $i, $index := $obj.Ranges}}
+{{- if not $index.HasPrimaryKey}}
 CREATE INDEX `{{$index.Name | camel2name}}` ON `{{$obj.DbTable}}`(
 	{{- range $i, $f := $index.Fields -}}
 		{{- if eq (add $i 1) (len $index.Fields) -}}
@@ -44,6 +46,7 @@ CREATE INDEX `{{$index.Name | camel2name}}` ON `{{$obj.DbTable}}`(
 		{{- end -}}
 	{{- end -}}
 );
+{{- end}}
 {{- end}}
 {{- end}}
 

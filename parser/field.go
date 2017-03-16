@@ -85,13 +85,8 @@ func (f *Field) IsPrimary() bool {
 }
 
 func (f *Field) IsAutoIncrement() bool {
-	if f.IsPrimary() {
-		if f.Flags.Contains("autoinc") {
-			return true
-		}
-		if !f.Flags.Contains("noinc") {
-			return true
-		}
+	if f.Flags.Contains("autoinc") {
+		return true
 	}
 	return false
 }
@@ -357,6 +352,7 @@ func (f *Field) Read(data map[interface{}]interface{}) error {
 			return errors.New("invalid field name: " + key)
 		}
 	}
+	//! single field primary adjust for redis ops
 	if f.IsPrimary() {
 		f.Flags.Add("unique")
 		if f.IsNumber() {
@@ -389,14 +385,10 @@ func (f *Field) SQLColumn(driver string) string {
 		columns = append(columns, f.SQLName(driver))
 		columns = append(columns, f.SQLType(driver))
 		columns = append(columns, f.SQLNull(driver))
-		if !f.IsPrimary() {
-			columns = append(columns, f.SQLDefault(driver))
-		}
-		if f.IsPrimary() {
-			columns = append(columns, "PRIMARY KEY")
-		}
 		if f.IsAutoIncrement() {
 			columns = append(columns, "AUTO_INCREMENT")
+		} else {
+			columns = append(columns, f.SQLDefault(driver))
 		}
 		if f.Comment != "" {
 			columns = append(columns, "COMMENT", "'"+f.Comment+"'")

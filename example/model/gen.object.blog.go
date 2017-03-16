@@ -18,7 +18,6 @@ var (
 
 type Blog struct {
 	Id        int32     `db:"id"`
-	UserId    int32     `db:"user_id"`
 	Title     string    `db:"title"`
 	Content   string    `db:"content"`
 	Status    int32     `db:"status"`
@@ -53,7 +52,6 @@ func (obj *Blog) GetTableName() string {
 func (obj *Blog) GetColumns() []string {
 	columns := []string{
 		"`id`",
-		"`user_id`",
 		"`title`",
 		"`content`",
 		"`status`",
@@ -106,55 +104,6 @@ func (u *IdOfBlogUK) UKRelation() UniqueRelation {
 }
 
 //! indexes
-
-type UserIdOfBlogIDX struct {
-	UserId int32
-	offset int
-	limit  int
-}
-
-func (u *UserIdOfBlogIDX) Key() string {
-	strs := []string{
-		"UserId",
-		fmt.Sprint(u.UserId),
-	}
-	return fmt.Sprintf("%s", strings.Join(strs, ":"))
-}
-
-func (u *UserIdOfBlogIDX) SQLFormat(limit bool) string {
-	conditions := []string{
-		"user_id = ?",
-	}
-	if limit {
-		return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOffsetLimit(u.offset, u.limit))
-	}
-	return orm.SQLWhere(conditions)
-}
-
-func (u *UserIdOfBlogIDX) SQLParams() []interface{} {
-	return []interface{}{
-		u.UserId,
-	}
-}
-
-func (u *UserIdOfBlogIDX) SQLLimit() int {
-	if u.limit > 0 {
-		return u.limit
-	}
-	return -1
-}
-
-func (u *UserIdOfBlogIDX) Limit(n int) {
-	u.limit = n
-}
-
-func (u *UserIdOfBlogIDX) Offset(n int) {
-	u.offset = n
-}
-
-func (u *UserIdOfBlogIDX) IDXRelation() IndexRelation {
-	return nil
-}
 
 //! ranges
 
@@ -330,7 +279,7 @@ func (m *_BlogMySQLMgr) FetchBySQL(q string, args ...interface{}) (results []int
 
 	for rows.Next() {
 		var result Blog
-		err = rows.Scan(&(result.Id), &(result.UserId), &(result.Title), &(result.Content), &(result.Status), &(result.Readed), &CreatedAt, &UpdatedAt)
+		err = rows.Scan(&(result.Id), &(result.Title), &(result.Content), &(result.Status), &(result.Readed), &CreatedAt, &UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -524,11 +473,10 @@ func (tx *_BlogMySQLTx) BatchCreate(objs []*Blog) error {
 	}
 
 	params := make([]string, 0, len(objs))
-	values := make([]interface{}, 0, len(objs)*8)
+	values := make([]interface{}, 0, len(objs)*7)
 	for _, obj := range objs {
-		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice(8, "?"), ",")))
-		values = append(values, 0)
-		values = append(values, obj.UserId)
+		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice(7, "?"), ",")))
+		values = append(values, obj.Id)
 		values = append(values, obj.Title)
 		values = append(values, obj.Content)
 		values = append(values, obj.Status)
@@ -577,14 +525,13 @@ func (tx *_BlogMySQLTx) UpdateBySQL(set, where string, args ...interface{}) erro
 }
 
 func (tx *_BlogMySQLTx) Create(obj *Blog) error {
-	params := orm.NewStringSlice(8, "?")
+	params := orm.NewStringSlice(7, "?")
 	q := fmt.Sprintf("INSERT INTO `blogs`(%s) VALUES(%s)",
 		strings.Join(obj.GetColumns(), ","),
 		strings.Join(params, ","))
 
-	values := make([]interface{}, 0, 8)
-	values = append(values, 0)
-	values = append(values, obj.UserId)
+	values := make([]interface{}, 0, 7)
+	values = append(values, obj.Id)
 	values = append(values, obj.Title)
 	values = append(values, obj.Content)
 	values = append(values, obj.Status)
@@ -608,7 +555,6 @@ func (tx *_BlogMySQLTx) Create(obj *Blog) error {
 
 func (tx *_BlogMySQLTx) Update(obj *Blog) error {
 	columns := []string{
-		"`user_id` = ?",
 		"`title` = ?",
 		"`content` = ?",
 		"`status` = ?",
@@ -618,8 +564,7 @@ func (tx *_BlogMySQLTx) Update(obj *Blog) error {
 	}
 	q := fmt.Sprintf("UPDATE `blogs` SET %s WHERE `id`=?",
 		strings.Join(columns, ","))
-	values := make([]interface{}, 0, 8-1)
-	values = append(values, obj.UserId)
+	values := make([]interface{}, 0, 7-1)
 	values = append(values, obj.Title)
 	values = append(values, obj.Content)
 	values = append(values, obj.Status)
@@ -888,7 +833,7 @@ func (tx *_BlogMySQLTx) FetchBySQL(q string, args ...interface{}) (results []int
 
 	for rows.Next() {
 		var result Blog
-		err = rows.Scan(&(result.Id), &(result.UserId), &(result.Title), &(result.Content), &(result.Status), &(result.Readed), &CreatedAt, &UpdatedAt)
+		err = rows.Scan(&(result.Id), &(result.Title), &(result.Content), &(result.Status), &(result.Readed), &CreatedAt, &UpdatedAt)
 		if err != nil {
 			return nil, err
 		}

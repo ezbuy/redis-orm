@@ -5,11 +5,10 @@ Blog:
   fields:
     - Id: int32
       flags: [primary]
-    - UserId: int32
-      flags: [index]
     - Title: string
     - Content: string
     - Status: int32
+      flags: [index]
     - Readed: int32
     - CreatedAt: timestamp
     - UpdatedAt: timestamp

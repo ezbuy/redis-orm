@@ -28,6 +28,15 @@ func NewIndex(obj *MetaObject) *Index {
 	return &Index{Obj: obj}
 }
 
+func (idx *Index) HasPrimaryKey() bool {
+	for _, f := range idx.Fields {
+		if f.IsPrimary() {
+			return true
+		}
+	}
+	return false
+}
+
 func (idx *Index) LastField() *Field {
 	return idx.Fields[len(idx.Fields)-1]
 }
