@@ -1,32 +1,30 @@
 {{define "object.redis"}}
 {{$obj := .}}
-{{$primaryField := $obj.PrimaryField}}
 
-	{{template "object.redis.manager" $obj}}	
-	{{template "object.redis.pipeline" $obj}}
-	{{if or (ne $obj.DbSource "") (ne $obj.ImportSQL "")}}
-	{{template "object.redis.sync" $obj}}
-	{{end}}
-	{{template "object.redis.read" $obj}}
-	{{template "object.redis.write" $obj}}
+{{template "object.redis.manager" $obj}}	
+{{template "object.redis.pipeline" $obj}}
+{{if or (ne $obj.DbSource "") (ne $obj.ImportSQL "")}}
+{{template "object.redis.sync" $obj}}
+{{end}}
+{{template "object.redis.read" $obj}}
+{{template "object.redis.write" $obj}}
 
-	//! uniques
-	{{- range $i, $unique := $obj.Uniques}}
-	{{$relation := ($unique.GetRelation "pair" $primaryField.GetType $obj.Name)}}
-	{{template "object.relation" $relation}}
-	{{- end}}
+//! uniques
+{{- range $i, $unique := $obj.Uniques}}
+{{$relation := ($unique.GetRelation "pair" "string" $obj.Name)}}
+{{template "object.relation" $relation}}
+{{- end}}
 
-	//! indexes
-	{{- range $i, $index := $obj.Indexes}}
-	{{$relation := ($index.GetRelation "set" $primaryField.GetType $obj.Name)}}
-	{{template "object.relation" $relation}}
-	{{- end}}
+//! indexes
+{{- range $i, $index := $obj.Indexes}}
+{{$relation := ($index.GetRelation "set" "string" $obj.Name)}}
+{{template "object.relation" $relation}}
+{{- end}}
 
-	//! ranges
-	{{- range $i, $rg := $obj.Ranges}}
-	{{$relation := ($rg.GetRelation "zset" $primaryField.GetType $obj.Name)}}
-	{{template "object.relation" $relation}}
-	{{- end}}
-
+//! ranges
+{{- range $i, $rg := $obj.Ranges}}
+{{$relation := ($rg.GetRelation "zset" "string" $obj.Name)}}
+{{template "object.relation" $relation}}
+{{- end}}
 	
 {{end}}

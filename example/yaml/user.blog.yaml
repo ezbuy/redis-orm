@@ -1,11 +1,10 @@
 UserBlogs:
-UserBlogs:
   dbs: [mysql]
   dbname: ezorm
   dbtable: user_blogs
   fields:
     - UserId: int32
-      flags: [autoinc, primary]
+      flags: [primary]
     - BlogId: int32
       flags: [primary]
   

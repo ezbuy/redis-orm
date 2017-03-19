@@ -1,7 +1,8 @@
 {{define "object.mysql.write"}}
 {{$obj := .}}
 {{$relation := $obj.Relation}}
-{{$primaryField := $obj.PrimaryField}}
+{{$primary := $obj.PrimaryKey}}
+{{$primaryField := $primary.FirstField }}
 //! tx write
 type _{{$obj.Name}}MySQLTx struct {
 	*orm.MySQLTx
@@ -31,22 +32,16 @@ func (tx *_{{$obj.Name}}MySQLTx) BatchCreate(objs []*{{$obj.Name}}) error {
 	for _, obj := range objs {
 		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice({{len $obj.Fields}}, "?"), ",")))
 		{{- range $i, $field := $obj.Fields -}}
-			{{- if $field.IsPrimary}}
-				{{- if $field.IsAutoIncrement}}
+			{{- if $field.IsAutoIncrement}}
 				values = append(values, 0)
-				{{- else}}
-				values = append(values, {{$field.GetTransformValue "obj."}})
-				{{- end}}			
-			{{- else}}
-				{{- if and $field.IsNullable $field.IsNeedTransform}}
-					if obj.{{$field.Name}} == nil {
-						values = append(values, nil)
-					} else {
-						values = append(values, {{$field.GetTransformValue "obj."}})
-					}	
-				{{- else}}
+			{{- else if and $field.IsNullable $field.IsNeedTransform}}
+				if obj.{{$field.Name}} == nil {
+					values = append(values, nil)
+				} else {
 					values = append(values, {{$field.GetTransformValue "obj."}})
-				{{- end}}
+				}
+			{{- else }}
+				values = append(values, {{$field.GetTransformValue "obj."}})
 			{{- end}}			
 		{{- end}}
 	}
@@ -61,15 +56,12 @@ func (tx *_{{$obj.Name}}MySQLTx) BatchCreate(objs []*{{$obj.Name}}) error {
 }
 
 func (tx *_{{$obj.Name}}MySQLTx) BatchDelete(objs []*{{$obj.Name}}) error {
-	if len(objs) == 0 {
-		return nil
-	}
-
-	ids := make([]interface{}, 0, len(objs))
 	for _, obj := range objs {
-		ids = append(ids, obj.{{$primaryField.Name}})
+		if err := tx.Delete(obj); err != nil {
+			return err
+		}
 	}
-	return tx.DeleteBy{{$primaryField.Name}}s(ids)
+	return nil
 }
 
 // argument example:
@@ -81,7 +73,7 @@ func (tx *_{{$obj.Name}}MySQLTx) UpdateBySQL(set, where string, args ...interfac
 	if where != "" {
 		query = fmt.Sprintf("UPDATE `{{$obj.DbTable}}` SET %s WHERE %s", set, where)
 	}
-	result, err := tx.Exec(query, args)
+	result, err := tx.Exec(query, args...)
 	if err != nil {
 		tx.err = err
 		return err
@@ -98,24 +90,18 @@ func (tx *_{{$obj.Name}}MySQLTx) Create(obj *{{$obj.Name}}) error {
 
 	values := make([]interface{}, 0, {{len $obj.Fields}})
 	{{- range $i, $field := $obj.Fields -}}
-			{{- if $field.IsPrimary}}
-				{{- if $field.IsAutoIncrement}}
-				values = append(values, 0)
-				{{- else}}
+		{{- if $field.IsAutoIncrement}}
+			values = append(values, 0)
+		{{- else if and $field.IsNullable $field.IsNeedTransform}}
+			if obj.{{$field.Name}} == nil {
+				values = append(values, nil)
+			} else {
 				values = append(values, {{$field.GetTransformValue "obj."}})
-				{{- end}}			
-			{{- else}}
-				{{- if and $field.IsNullable $field.IsNeedTransform}}
-					if obj.{{$field.Name}} == nil {
-						values = append(values, nil)
-					} else {
-						values = append(values, {{$field.GetTransformValue "obj."}})
-					}	
-				{{- else}}
-					values = append(values, {{$field.GetTransformValue "obj."}})
-				{{- end}}
-			{{- end}}			
-		{{- end}}
+			}
+		{{- else }}
+			values = append(values, {{$field.GetTransformValue "obj."}})
+		{{- end}}			
+	{{- end}}
 	result, err := tx.Exec(q, values...)
 	if err != nil {
 		tx.err = err
@@ -139,9 +125,10 @@ func (tx *_{{$obj.Name}}MySQLTx) Update(obj *{{$obj.Name}}) error {
 		{{- end}}
 	{{- end}}
 	}	
-	q := fmt.Sprintf("UPDATE `{{$obj.DbTable}}` SET %s WHERE `{{$primaryField.Name | camel2name}}`=?", 
-		strings.Join(columns, ","))
-	values := make([]interface{}, 0, {{len $obj.Fields}} - 1)
+	
+	pk := obj.GetPrimaryKey()
+	q := fmt.Sprintf("UPDATE `{{$obj.DbTable}}` SET %s %s", strings.Join(columns, ","), pk.SQLFormat())
+	values := make([]interface{}, 0, {{len $obj.Fields}} - {{len $primary.Fields}})
 	{{- range $i, $field := $obj.Fields -}}
 			{{- if not $field.IsPrimary}}
 				{{- if and $field.IsNullable $field.IsNeedTransform}}
@@ -155,7 +142,7 @@ func (tx *_{{$obj.Name}}MySQLTx) Update(obj *{{$obj.Name}}) error {
 				{{- end}}
 			{{- end}}			
 		{{- end}}
-	values = append(values, {{$primaryField.GetTransformValue "obj."}})
+	values = append(values, pk.SQLParams()...)
 
 	result, err := tx.Exec(q, values...)
 	if err != nil {
@@ -178,8 +165,13 @@ func (tx *_{{$obj.Name}}MySQLTx) Save(obj *{{$obj.Name}}) error {
 }
 
 func (tx *_{{$obj.Name}}MySQLTx) Delete(obj *{{$obj.Name}}) error {
-	q := fmt.Sprintf("DELETE FROM `{{$obj.DbTable}}` WHERE `{{$primaryField.Name | camel2name}}`=?")
-	result, err := tx.Exec(q , {{$primaryField.GetTransformValue "obj."}})
+	pk := obj.GetPrimaryKey()
+	return tx.DeleteByPrimaryKey(pk)
+}
+
+func (tx *_{{$obj.Name}}MySQLTx) DeleteByPrimaryKey(pk PrimaryKey) error {
+	q := fmt.Sprintf("DELETE FROM `{{$obj.DbTable}}` %s", pk.SQLFormat())
+	result, err := tx.Exec(q , pk.SQLParams()...)
 	if err != nil {
 		tx.err = err
 		return err
@@ -188,14 +180,12 @@ func (tx *_{{$obj.Name}}MySQLTx) Delete(obj *{{$obj.Name}}) error {
 	return tx.err
 }
 
-func (tx *_{{$obj.Name}}MySQLTx) DeleteBy{{$primaryField.Name}}s({{$primaryField.Name | camel2name}}s []interface{}) error { 
-	if len({{$primaryField.Name | camel2name}}s) == 0 {
-		return nil
+func (tx *_{{$obj.Name}}MySQLTx) DeleteBySQL(where string, args ...interface{}) error { 
+	query := fmt.Sprintf("DELETE FROM `{{$obj.DbTable}}`")
+	if where != "" {
+		query = fmt.Sprintf("DELETE FROM `{{$obj.DbTable}}` WHERE %s", where)
 	}
-
-	q := fmt.Sprintf("DELETE FROM `{{$obj.DbTable}}` WHERE `{{$primaryField.Name | camel2name}}` IN (%s)",
-		 orm.SliceJoin({{$primaryField.Name | camel2name}}s, ","))
-	result, err := tx.Exec(q)
+	result, err := tx.Exec(query, args...)
 	if err != nil {
 		tx.err = err
 		return err
@@ -203,7 +193,6 @@ func (tx *_{{$obj.Name}}MySQLTx) DeleteBy{{$primaryField.Name}}s({{$primaryField
 	tx.rowsAffected, tx.err = result.RowsAffected()
 	return tx.err
 }
-
 
 func (tx *_{{$obj.Name}}MySQLTx) Close() error {
 	if tx.err != nil {
@@ -213,7 +202,7 @@ func (tx *_{{$obj.Name}}MySQLTx) Close() error {
 }
 
 //! tx read
-func (tx *_{{$obj.Name}}MySQLTx) FindOne(unique Unique) (interface{}, error) {
+func (tx *_{{$obj.Name}}MySQLTx) FindOne(unique Unique) (PrimaryKey, error) {
 	objs, err := tx.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
 		tx.err = err
@@ -239,7 +228,7 @@ func (tx *_{{$obj.Name}}MySQLTx) FindOneFetch(unique Unique) (*{{$obj.Name}}, er
 	return nil, fmt.Errorf("none record")
 }
 
-func (tx *_{{$obj.Name}}MySQLTx) Find(index Index) ([]interface{}, error) {
+func (tx *_{{$obj.Name}}MySQLTx) Find(index Index) ([]PrimaryKey, error) {
 	return tx.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
 }
 
@@ -261,7 +250,7 @@ func (tx *_{{$obj.Name}}MySQLTx) FindCount(index Index) (int64, error) {
 	return tx.queryCount(index.SQLFormat(false), index.SQLParams()...)
 }
 
-func (tx *_{{$obj.Name}}MySQLTx) Range(scope Range) ([]interface{}, error) {
+func (tx *_{{$obj.Name}}MySQLTx) Range(scope Range) ([]PrimaryKey, error) {
 	return tx.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
@@ -283,7 +272,7 @@ func (tx *_{{$obj.Name}}MySQLTx) RangeCount(scope Range) (int64, error) {
 	return tx.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
 }
 
-func (tx *_{{$obj.Name}}MySQLTx) RangeRevert(scope Range) ([]interface{}, error) {
+func (tx *_{{$obj.Name}}MySQLTx) RangeRevert(scope Range) ([]PrimaryKey, error) {
 	scope.Revert(true)
 	return tx.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
@@ -293,36 +282,73 @@ func (tx *_{{$obj.Name}}MySQLTx) RangeRevertFetch(scope Range) ([]*{{$obj.Name}}
 	return tx.RangeFetch(scope)
 }
 
-func (tx *_{{$obj.Name}}MySQLTx) queryLimit(where string, limit int, args ...interface{}) (results []interface{}, err error){
-	query := fmt.Sprintf("SELECT `{{$primaryField.Name | camel2name}}` FROM `{{$obj.DbTable}}`")
-	if where != "" {
-		query += " WHERE " 
-		query += where
-	}
-
+func (tx *_{{$obj.Name}}MySQLTx) queryLimit(where string, limit int, args ...interface{}) (results []PrimaryKey, err error){
+	pk := {{$obj.Name}}Mgr.NewPrimaryKey()
+	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(pk.Columns(), ","), where)
 	rows, err := tx.Query(query, args...)
 	if err != nil {
-		tx.err = err
 		return nil, fmt.Errorf("{{$obj.Name}} query limit error: %v", err)
 	}
 	defer rows.Close()
 
 	offset :=0
+	{{- range $index, $field := $primary.Fields}}
+		{{- if $field.IsNullable }}
+			var {{$field.Name}} sql.{{$field.GetNullSQLType}}
+		{{- else if $field.IsNeedTransform }}
+			var {{$field.Name}} {{$field.GetTransform.TypeOrigin}}
+		{{- end -}}
+	{{- end }}
+
 	for rows.Next() {
 		if limit >= 0 && offset >= limit {
 			break
 		}
 		offset++
 
-		var result {{$primaryField.GetType}}
-		if err = rows.Scan(&result); err != nil {
-			tx.err = err
+		result := {{$obj.Name}}Mgr.NewPrimaryKey()
+		err = rows.Scan(
+		{{- range $index, $field := $primary.Fields -}}
+		{{- if or $field.IsNullable $field.IsNeedTransform -}}
+			&{{$field.Name}},
+		{{- else -}}
+			&(result.{{$field.Name}}),
+		{{- end }}
+		{{- end -}}
+		)
+		if err != nil {
 			return nil, err
 		}
+
+		{{range $index, $field := $primary.Fields}}
+			{{- if $field.IsNeedTransform }}
+				{{- if $field.IsNullable -}}
+					if {{$field.Name}}.Valid {
+						{{- with $v := (printf "%sValue" $field.Name)}}
+						{{$field.Name}}Value := {{$field.Name}}.{{$field.NullSQLTypeValue}}
+						{{$field.Name}}Point := {{- printf $field.GetTransform.ConvertTo $v}}
+						result.{{$field.Name}} = &{{$field.Name}}Point	
+						{{- end}}
+					} else {
+						result.{{$field.Name}} = nil
+					}					
+				{{- else -}}
+				result.{{$field.Name}} = {{- printf $field.GetTransform.ConvertTo $field.Name}}
+				{{- end -}}
+			{{- else }}				
+				{{- if $field.IsNullable -}}
+					result.{{$field.Name}} =
+					{{- if $field.NullSQLTypeNeedCast -}}
+					{{$field.GetType}}({{$field.Name}}.{{$field.NullSQLTypeValue}})
+					{{- else -}}
+					{{$field.Name}}.{{$field.NullSQLTypeValue}}
+					{{- end -}}
+				{{- end -}}
+			{{- end}}
+		{{end}}
 		results = append(results, result)
 	}
 	if err := rows.Err() ;err != nil {
-		tx.err = err
 		return nil, fmt.Errorf("{{$obj.Name}} query limit result error: %v", err)
 	}
 	return
@@ -350,19 +376,20 @@ func (tx *_{{$obj.Name}}MySQLTx) queryCount(where string, args ...interface{}) (
 	return count, nil
 }
 
-func (tx *_{{$obj.Name}}MySQLTx) Fetch({{$primaryField.Name | camel2name}} interface{}) (*{{$obj.Name}}, error) {
+func (tx *_{{$obj.Name}}MySQLTx) Fetch(pk PrimaryKey) (*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
-	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` WHERE `{{$primaryField.Name}}` = (%s)", strings.Join(obj.GetColumns(), ","), fmt.Sprint({{$primaryField.Name | camel2name}}))
-	objs, err := tx.FetchBySQL(query)
+	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	objs, err := tx.FetchBySQL(query, pk.SQLParams()...)
 	if err != nil {
 		return nil, err
 	}
 	if len(objs) > 0 {
-	return objs[0].(*{{$obj.Name}}), nil
+		return objs[0].(*{{$obj.Name}}), nil
 	}
 	return nil, fmt.Errorf("{{$obj.Name}} fetch record not found")
 }
 
+{{if $primary.IsSingleField}}
 func (tx *_{{$obj.Name}}MySQLTx) FetchBy{{$primaryField.Name}}s({{$primaryField.Name | camel2name}}s []interface{}) ( []*{{$obj.Name}}, error) {
 	if len({{$primaryField.Name | camel2name}}s) == 0 {
 		return []*{{$obj.Name}}{}, nil
@@ -380,6 +407,7 @@ func (tx *_{{$obj.Name}}MySQLTx) FetchBy{{$primaryField.Name}}s({{$primaryField.
 	}
 	return results, nil
 }
+{{end}}
 
 func (tx *_{{$obj.Name}}MySQLTx) Search(where string, args ... interface{}) ([]*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()

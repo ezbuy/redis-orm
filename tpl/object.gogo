@@ -1,7 +1,7 @@
 {{define "object"}}package {{.GoPackage}}
 {{$obj := .}}
 {{$relation := $obj.Relation}}
-{{$primaryField := $obj.PrimaryField}}
+
 import (
 	"fmt"
 	"time"
@@ -72,6 +72,10 @@ var (
 
 	//! object function
 	{{template "object.functions" $obj}}
+
+	//! primary key
+	{{template "object.primary.key" $obj.PrimaryKey}}
+
 	//! uniques
 	{{- range $i, $unique := $obj.Uniques}}
 	{{template "object.unique" $unique}}
@@ -88,37 +92,22 @@ var (
 	{{- end}}
 
 	{{- if $obj.DbContains "mysql"}}
-	func (m *_{{$obj.Name}}Mgr) MySQL() *ReferenceResult {
-		return NewReferenceResult({{$obj.Name}}MySQLMgr())
-	}
 	{{template "object.mysql" $obj}}
 	{{- end}}
 
 	{{- if $obj.DbContains "mssql"}}
-	func (m *_{{$obj.Name}}Mgr) MsSQL() *ReferenceResult {
-		return NewReferenceResult({{$obj.Name}}MsSQLMgr())
-	}
 	{{template "object.mssql" $obj}}
 	{{- end}}
 
 	{{- if $obj.DbContains "redis"}}
-	func (m *_{{$obj.Name}}Mgr) Redis() *ReferenceResult {
-		return NewReferenceResult({{$obj.Name}}RedisMgr())
-	}
 	{{template "object.redis" $obj}}
 	{{- end}}
 
 	{{- if $obj.DbContains "mongo"}}
-	func (m *_{{$obj.Name}}Mgr) Mongo() *ReferenceResult {
-		return NewReferenceResult({{$obj.Name}}MongoMgr())
-	}
 	{{template "object.mongo" $obj}}
 	{{- end}}
 
 	{{- if $obj.DbContains "elastic"}}
-	func (m *_{{$obj.Name}}Mgr) Elastic() *ReferenceResult {
-		return NewReferenceResult({{$obj.Name}}ElasticMgr())
-	}
 	{{template "object.elastic" $obj}}
 	{{- end}}	
 {{end}}

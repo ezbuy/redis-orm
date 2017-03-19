@@ -58,6 +58,68 @@ func (obj *UserBaseInfo) GetColumns() []string {
 	return columns
 }
 
+func (obj *UserBaseInfo) GetPrimaryKey() PrimaryKey {
+	pk := UserBaseInfoMgr.NewPrimaryKey()
+	pk.Id = obj.Id
+	return pk
+}
+
+//! primary key
+
+type IdOfUserBaseInfoPK struct {
+	Id int32
+}
+
+func (m *_UserBaseInfoMgr) NewPrimaryKey() *IdOfUserBaseInfoPK {
+	return &IdOfUserBaseInfoPK{}
+}
+
+func (u *IdOfUserBaseInfoPK) Key() string {
+	strs := []string{
+		"Id",
+		fmt.Sprint(u.Id),
+	}
+	return fmt.Sprintf("%s", strings.Join(strs, ":"))
+}
+
+func (u *IdOfUserBaseInfoPK) Parse(key string) error {
+	arr := strings.Split(key, ":")
+	if len(arr)%2 != 0 {
+		return fmt.Errorf("key (%s) format error", key)
+	}
+	kv := map[string]string{}
+	for i := 0; i < len(arr)/2; i++ {
+		kv[arr[2*i]] = arr[2*i+1]
+	}
+	vId, ok := kv["Id"]
+	if !ok {
+		return fmt.Errorf("key (%s) without (Id) field", key)
+	}
+	if err := orm.StringScan(vId, &(u.Id)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (u *IdOfUserBaseInfoPK) SQLFormat() string {
+	conditions := []string{
+		"id = ?",
+	}
+	return orm.SQLWhere(conditions)
+}
+
+func (u *IdOfUserBaseInfoPK) SQLParams() []interface{} {
+	return []interface{}{
+		u.Id,
+	}
+}
+
+func (u *IdOfUserBaseInfoPK) Columns() []string {
+	return []string{
+		"`id`",
+	}
+}
+
 //! uniques
 
 type MailboxPasswordOfUserBaseInfoUK struct {
@@ -312,10 +374,6 @@ func (u *IdOfUserBaseInfoRNG) RNGRelation() RangeRelation {
 	return nil
 }
 
-func (m *_UserBaseInfoMgr) MySQL() *ReferenceResult {
-	return NewReferenceResult(UserBaseInfoMySQLMgr())
-}
-
 type _UserBaseInfoMySQLMgr struct {
 	*orm.MySQLStore
 }
@@ -377,10 +435,10 @@ func (m *_UserBaseInfoMySQLMgr) FetchBySQL(q string, args ...interface{}) (resul
 	}
 	return
 }
-func (m *_UserBaseInfoMySQLMgr) Fetch(id interface{}) (*UserBaseInfo, error) {
+func (m *_UserBaseInfoMySQLMgr) Fetch(pk PrimaryKey) (*UserBaseInfo, error) {
 	obj := UserBaseInfoMgr.NewUserBaseInfo()
-	query := fmt.Sprintf("SELECT %s FROM `user_base_info` WHERE `Id` = (%s)", strings.Join(obj.GetColumns(), ","), id)
-	objs, err := m.FetchBySQL(query)
+	query := fmt.Sprintf("SELECT %s FROM `user_base_info` %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
 	if err != nil {
 		return nil, err
 	}
@@ -390,13 +448,13 @@ func (m *_UserBaseInfoMySQLMgr) Fetch(id interface{}) (*UserBaseInfo, error) {
 	return nil, fmt.Errorf("UserBaseInfo fetch record not found")
 }
 
-func (m *_UserBaseInfoMySQLMgr) FetchByIds(ids []interface{}) ([]*UserBaseInfo, error) {
-	if len(ids) == 0 {
-		return []*UserBaseInfo{}, nil
+func (m *_UserBaseInfoMySQLMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*UserBaseInfo, error) {
+	params := make([]string, 0, len(pks))
+	for _, pk := range pks {
+		params = append(params, fmt.Sprint(pk.(*IdOfUserBaseInfoPK).Id))
 	}
-
 	obj := UserBaseInfoMgr.NewUserBaseInfo()
-	query := fmt.Sprintf("SELECT %s FROM `user_base_info` WHERE `Id` IN (%s)", strings.Join(obj.GetColumns(), ","), orm.SliceJoin(ids, ","))
+	query := fmt.Sprintf("SELECT %s FROM `user_base_info` WHERE `Id` IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join(params, ","))
 	objs, err := m.FetchBySQL(query)
 	if err != nil {
 		return nil, err
@@ -408,15 +466,15 @@ func (m *_UserBaseInfoMySQLMgr) FetchByIds(ids []interface{}) ([]*UserBaseInfo, 
 	return results, nil
 }
 
-func (m *_UserBaseInfoMySQLMgr) FindOne(unique Unique) (interface{}, error) {
+func (m *_UserBaseInfoMySQLMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	objs, err := m.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if len(objs) > 0 {
 		return objs[0], nil
 	}
-	return "", fmt.Errorf("UserBaseInfo find record not found")
+	return nil, fmt.Errorf("UserBaseInfo find record not found")
 }
 
 func (m *_UserBaseInfoMySQLMgr) FindOneFetch(unique Unique) (*UserBaseInfo, error) {
@@ -432,7 +490,7 @@ func (m *_UserBaseInfoMySQLMgr) FindOneFetch(unique Unique) (*UserBaseInfo, erro
 	return nil, fmt.Errorf("none record")
 }
 
-func (m *_UserBaseInfoMySQLMgr) Find(index Index) ([]interface{}, error) {
+func (m *_UserBaseInfoMySQLMgr) Find(index Index) ([]PrimaryKey, error) {
 	return m.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
 }
 
@@ -454,7 +512,7 @@ func (m *_UserBaseInfoMySQLMgr) FindCount(index Index) (int64, error) {
 	return m.queryCount(index.SQLFormat(false), index.SQLParams()...)
 }
 
-func (m *_UserBaseInfoMySQLMgr) Range(scope Range) ([]interface{}, error) {
+func (m *_UserBaseInfoMySQLMgr) Range(scope Range) ([]PrimaryKey, error) {
 	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
@@ -476,7 +534,7 @@ func (m *_UserBaseInfoMySQLMgr) RangeCount(scope Range) (int64, error) {
 	return m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
 }
 
-func (m *_UserBaseInfoMySQLMgr) RangeRevert(scope Range) ([]interface{}, error) {
+func (m *_UserBaseInfoMySQLMgr) RangeRevert(scope Range) ([]PrimaryKey, error) {
 	scope.Revert(true)
 	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
@@ -486,8 +544,9 @@ func (m *_UserBaseInfoMySQLMgr) RangeRevertFetch(scope Range) ([]*UserBaseInfo, 
 	return m.RangeFetch(scope)
 }
 
-func (m *_UserBaseInfoMySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []interface{}, err error) {
-	query := fmt.Sprintf("SELECT `id` FROM `user_base_info` %s", where)
+func (m *_UserBaseInfoMySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []PrimaryKey, err error) {
+	pk := UserBaseInfoMgr.NewPrimaryKey()
+	query := fmt.Sprintf("SELECT %s FROM `user_base_info` %s", strings.Join(pk.Columns(), ","), where)
 	rows, err := m.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("UserBaseInfo query limit error: %v", err)
@@ -495,16 +554,19 @@ func (m *_UserBaseInfoMySQLMgr) queryLimit(where string, limit int, args ...inte
 	defer rows.Close()
 
 	offset := 0
+
 	for rows.Next() {
 		if limit >= 0 && offset >= limit {
 			break
 		}
 		offset++
 
-		var result int32
-		if err = rows.Scan(&result); err != nil {
+		result := UserBaseInfoMgr.NewPrimaryKey()
+		err = rows.Scan(&(result.Id))
+		if err != nil {
 			return nil, err
 		}
+
 		results = append(results, result)
 	}
 	if err := rows.Err(); err != nil {

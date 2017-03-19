@@ -16,13 +16,28 @@ func NewPrimaryKey(obj *MetaObject) *PrimaryKey {
 	return &PrimaryKey{Obj: obj}
 }
 
+func (pk *PrimaryKey) IsSingleField() bool {
+	if len(pk.Fields) == 1 {
+		return true
+	}
+	return false
+}
+
+func (pk *PrimaryKey) FirstField() *Field {
+	if len(pk.Fields) > 0 {
+		return pk.Fields[0]
+	}
+	return nil
+}
+
 func (pk *PrimaryKey) build() error {
-	pk.Name = strings.Join(pk.FieldNames, "_")
+	pk.Name = fmt.Sprintf("%sOf%sPK", strings.Join(pk.FieldNames, ""), pk.Obj.Name)
 	for _, name := range pk.FieldNames {
 		f := pk.Obj.FieldByName(name)
 		if f == nil {
 			return fmt.Errorf("%s field not exist", name)
 		}
+		f.Flags.Add("primary")
 		pk.Fields = append(pk.Fields, f)
 	}
 	if len(pk.Fields) == 0 {

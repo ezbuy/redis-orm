@@ -1,6 +1,5 @@
 {{define "relation.functions"}}
 {{$relation := .}}
-{{$primaryField := $relation.PrimaryField}}
 
 func (relation *{{.Name}}) GetClassName() string {
 	return "{{.Name}}"
@@ -8,7 +7,7 @@ func (relation *{{.Name}}) GetClassName() string {
 
 func (relation *{{.Name}}) GetIndexes() []string {
 	idx := []string{
-	{{- range $field := .Fields}}
+	{{- range $field := $relation.Fields}}
 	{{- if $field.HasIndex}}
 		"{{$field.Name}}",
 	{{- end}}
@@ -21,8 +20,5 @@ func (relation *{{.Name}}) GetStoreType() string {
 	return "{{$relation.StoreType}}"
 }
 
-func (relation *{{.Name}}) GetPrimaryName() string {
-	return "{{$primaryField.Name}}"
-}
 {{end}}
 

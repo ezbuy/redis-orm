@@ -1,6 +1,7 @@
 {{define "object.functions"}}
 {{$obj := .}}
-{{$primaryField := $obj.PrimaryField}}
+{{$primary := $obj.PrimaryKey}}
+{{$primaryField := $primary.FirstField }}
 func (obj *{{.Name}}) GetNameSpace() string {
 	return "{{.Package}}"
 }
@@ -26,6 +27,14 @@ func (obj *{{.Name}}) GetColumns() []string {
 	return columns
 }
 
+func (obj *{{.Name}}) GetPrimaryKey() PrimaryKey {
+	pk := {{.Name}}Mgr.NewPrimaryKey()
+	{{- range $field := $primary.Fields}}
+	pk.{{$field.Name}} = obj.{{$field.Name}}
+	{{- end}}
+	return pk
+}
+
 {{- if $obj.DbContains "redis"}}
 func (obj *{{.Name}}) GetIndexes() []string {
 	idx := []string{
@@ -43,7 +52,9 @@ func (obj *{{.Name}}) GetStoreType() string {
 }
 
 func (obj *{{.Name}}) GetPrimaryName() string {
-	return "{{$primaryField.Name}}"
+	pk := obj.GetPrimaryKey()
+	return pk.Key()
 }
+
 {{- end}}
 {{end}}

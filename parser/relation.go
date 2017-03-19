@@ -1,6 +1,9 @@
 package parser
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 type Relation struct {
 	Name      string
@@ -10,6 +13,8 @@ type Relation struct {
 	//! fields
 	Fields     []*Field
 	ValueField *Field
+	//! primary
+	primary *PrimaryKey
 	//! owner
 	Obj *MetaObject
 }
@@ -28,6 +33,10 @@ func (r *Relation) PrimaryField() *Field {
 		}
 	}
 	return nil
+}
+
+func (r *Relation) PrimaryKey() *PrimaryKey {
+	return r.primary
 }
 
 func (r *Relation) DB() string {
@@ -102,6 +111,12 @@ func (r *Relation) build() error {
 	default:
 		return errors.New("unsupport `store` for relation")
 	}
+
+	//! relation primary
+	r.primary = NewPrimaryKey(r.Obj)
+	r.primary.Name = fmt.Sprintf("%sOf%sPK", r.Fields[0].Name, r.Obj.Name)
+	r.primary.FieldNames = []string{r.Fields[0].Name}
+	r.primary.Fields = []*Field{r.Fields[0]}
 	return nil
 }
 
