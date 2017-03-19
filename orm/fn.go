@@ -1,6 +1,7 @@
 package orm
 
 import (
+	"encoding"
 	"errors"
 	"fmt"
 	"strconv"
@@ -110,4 +111,121 @@ func SQLOffsetLimit(offset, limit int) string {
 		return fmt.Sprintf("LIMIT %d", limit)
 	}
 	return fmt.Sprintf("LIMIT %d, %d", offset, limit)
+}
+
+func atoi(b []byte) (int, error) {
+	return strconv.Atoi(string(b))
+}
+
+func parseInt(b []byte, base int, bitSize int) (int64, error) {
+	return strconv.ParseInt(string(b), base, bitSize)
+}
+
+func parseUint(b []byte, base int, bitSize int) (uint64, error) {
+	return strconv.ParseUint(string(b), base, bitSize)
+}
+
+func parseFloat(b []byte, bitSize int) (float64, error) {
+	return strconv.ParseFloat(string(b), bitSize)
+}
+
+func StringScan(str string, v interface{}) error {
+	b := []byte(str)
+	switch v := v.(type) {
+	case nil:
+		return fmt.Errorf("StringScan(nil)")
+	case *string:
+		*v = str
+		return nil
+	case *[]byte:
+		*v = b
+		return nil
+	case *int:
+		var err error
+		*v, err = atoi(b)
+		return err
+	case *int8:
+		n, err := parseInt(b, 10, 8)
+		if err != nil {
+			return err
+		}
+		*v = int8(n)
+		return nil
+	case *int16:
+		n, err := parseInt(b, 10, 16)
+		if err != nil {
+			return err
+		}
+		*v = int16(n)
+		return nil
+	case *int32:
+		n, err := parseInt(b, 10, 32)
+		if err != nil {
+			return err
+		}
+		*v = int32(n)
+		return nil
+	case *int64:
+		n, err := parseInt(b, 10, 64)
+		if err != nil {
+			return err
+		}
+		*v = n
+		return nil
+	case *uint:
+		n, err := parseUint(b, 10, 64)
+		if err != nil {
+			return err
+		}
+		*v = uint(n)
+		return nil
+	case *uint8:
+		n, err := parseUint(b, 10, 8)
+		if err != nil {
+			return err
+		}
+		*v = uint8(n)
+		return nil
+	case *uint16:
+		n, err := parseUint(b, 10, 16)
+		if err != nil {
+			return err
+		}
+		*v = uint16(n)
+		return nil
+	case *uint32:
+		n, err := parseUint(b, 10, 32)
+		if err != nil {
+			return err
+		}
+		*v = uint32(n)
+		return nil
+	case *uint64:
+		n, err := parseUint(b, 10, 64)
+		if err != nil {
+			return err
+		}
+		*v = n
+		return nil
+	case *float32:
+		n, err := parseFloat(b, 32)
+		if err != nil {
+			return err
+		}
+		*v = float32(n)
+		return err
+	case *float64:
+		var err error
+		*v, err = parseFloat(b, 64)
+		return err
+	case *bool:
+		*v = len(b) == 1 && b[0] == '1'
+		return nil
+	case encoding.BinaryUnmarshaler:
+		return v.UnmarshalBinary(b)
+	default:
+		return fmt.Errorf(
+			"can't unmarshal %T (consider implementing BinaryUnmarshaler)", v)
+	}
+
 }

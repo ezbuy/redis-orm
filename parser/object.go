@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -25,7 +24,7 @@ type MetaObject struct {
 	fields       []*Field
 	fieldNameMap map[string]*Field
 	//! primary
-	primary []*Field
+	primary *PrimaryKey
 	//! indexes
 	uniques []*Index
 	indexes []*Index
@@ -41,7 +40,6 @@ func NewMetaObject(packageName string) *MetaObject {
 		Package:      packageName,
 		GoPackage:    packageName,
 		fieldNameMap: make(map[string]*Field),
-		primary:      []*Field{},
 		uniques:      []*Index{},
 		indexes:      []*Index{},
 		ranges:       []*Index{},
@@ -64,7 +62,7 @@ func (o *MetaObject) PrimaryField() *Field {
 	return nil
 }
 
-func (o *MetaObject) PrimaryKey() []*Field {
+func (o *MetaObject) PrimaryKey() *PrimaryKey {
 	return o.primary
 }
 
@@ -158,18 +156,14 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 				f.Obj = o
 				err := f.Read(field.(map[interface{}]interface{}))
 				if err != nil {
-					return errors.New(o.Name + " obj has " + err.Error())
+					return fmt.Errorf("object (%s) %s", o.Name, err.Error())
 				}
 				o.fields[i] = f
 				o.fieldNameMap[f.Name] = f
 			}
 		case "primary":
-			fields := toStringSlice(val.([]interface{}))
-			for _, field := range fields {
-				if f := o.FieldByName(field); f != nil {
-					o.primary = append(o.primary, f)
-				}
-			}
+			o.primary = NewPrimaryKey(o)
+			o.primary.FieldNames = toStringSlice(val.([]interface{}))
 		case "uniques":
 			for _, i := range val.([]interface{}) {
 				if len(i.([]interface{})) == 0 {
@@ -201,7 +195,7 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 			relation := NewRelation(o)
 			err := relation.Read(val.(map[interface{}]interface{}))
 			if err != nil {
-				return errors.New(o.Name + " obj has " + err.Error())
+				return fmt.Errorf("object (%s) %s", o.Name, err.Error())
 			}
 			o.Relation = relation
 		}
@@ -209,29 +203,42 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 
 	for _, field := range o.fields {
 		if field.IsPrimary() {
-			if len(o.primary) != 0 {
-				return fmt.Errorf("primary key already defined: <%s> ", field.Name)
+			if o.primary == nil {
+				o.primary = NewPrimaryKey(o)
+				o.primary.FieldNames = []string{}
 			}
-			o.primary = append(o.primary, field)
+			o.primary.FieldNames = append(o.primary.FieldNames, field.Name)
 		}
 		if field.HasIndex() && field.IsNullable() {
-			return fmt.Errorf("field <%s> should not be nullable for indexing", field.Name)
+			return fmt.Errorf("object (%s) field (%s) should not be nullable for indexing", o.Name, field.Name)
+		}
+	}
+
+	if o.Relation == nil {
+		if o.primary == nil {
+			if o.DbContains("mysql") || o.DbContains("mssql") {
+				return fmt.Errorf("object (%s) needs a primary key declare.", o.Name)
+			}
+		} else {
+			if err := o.primary.build(); err != nil {
+				return fmt.Errorf("object (%s) %s", o.Name, err.Error())
+			}
 		}
 	}
 
 	for _, unique := range o.uniques {
 		if err := unique.buildUnique(); err != nil {
-			return err
+			return fmt.Errorf("object (%s) %s", o.Name, err.Error())
 		}
 	}
 	for _, index := range o.indexes {
 		if err := index.buildIndex(); err != nil {
-			return err
+			return fmt.Errorf("object (%s) %s", o.Name, err.Error())
 		}
 	}
 	for _, rg := range o.ranges {
 		if err := rg.buildRange(); err != nil {
-			return err
+			return fmt.Errorf("object (%s) %s", o.Name, err.Error())
 		}
 	}
 	return nil

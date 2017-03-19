@@ -1,6 +1,5 @@
 {{define "object.redis.sync"}}
 {{$obj := .}}
-{{$primaryField := $obj.PrimaryField}}
 func (m *_{{$obj.Name}}RedisMgr) Load(db DBFetcher) error {
 	if err := m.Clear(); err != nil {
 		return err

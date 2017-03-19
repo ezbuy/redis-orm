@@ -54,11 +54,11 @@ type {{$relation.Name}} struct {
 
 
 {{- if $obj.DbContains "mysql"}}
-{{template "object.mysql.read" $obj}}
+{{template "relation.mysql.read" $relation}}
 {{- end}}
 
 {{- if $obj.DbContains "mssql"}}
-{{template "object.mssql.read" $obj}}
+{{template "relation.mssql.read" $relation}}
 {{- end}}
 
 {{end}}

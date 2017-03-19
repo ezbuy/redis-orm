@@ -1,6 +1,7 @@
 {{define "object.redis.write"}}
 {{$obj := .}}
-{{$primaryField := $obj.PrimaryField}}
+{{$primary := $obj.PrimaryKey}}
+{{$primaryField := $primary.FirstField }}
 
 func (m *_{{$obj.Name}}RedisMgr) Create(obj *{{$obj.Name}}) error {
 	return m.Save(obj)
@@ -11,10 +12,11 @@ func (m *_{{$obj.Name}}RedisMgr) Update(obj *{{$obj.Name}}) error {
 }
 
 func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
+	pk := obj.GetPrimaryKey()
 	pipe := m.BeginPipeline()
 	//! uniques
 	{{- range $i, $unique := $obj.Uniques}}
-	{{- $relation := ($unique.GetRelation "pair" $primaryField.GetType $obj.Name)}}
+	{{- $relation := ($unique.GetRelation "pair" "string" $obj.Name)}}
 	uk_key_{{$i}} := []string{
 		{{- range $j, $field:= $unique.Fields}}
 		"{{$field.Name}}",
@@ -29,7 +31,7 @@ func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
 
 	//! indexes
 	{{- range $i, $index := $obj.Indexes}}
-	{{- $relation := ($index.GetRelation "set" $primaryField.GetType $obj.Name)}}
+	{{- $relation := ($index.GetRelation "set" "string" $obj.Name)}}
 	idx_key_{{$i}} := []string{
 		{{- range $j, $field:= $index.Fields}}
 		"{{$field.Name}}",
@@ -38,7 +40,7 @@ func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
 	}
 	idx_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline)
 	idx_rel_{{$i}} := {{$relation.Name}}RedisMgr().New{{$relation.Name}}(strings.Join(idx_key_{{$i}}, ":"))
-	idx_rel_{{$i}}.Value = {{$primaryField.GetTransformValue "obj."}}
+	idx_rel_{{$i}}.Value = pk.Key()
 	if err := idx_pip_{{$i}}.SetRem(idx_rel_{{$i}}); err != nil {
 		return err
 	}
@@ -46,7 +48,7 @@ func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
 
 	//! ranges
 	{{- range $i, $rg := $obj.Ranges}}
-	{{- $relation := ($rg.GetRelation "zset" $primaryField.GetType $obj.Name)}}
+	{{- $relation := ($rg.GetRelation "zset" "string" $obj.Name)}}
 	rg_key_{{$i}} := []string{
 		{{- range $j, $field:= $rg.Fields}}
 			{{- if eq (len $rg.Fields) (add $j 1)}}
@@ -64,13 +66,13 @@ func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
 		return err
 	}
 	rg_rel_{{$i}}.Score = score_rg_{{$i}}
-	rg_rel_{{$i}}.Value = {{$primaryField.GetTransformValue "obj."}}
+	rg_rel_{{$i}}.Value = pk.Key()
 	if err := rg_pip_{{$i}}.ZSetRem(rg_rel_{{$i}}); err != nil {
 		return err
 	}
 	{{- end}}
 
-	if err := pipe.Del(keyOfObject(obj, fmt.Sprint({{$primaryField.GetTransformValue "obj."}}))).Err(); err != nil {
+	if err := pipe.Del(keyOfObject(obj, pk.Key())).Err(); err != nil {
 		return err
 	}
 
@@ -106,22 +108,23 @@ func (m *_{{$obj.Name}}RedisMgr) Save(obj *{{$obj.Name}}) error {
 }
 
 func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipeline, obj *{{$obj.Name}}) error {
+	pk := obj.GetPrimaryKey()
 	//! fields
 	{{- range $i, $field := $obj.Fields}}
 		{{- if and $field.IsNullable $field.IsNeedTransform}}
 			if obj.{{$field.Name}} != nil {
-				pipe.HSet(keyOfObject(obj, fmt.Sprint({{$primaryField.GetTransformValue "obj."}})), "{{$field.Name}}", fmt.Sprint({{$field.GetTransformValue "obj."}}))
+				pipe.HSet(keyOfObject(obj, pk.Key()), "{{$field.Name}}", fmt.Sprint({{$field.GetTransformValue "obj."}}))
 			} else {
-				pipe.HSet(keyOfObject(obj, fmt.Sprint({{$primaryField.GetTransformValue "obj."}})), "{{$field.Name}}", "nil")
+				pipe.HSet(keyOfObject(obj, pk.Key()), "{{$field.Name}}", "nil")
 			}
 		{{- else}}
-			pipe.HSet(keyOfObject(obj, fmt.Sprint({{$primaryField.GetTransformValue "obj."}})), "{{$field.Name}}", fmt.Sprint({{$field.GetTransformValue "obj."}}))
+			pipe.HSet(keyOfObject(obj, pk.Key()), "{{$field.Name}}", fmt.Sprint({{$field.GetTransformValue "obj."}}))
 		{{- end}}	
 	{{- end}}
 
 	//! uniques
 	{{- range $i, $unique := $obj.Uniques}}
-	{{- $relation := ($unique.GetRelation "pair" $primaryField.GetType $obj.Name)}}
+	{{- $relation := ($unique.GetRelation "pair" "string" $obj.Name)}}
 	uk_key_{{$i}} := []string{
 		{{- range $j, $field:= $unique.Fields}}
 		"{{$field.Name}}",
@@ -130,7 +133,7 @@ func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipelin
 	}
 	uk_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline)
 	uk_rel_{{$i}} := {{$relation.Name}}RedisMgr().New{{$relation.Name}}(strings.Join(uk_key_{{$i}}, ":"))
-	uk_rel_{{$i}}.Value = {{$primaryField.GetTransformValue "obj."}}
+	uk_rel_{{$i}}.Value = pk.Key()
 	if err := uk_pip_{{$i}}.PairAdd(uk_rel_{{$i}}); err != nil {
 		return err
 	}
@@ -138,7 +141,7 @@ func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipelin
 
 	//! indexes
 	{{- range $i, $index := $obj.Indexes}}
-	{{- $relation := ($index.GetRelation "set" $primaryField.GetType $obj.Name)}}
+	{{- $relation := ($index.GetRelation "set" "string" $obj.Name)}}
 	idx_key_{{$i}} := []string{
 		{{- range $j, $field:= $index.Fields}}
 		"{{$field.Name}}",
@@ -147,7 +150,7 @@ func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipelin
 	}
 	idx_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline)
 	idx_rel_{{$i}} := {{$relation.Name}}RedisMgr().New{{$relation.Name}}(strings.Join(idx_key_{{$i}}, ":"))
-	idx_rel_{{$i}}.Value = {{$primaryField.GetTransformValue "obj."}}
+	idx_rel_{{$i}}.Value = pk.Key()
 	if err := idx_pip_{{$i}}.SetAdd(idx_rel_{{$i}}); err != nil {
 		return err
 	}
@@ -155,7 +158,7 @@ func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipelin
 
 	//! ranges
 	{{- range $i, $rg := $obj.Ranges}}
-	{{- $relation := ($rg.GetRelation "zset" $primaryField.GetType $obj.Name)}}
+	{{- $relation := ($rg.GetRelation "zset" "string" $obj.Name)}}
 	rg_key_{{$i}} := []string{
 		{{- range $j, $field:= $rg.Fields}}
 			{{- if eq (len $rg.Fields) (add $j 1)}}
@@ -173,7 +176,7 @@ func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipelin
 		return err
 	}
 	rg_rel_{{$i}}.Score = score_rg_{{$i}}
-	rg_rel_{{$i}}.Value = {{$primaryField.GetTransformValue "obj."}}
+	rg_rel_{{$i}}.Value = pk.Key()
 	if err := rg_pip_{{$i}}.ZSetAdd(rg_rel_{{$i}}); err != nil {
 		return err
 	}

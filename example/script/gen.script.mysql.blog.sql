@@ -1,18 +1,15 @@
 
-DROP TABLE IF EXISTS `blogs`;
-CREATE TABLE IF NOT EXISTS  `blogs` (
-	`id` INT(11) NOT NULL PRIMARY KEY AUTO_INCREMENT,
-	`user_id` INT(11) NOT NULL DEFAULT '0',
+CREATE TABLE IF NOT EXISTS `blogs` (
+	`id` INT(11) NOT NULL DEFAULT '0',
 	`title` VARCHAR(100) NOT NULL DEFAULT '',
 	`content` VARCHAR(100) NOT NULL DEFAULT '',
 	`status` INT(11) NOT NULL DEFAULT '0',
 	`readed` INT(11) NOT NULL DEFAULT '0',
 	`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	`updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+	`updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
-CREATE UNIQUE INDEX `id_of_blog_uk` ON `blogs`(`id`);
-CREATE INDEX `user_id_of_blog_idx` ON `blogs`(`user_id`);
-CREATE INDEX `id_of_blog_rng` ON `blogs`(`id`);
+CREATE INDEX `status_of_blog_idx` ON `blogs`(`status`);
 

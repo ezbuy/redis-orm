@@ -34,10 +34,6 @@ func (relation *UserId) GetStoreType() string {
 	return "list"
 }
 
-func (relation *UserId) GetPrimaryName() string {
-	return "Key"
-}
-
 type _UserIdRedisMgr struct {
 	*orm.RedisStore
 }

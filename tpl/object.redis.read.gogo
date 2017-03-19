@@ -1,26 +1,21 @@
 {{define "object.redis.read"}}
 {{$obj := .}}
-{{$primaryField := $obj.PrimaryField}}
+{{$primary := $obj.PrimaryKey}}
+{{$primaryField := $primary.FirstField }}
+
 //! redis model read
-func (m *_{{$obj.Name}}RedisMgr) FindOne(unique Unique) (interface{}, error) {
+func (m *_{{$obj.Name}}RedisMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	if relation := unique.UKRelation(); relation != nil {
 		str, err := relation.FindOne(unique.Key())
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		{{- if $primaryField.IsNeedTransform}}
-			var val {{$primaryField.GetTransform.TypeOrigin}}
-			if err := m.StringScan(str, &val); err != nil {
-				return nil, err
-			}
-			return {{- printf $primaryField.GetTransform.ConvertTo "val"}}, nil
-		{{- else}}
-			var val {{$primaryField.GetType}}
-			if err := m.StringScan(str, &val); err != nil {
-				return nil, err
-			}
-			return val, nil
-		{{- end}}
+
+		pk := {{$obj.Name}}Mgr.NewPrimaryKey()
+		if err := pk.Parse(str); err != nil {
+			return nil , err
+		}
+		return pk, nil
 	}
 	return nil, fmt.Errorf("unique none relation.")
 }
@@ -33,27 +28,19 @@ func (m *_{{$obj.Name}}RedisMgr) FindOneFetch(unique Unique) (*{{$obj.Name}}, er
 	return m.Fetch(v)
 }
 
-func (m *_{{$obj.Name}}RedisMgr) Find(index Index) ([]interface{}, error) {
+func (m *_{{$obj.Name}}RedisMgr) Find(index Index) ([]PrimaryKey, error) {
 	if relation := index.IDXRelation(); relation != nil {
 		strs, err := relation.Find(index.Key())
 		if err != nil {
 			return nil, err
 		}
-		results := make([]interface{}, 0, len(strs))
+		results := make([]PrimaryKey, 0, len(strs))
 		for _, str := range strs {
-			{{- if $primaryField.IsNeedTransform}}
-				var val {{$primaryField.GetTransform.TypeOrigin}}
-				if err := m.StringScan(str, &val); err != nil {
-					return nil, err
-				}
-				results = append(results, {{- printf $primaryField.GetTransform.ConvertTo "val"}})
-			{{- else}}
-				var val {{$primaryField.GetType}}
-				if err := m.StringScan(str, &val); err != nil {
-					return nil, err
-				}
-				results = append(results, val)
-			{{- end}}
+			pk := {{$obj.Name}}Mgr.NewPrimaryKey()
+			if err := pk.Parse(str); err != nil {
+				return nil , err
+			}
+			results = append(results, pk)
 		}
 		return results, nil
 	}
@@ -65,7 +52,7 @@ func (m *_{{$obj.Name}}RedisMgr) FindFetch(index Index) ([]*{{$obj.Name}}, error
 	if err != nil {
 		return nil, err
 	}
-	return m.FetchBy{{$primaryField.Name}}s(vs)
+	return m.FetchByPrimaryKeys(vs)
 }
 
 func (m *_{{$obj.Name}}RedisMgr) FindCount(index Index) (int64, error) {
@@ -79,27 +66,19 @@ func (m *_{{$obj.Name}}RedisMgr) FindCount(index Index) (int64, error) {
 	return 0, fmt.Errorf("index none relation.")
 }
 
-func (m *_{{$obj.Name}}RedisMgr) Range(scope Range) ([]interface{}, error) {
+func (m *_{{$obj.Name}}RedisMgr) Range(scope Range) ([]PrimaryKey, error) {
 	if relation := scope.RNGRelation(); relation != nil {
 		strs, err := relation.Range(scope.Key(), scope.Begin(), scope.End())
 		if err != nil {
 			return nil, err
 		}
-		results := make([]interface{}, 0, len(strs))
+		results := make([]PrimaryKey, 0, len(strs))
 		for _, str := range strs {
-			{{- if $primaryField.IsNeedTransform}}
-				var val {{$primaryField.GetTransform.TypeOrigin}}
-				if err := m.StringScan(str, &val); err != nil {
-					return nil, err
-				}
-				results = append(results, {{- printf $primaryField.GetTransform.ConvertTo "val"}})
-			{{- else}}
-				var val {{$primaryField.GetType}}
-				if err := m.StringScan(str, &val); err != nil {
-					return nil, err
-				}
-				results = append(results, val)
-			{{- end}}
+			pk := {{$obj.Name}}Mgr.NewPrimaryKey()
+			if err := pk.Parse(str); err != nil {
+				return nil , err
+			}
+			results = append(results, pk)
 		}
 		return results, nil
 	}
@@ -111,7 +90,7 @@ func (m *_{{$obj.Name}}RedisMgr) RangeFetch(scope Range) ([]*{{$obj.Name}}, erro
 	if err != nil {
 		return nil, err
 	}
-	return m.FetchBy{{$primaryField.Name}}s(vs)
+	return m.FetchByPrimaryKeys(vs)
 }
 
 func (m *_{{$obj.Name}}RedisMgr) RangeCount(scope Range) (int64, error) {
@@ -125,28 +104,20 @@ func (m *_{{$obj.Name}}RedisMgr) RangeCount(scope Range) (int64, error) {
 	return 0, fmt.Errorf("range none relation.")
 }
 
-func (m *_{{$obj.Name}}RedisMgr) RangeRevert(scope Range) ([]interface{}, error) {
+func (m *_{{$obj.Name}}RedisMgr) RangeRevert(scope Range) ([]PrimaryKey, error) {
 	if relation := scope.RNGRelation(); relation != nil {
 		scope.Revert(true)
 		strs, err := relation.RangeRevert(scope.Key(), scope.Begin(), scope.End())
 		if err != nil {
 			return nil, err
 		}
-		results := make([]interface{}, 0, len(strs))
+		results := make([]PrimaryKey, 0, len(strs))
 		for _, str := range strs {
-			{{- if $primaryField.IsNeedTransform}}
-				var val {{$primaryField.GetTransform.TypeOrigin}}
-				if err := m.StringScan(str, &val); err != nil {
-					return nil, err
-				}
-				results = append(results, {{- printf $primaryField.GetTransform.ConvertTo "val"}})
-			{{- else}}
-				var val {{$primaryField.GetType}}
-				if err := m.StringScan(str, &val); err != nil {
-					return nil, err
-				}
-				results = append(results, val)
-			{{- end}}
+			pk := {{$obj.Name}}Mgr.NewPrimaryKey()
+			if err := pk.Parse(str); err != nil {
+				return nil , err
+			}
+			results = append(results, pk)
 		}
 		return results, nil
 	}
@@ -158,17 +129,17 @@ func (m *_{{$obj.Name}}RedisMgr) RangeRevertFetch(scope Range) ([]*{{$obj.Name}}
 	if err != nil {
 		return nil, err
 	}
-	return m.FetchBy{{$primaryField.Name}}s(vs)
+	return m.FetchByPrimaryKeys(vs)
 }
 
-func (m *_{{$obj.Name}}RedisMgr) Fetch({{$primaryField.Name | camel2name}} interface{}) (*{{$obj.Name}}, error) {
+func (m *_{{$obj.Name}}RedisMgr) Fetch(pk PrimaryKey) (*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	
 	pipe := m.BeginPipeline()
-	pipe.Exists(keyOfObject(obj, fmt.Sprint({{$primaryField.Name | camel2name}})))
-	pipe.HMGet(keyOfObject(obj, fmt.Sprint({{$primaryField.Name | camel2name}}))
-	{{- range $i, $field := $obj.Fields -}}	
-			  ,"{{$field.Name}}"
+	pipe.Exists(keyOfObject(obj, pk.Key()))
+	pipe.HMGet(keyOfObject(obj, pk.Key()),
+	{{- range $i, $field := $obj.Fields}}	
+	"{{$field.Name}}",
 	{{- end -}})
 	cmds, err := pipe.Exec()
 	if err != nil {
@@ -177,7 +148,7 @@ func (m *_{{$obj.Name}}RedisMgr) Fetch({{$primaryField.Name | camel2name}} inter
 
 	if b, err := cmds[0].(*redis.BoolCmd).Result(); err == nil {
 		if !b {
-			return nil, fmt.Errorf("{{$obj.Name}} {{$primaryField.Name}}:(%v) not exist", {{$primaryField.Name | camel2name}})
+			return nil, fmt.Errorf("{{$obj.Name}} primary key:(%s) not exist", pk.Key())
 		}
 	}
 
@@ -215,25 +186,25 @@ func (m *_{{$obj.Name}}RedisMgr) Fetch({{$primaryField.Name | camel2name}} inter
 	return obj, nil
 }
 
-func (m *_{{$obj.Name}}RedisMgr) FetchBy{{$primaryField.Name}}s({{$primaryField.Name | camel2name}}s []interface{}) ([]*{{$obj.Name}}, error) {
-	objs := make([]*{{$obj.Name}}, 0, len({{$primaryField.Name | camel2name}}s))
+func (m *_{{$obj.Name}}RedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*{{$obj.Name}}, error) {
+	objs := make([]*{{$obj.Name}}, 0, len(pks))
 	pipe := m.BeginPipeline()
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
-	for _, id := range {{$primaryField.Name | camel2name}}s {		
-		pipe.Exists(keyOfObject(obj, fmt.Sprint(id)))
-		pipe.HMGet(keyOfObject(obj, fmt.Sprint(id))
-		{{- range $i, $field := $obj.Fields -}}	
-			  ,"{{$field.Name}}"
+	for _, pk := range pks {		
+		pipe.Exists(keyOfObject(obj, pk.Key()))
+		pipe.HMGet(keyOfObject(obj, pk.Key()),
+		{{- range $i, $field := $obj.Fields}}	
+		"{{$field.Name}}",
 		{{- end -}})
 	}
 	cmds, err := pipe.Exec()
 	if err != nil {
 		return nil, err
 	}
-	for i := 0; i < len({{$primaryField.Name | camel2name}}s); i++ {
+	for i := 0; i < len(pks); i++ {
 		if b, err := cmds[2*i].(*redis.BoolCmd).Result(); err == nil {
 			if !b {
-				return nil, fmt.Errorf("{{$obj.Name}} {{$primaryField.Name}}:(%v) not exist", {{$primaryField.Name | camel2name}}s[i])
+				return nil, fmt.Errorf("{{$obj.Name}} primary key:(%s) not exist", pks[i].Key())
 			}
 		}
 

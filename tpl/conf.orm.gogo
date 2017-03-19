@@ -1,7 +1,5 @@
 {{define "conf.orm"}}package {{.GoPackage}}
 
-import "github.com/ezbuy/redis-orm/orm"
-
 type SQL interface{
 	SQLFormat(limit bool) string
 	SQLParams() []interface{}
@@ -11,6 +9,14 @@ type SQL interface{
 }
 
 //! conf.orm
+type PrimaryKey interface{
+	Key() string
+	SQLFormat() string
+	SQLParams() []interface{}
+	Columns() []string
+	Parse(key string) error
+}
+
 type Unique interface{
 	SQL
 	Key() string
@@ -46,106 +52,16 @@ type RangeRelation interface {
 }
 
 type Finder interface{
-	FindOne(unique Unique) (interface{}, error)
-	Find(index Index) ([]interface{}, error)
+	FindOne(unique Unique) (PrimaryKey, error)
+	Find(index Index) ([]PrimaryKey, error)
 	FindCount(index Index) (int64, error)
-	Range(scope Range) ([]interface{}, error)
+	Range(scope Range) ([]PrimaryKey, error)
 	RangeCount(scope Range) (int64, error)
-	RangeRevert(scope Range) ([]interface{}, error)
+	RangeRevert(scope Range) ([]PrimaryKey, error)
 }
 
 type DBFetcher interface {
 	FetchBySQL(sql string, args ...interface{}) ([]interface{}, error)	
-}
-
-type ReferenceResult struct{
-	db 		Finder
-	set 	*orm.VSet
-	times 	int
-	offset  int
-	limit 	int
-	err error	
-}
-
-func NewReferenceResult(db Finder) *ReferenceResult {
-	return &ReferenceResult{
-		db: db,
-		set: orm.NewVSet(),
-		times: 0,
-		offset: 0,
-		limit: -1,
-	}
-}
-
-func (rr *ReferenceResult) DB(db Finder) *ReferenceResult {
-	rr.db = db
-	return rr
-}
-
-func (rr *ReferenceResult) Offset(n int) *ReferenceResult {
-	rr.offset = n
-	return rr
-}
-
-func (rr *ReferenceResult) Limit(n int) *ReferenceResult {
-	rr.limit = n
-	return rr
-}
-
-func (rr *ReferenceResult) Result() ([]interface{}, error){
-	return rr.set.Values(rr.times, rr.offset, rr.limit), rr.err
-}
-
-func (rr *ReferenceResult) Values() []interface{} {
-	return rr.set.Values(rr.times, rr.offset, rr.limit)
-}
-
-func (rr *ReferenceResult) Unions() []interface{} {
-	return rr.set.Values(0, rr.offset, rr.limit)
-}
-
-func (rr *ReferenceResult) Err() error{
-	return rr.err
-}
-
-func (rr *ReferenceResult) FindOne(unique Unique) *ReferenceResult {
-	rr.times = rr.times + 1
-	if str, err := rr.db.FindOne(unique); err == nil {
-		rr.set.Add(1, str)
-	} else {
-		rr.err = err
-	}
-	return rr
-}
-
-func (rr *ReferenceResult) Find(index Index) *ReferenceResult {
-	rr.times = rr.times + 1
-	if strs, err := rr.db.Find(index); err == nil {
-		rr.set.Add(strs...)
-	} else {
-		rr.err = err
-	}
-	return rr
-}
-
-func (rr *ReferenceResult) Range(scope Range) *ReferenceResult {
-	rr.times = rr.times + 1
-	if strs, err := rr.db.Range(scope); err == nil {
-		rr.set.SortAdd(rr.times, strs...)
-	} else {
-		rr.err = err
-	}
-	return rr	
-}
-
-func (rr *ReferenceResult) RangeRevert(scope Range) *ReferenceResult {
-	rr.times = rr.times + 1
-	if strs, err := rr.db.RangeRevert(scope); err == nil {
-		rr.set.SortAdd(rr.times, strs...)
-	} else {
-		rr.err = err
-	}
-	return rr	
 }
 
 {{end}}

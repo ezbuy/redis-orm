@@ -36,10 +36,6 @@ func (relation *SexUserLocation) GetStoreType() string {
 	return "geo"
 }
 
-func (relation *SexUserLocation) GetPrimaryName() string {
-	return "Key"
-}
-
 type _SexUserLocationRedisMgr struct {
 	*orm.RedisStore
 }
