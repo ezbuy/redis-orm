@@ -448,6 +448,18 @@ type _UserBlogsMySQLMgr struct {
 	*orm.MySQLStore
 }
 
+func (m *_UserBlogsMgr) MySQL(cf *MySQLConfig) *_UserBlogsMySQLMgr {
+	if cf == nil {
+		return UserBlogsMySQLMgr()
+	}
+
+	mgr, err := NewUserBlogsMySQLMgr(cf)
+	if err != nil {
+		panic(err)
+	}
+	return mgr
+}
+
 func UserBlogsMySQLMgr() *_UserBlogsMySQLMgr {
 	return &_UserBlogsMySQLMgr{_mysql_store}
 }
@@ -959,6 +971,18 @@ func (tx *_UserBlogsMySQLTx) Fetch(pk PrimaryKey) (*UserBlogs, error) {
 		return objs[0].(*UserBlogs), nil
 	}
 	return nil, fmt.Errorf("UserBlogs fetch record not found")
+}
+
+func (tx *_UserBlogsMySQLTx) FetchByPrimaryKeys(pks []PrimaryKey) ([]*UserBlogs, error) {
+	results := make([]*UserBlogs, 0, len(pks))
+	for _, pk := range pks {
+		obj, err := tx.Fetch(pk)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, obj)
+	}
+	return results, nil
 }
 
 func (tx *_UserBlogsMySQLTx) Search(where string, args ...interface{}) ([]*UserBlogs, error) {

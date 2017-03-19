@@ -6,6 +6,19 @@ type _{{$obj.Name}}MySQLMgr struct {
 	*orm.MySQLStore
 }
 
+
+func (m *_{{$obj.Name}}Mgr) MySQL(cf *MySQLConfig) *_{{$obj.Name}}MySQLMgr {
+	if cf == nil {
+		return {{$obj.Name}}MySQLMgr()
+	}
+
+	mgr, err := New{{$obj.Name}}MySQLMgr(cf)
+	if err != nil {
+		panic(err)
+	}
+	return mgr
+}
+
 func {{$obj.Name}}MySQLMgr() *_{{$obj.Name}}MySQLMgr {
 	return &_{{$obj.Name}}MySQLMgr{_mysql_store}
 }

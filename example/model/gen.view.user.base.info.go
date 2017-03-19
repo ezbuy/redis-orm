@@ -378,6 +378,18 @@ type _UserBaseInfoMySQLMgr struct {
 	*orm.MySQLStore
 }
 
+func (m *_UserBaseInfoMgr) MySQL(cf *MySQLConfig) *_UserBaseInfoMySQLMgr {
+	if cf == nil {
+		return UserBaseInfoMySQLMgr()
+	}
+
+	mgr, err := NewUserBaseInfoMySQLMgr(cf)
+	if err != nil {
+		panic(err)
+	}
+	return mgr
+}
+
 func UserBaseInfoMySQLMgr() *_UserBaseInfoMySQLMgr {
 	return &_UserBaseInfoMySQLMgr{_mysql_store}
 }

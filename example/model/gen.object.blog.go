@@ -18,6 +18,7 @@ var (
 
 type Blog struct {
 	Id        int32     `db:"id"`
+	UserId    int32     `db:"user_id"`
 	Title     string    `db:"title"`
 	Content   string    `db:"content"`
 	Status    int32     `db:"status"`
@@ -52,6 +53,7 @@ func (obj *Blog) GetTableName() string {
 func (obj *Blog) GetColumns() []string {
 	columns := []string{
 		"`id`",
+		"`user_id`",
 		"`title`",
 		"`content`",
 		"`status`",
@@ -65,28 +67,32 @@ func (obj *Blog) GetColumns() []string {
 func (obj *Blog) GetPrimaryKey() PrimaryKey {
 	pk := BlogMgr.NewPrimaryKey()
 	pk.Id = obj.Id
+	pk.UserId = obj.UserId
 	return pk
 }
 
 //! primary key
 
-type IdOfBlogPK struct {
-	Id int32
+type IdUserIdOfBlogPK struct {
+	Id     int32
+	UserId int32
 }
 
-func (m *_BlogMgr) NewPrimaryKey() *IdOfBlogPK {
-	return &IdOfBlogPK{}
+func (m *_BlogMgr) NewPrimaryKey() *IdUserIdOfBlogPK {
+	return &IdUserIdOfBlogPK{}
 }
 
-func (u *IdOfBlogPK) Key() string {
+func (u *IdUserIdOfBlogPK) Key() string {
 	strs := []string{
 		"Id",
 		fmt.Sprint(u.Id),
+		"UserId",
+		fmt.Sprint(u.UserId),
 	}
 	return fmt.Sprintf("%s", strings.Join(strs, ":"))
 }
 
-func (u *IdOfBlogPK) Parse(key string) error {
+func (u *IdUserIdOfBlogPK) Parse(key string) error {
 	arr := strings.Split(key, ":")
 	if len(arr)%2 != 0 {
 		return fmt.Errorf("key (%s) format error", key)
@@ -102,68 +108,39 @@ func (u *IdOfBlogPK) Parse(key string) error {
 	if err := orm.StringScan(vId, &(u.Id)); err != nil {
 		return err
 	}
+	vUserId, ok := kv["UserId"]
+	if !ok {
+		return fmt.Errorf("key (%s) without (UserId) field", key)
+	}
+	if err := orm.StringScan(vUserId, &(u.UserId)); err != nil {
+		return err
+	}
 	return nil
 }
 
-func (u *IdOfBlogPK) SQLFormat() string {
+func (u *IdUserIdOfBlogPK) SQLFormat() string {
 	conditions := []string{
 		"id = ?",
+		"user_id = ?",
 	}
 	return orm.SQLWhere(conditions)
 }
 
-func (u *IdOfBlogPK) SQLParams() []interface{} {
+func (u *IdUserIdOfBlogPK) SQLParams() []interface{} {
 	return []interface{}{
 		u.Id,
+		u.UserId,
 	}
 }
 
-func (u *IdOfBlogPK) Columns() []string {
+func (u *IdUserIdOfBlogPK) Columns() []string {
 	return []string{
 		"`id`",
+		"`user_id`",
 	}
 }
 
 //! uniques
-
-type IdOfBlogUK struct {
-	Id int32
-}
-
-func (u *IdOfBlogUK) Key() string {
-	strs := []string{
-		"Id",
-		fmt.Sprint(u.Id),
-	}
-	return fmt.Sprintf("%s", strings.Join(strs, ":"))
-}
-
-func (u *IdOfBlogUK) SQLFormat(limit bool) string {
-	conditions := []string{
-		"id = ?",
-	}
-	return orm.SQLWhere(conditions)
-}
-
-func (u *IdOfBlogUK) SQLParams() []interface{} {
-	return []interface{}{
-		u.Id,
-	}
-}
-
-func (u *IdOfBlogUK) SQLLimit() int {
-	return 1
-}
-
-func (u *IdOfBlogUK) Limit(n int) {
-}
-
-func (u *IdOfBlogUK) Offset(n int) {
-}
-
-func (u *IdOfBlogUK) UKRelation() UniqueRelation {
-	return nil
-}
 
 //! indexes
 
@@ -218,124 +195,20 @@ func (u *StatusOfBlogIDX) IDXRelation() IndexRelation {
 
 //! ranges
 
-type IdOfBlogRNG struct {
-	IdBegin      int64
-	IdEnd        int64
-	offset       int
-	limit        int
-	includeBegin bool
-	includeEnd   bool
-	revert       bool
-}
-
-func (u *IdOfBlogRNG) Key() string {
-	strs := []string{
-		"Id",
-	}
-	return fmt.Sprintf("%s", strings.Join(strs, ":"))
-}
-
-func (u *IdOfBlogRNG) beginOp() string {
-	if u.includeBegin {
-		return ">="
-	}
-	return ">"
-}
-func (u *IdOfBlogRNG) endOp() string {
-	if u.includeBegin {
-		return "<="
-	}
-	return "<"
-}
-
-func (u *IdOfBlogRNG) SQLFormat(limit bool) string {
-	conditions := []string{}
-	if u.IdBegin != u.IdEnd {
-		if u.IdBegin != -1 {
-			conditions = append(conditions, fmt.Sprintf("id %s ?", u.beginOp()))
-		}
-		if u.IdEnd != -1 {
-			conditions = append(conditions, fmt.Sprintf("id %s ?", u.endOp()))
-		}
-	}
-	if limit {
-		return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Id", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
-	}
-	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Id", u.revert))
-}
-
-func (u *IdOfBlogRNG) SQLParams() []interface{} {
-	params := []interface{}{}
-	if u.IdBegin != u.IdEnd {
-		if u.IdBegin != -1 {
-			params = append(params, u.IdBegin)
-		}
-		if u.IdEnd != -1 {
-			params = append(params, u.IdEnd)
-		}
-	}
-	return params
-}
-
-func (u *IdOfBlogRNG) SQLLimit() int {
-	if u.limit > 0 {
-		return u.limit
-	}
-	return -1
-}
-
-func (u *IdOfBlogRNG) Limit(n int) {
-	u.limit = n
-}
-
-func (u *IdOfBlogRNG) Offset(n int) {
-	u.offset = n
-}
-
-func (u *IdOfBlogRNG) Begin() int64 {
-	start := u.IdBegin
-	if start == -1 || start == 0 {
-		start = 0
-	}
-	if start > 0 {
-		if !u.includeBegin {
-			start = start + 1
-		}
-	}
-	return start
-}
-
-func (u *IdOfBlogRNG) End() int64 {
-	stop := u.IdEnd
-	if stop == 0 || stop == -1 {
-		stop = -1
-	}
-	if stop > 0 {
-		if !u.includeBegin {
-			stop = stop - 1
-		}
-	}
-	return stop
-}
-
-func (u *IdOfBlogRNG) Revert(b bool) {
-	u.revert = b
-}
-
-func (u *IdOfBlogRNG) IncludeBegin(f bool) {
-	u.includeBegin = f
-}
-
-func (u *IdOfBlogRNG) IncludeEnd(f bool) {
-	u.includeEnd = f
-}
-
-func (u *IdOfBlogRNG) RNGRelation() RangeRelation {
-	return nil
-}
-
 type _BlogMySQLMgr struct {
 	*orm.MySQLStore
+}
+
+func (m *_BlogMgr) MySQL(cf *MySQLConfig) *_BlogMySQLMgr {
+	if cf == nil {
+		return BlogMySQLMgr()
+	}
+
+	mgr, err := NewBlogMySQLMgr(cf)
+	if err != nil {
+		panic(err)
+	}
+	return mgr
 }
 
 func BlogMySQLMgr() *_BlogMySQLMgr {
@@ -386,7 +259,7 @@ func (m *_BlogMySQLMgr) FetchBySQL(q string, args ...interface{}) (results []int
 
 	for rows.Next() {
 		var result Blog
-		err = rows.Scan(&(result.Id), &(result.Title), &(result.Content), &(result.Status), &(result.Readed), &CreatedAt, &UpdatedAt)
+		err = rows.Scan(&(result.Id), &(result.UserId), &(result.Title), &(result.Content), &(result.Status), &(result.Readed), &CreatedAt, &UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -415,19 +288,13 @@ func (m *_BlogMySQLMgr) Fetch(pk PrimaryKey) (*Blog, error) {
 }
 
 func (m *_BlogMySQLMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*Blog, error) {
-	params := make([]string, 0, len(pks))
+	results := make([]*Blog, 0, len(pks))
 	for _, pk := range pks {
-		params = append(params, fmt.Sprint(pk.(*IdOfBlogPK).Id))
-	}
-	obj := BlogMgr.NewBlog()
-	query := fmt.Sprintf("SELECT %s FROM `blogs` WHERE `Id` IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join(params, ","))
-	objs, err := m.FetchBySQL(query)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]*Blog, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*Blog))
+		obj, err := m.Fetch(pk)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, obj)
 	}
 	return results, nil
 }
@@ -528,7 +395,7 @@ func (m *_BlogMySQLMgr) queryLimit(where string, limit int, args ...interface{})
 		offset++
 
 		result := BlogMgr.NewPrimaryKey()
-		err = rows.Scan(&(result.Id))
+		err = rows.Scan(&(result.Id), &(result.UserId))
 		if err != nil {
 			return nil, err
 		}
@@ -584,10 +451,11 @@ func (tx *_BlogMySQLTx) BatchCreate(objs []*Blog) error {
 	}
 
 	params := make([]string, 0, len(objs))
-	values := make([]interface{}, 0, len(objs)*7)
+	values := make([]interface{}, 0, len(objs)*8)
 	for _, obj := range objs {
-		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice(7, "?"), ",")))
+		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice(8, "?"), ",")))
 		values = append(values, obj.Id)
+		values = append(values, obj.UserId)
 		values = append(values, obj.Title)
 		values = append(values, obj.Content)
 		values = append(values, obj.Status)
@@ -633,13 +501,14 @@ func (tx *_BlogMySQLTx) UpdateBySQL(set, where string, args ...interface{}) erro
 }
 
 func (tx *_BlogMySQLTx) Create(obj *Blog) error {
-	params := orm.NewStringSlice(7, "?")
+	params := orm.NewStringSlice(8, "?")
 	q := fmt.Sprintf("INSERT INTO `blogs`(%s) VALUES(%s)",
 		strings.Join(obj.GetColumns(), ","),
 		strings.Join(params, ","))
 
-	values := make([]interface{}, 0, 7)
+	values := make([]interface{}, 0, 8)
 	values = append(values, obj.Id)
+	values = append(values, obj.UserId)
 	values = append(values, obj.Title)
 	values = append(values, obj.Content)
 	values = append(values, obj.Status)
@@ -673,7 +542,7 @@ func (tx *_BlogMySQLTx) Update(obj *Blog) error {
 
 	pk := obj.GetPrimaryKey()
 	q := fmt.Sprintf("UPDATE `blogs` SET %s %s", strings.Join(columns, ","), pk.SQLFormat())
-	values := make([]interface{}, 0, 7-1)
+	values := make([]interface{}, 0, 8-2)
 	values = append(values, obj.Title)
 	values = append(values, obj.Content)
 	values = append(values, obj.Status)
@@ -838,7 +707,7 @@ func (tx *_BlogMySQLTx) queryLimit(where string, limit int, args ...interface{})
 		offset++
 
 		result := BlogMgr.NewPrimaryKey()
-		err = rows.Scan(&(result.Id))
+		err = rows.Scan(&(result.Id), &(result.UserId))
 		if err != nil {
 			return nil, err
 		}
@@ -886,20 +755,14 @@ func (tx *_BlogMySQLTx) Fetch(pk PrimaryKey) (*Blog, error) {
 	return nil, fmt.Errorf("Blog fetch record not found")
 }
 
-func (tx *_BlogMySQLTx) FetchByIds(ids []interface{}) ([]*Blog, error) {
-	if len(ids) == 0 {
-		return []*Blog{}, nil
-	}
-
-	obj := BlogMgr.NewBlog()
-	query := fmt.Sprintf("SELECT %s FROM `blogs` WHERE `Id` IN (%s)", strings.Join(obj.GetColumns(), ","), orm.SliceJoin(ids, ","))
-	objs, err := tx.FetchBySQL(query)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]*Blog, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*Blog))
+func (tx *_BlogMySQLTx) FetchByPrimaryKeys(pks []PrimaryKey) ([]*Blog, error) {
+	results := make([]*Blog, 0, len(pks))
+	for _, pk := range pks {
+		obj, err := tx.Fetch(pk)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, obj)
 	}
 	return results, nil
 }
@@ -941,7 +804,7 @@ func (tx *_BlogMySQLTx) FetchBySQL(q string, args ...interface{}) (results []int
 
 	for rows.Next() {
 		var result Blog
-		err = rows.Scan(&(result.Id), &(result.Title), &(result.Content), &(result.Status), &(result.Readed), &CreatedAt, &UpdatedAt)
+		err = rows.Scan(&(result.Id), &(result.UserId), &(result.Title), &(result.Content), &(result.Status), &(result.Readed), &CreatedAt, &UpdatedAt)
 		if err != nil {
 			return nil, err
 		}

@@ -530,6 +530,18 @@ type _UserMySQLMgr struct {
 	*orm.MySQLStore
 }
 
+func (m *_UserMgr) MySQL(cf *MySQLConfig) *_UserMySQLMgr {
+	if cf == nil {
+		return UserMySQLMgr()
+	}
+
+	mgr, err := NewUserMySQLMgr(cf)
+	if err != nil {
+		panic(err)
+	}
+	return mgr
+}
+
 func UserMySQLMgr() *_UserMySQLMgr {
 	return &_UserMySQLMgr{_mysql_store}
 }
@@ -1132,13 +1144,13 @@ func (tx *_UserMySQLTx) Fetch(pk PrimaryKey) (*User, error) {
 	return nil, fmt.Errorf("User fetch record not found")
 }
 
-func (tx *_UserMySQLTx) FetchByIds(ids []interface{}) ([]*User, error) {
-	if len(ids) == 0 {
-		return []*User{}, nil
+func (tx *_UserMySQLTx) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
+	params := make([]string, 0, len(pks))
+	for _, pk := range pks {
+		params = append(params, fmt.Sprint(pk.(*IdOfUserPK).Id))
 	}
-
 	obj := UserMgr.NewUser()
-	query := fmt.Sprintf("SELECT %s FROM `users` WHERE `Id` IN (%s)", strings.Join(obj.GetColumns(), ","), orm.SliceJoin(ids, ","))
+	query := fmt.Sprintf("SELECT %s FROM `users` WHERE `Id` IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join(params, ","))
 	objs, err := tx.FetchBySQL(query)
 	if err != nil {
 		return nil, err
@@ -1220,6 +1232,18 @@ func (tx *_UserMySQLTx) FetchBySQL(q string, args ...interface{}) (results []int
 
 type _UserRedisMgr struct {
 	*orm.RedisStore
+}
+
+func (m *_UserMgr) Redis(cf *RedisConfig) *_UserRedisMgr {
+	if cf == nil {
+		return UserRedisMgr()
+	}
+
+	mgr, err := NewUserRedisMgr(cf)
+	if err != nil {
+		panic(err)
+	}
+	return mgr
 }
 
 func UserRedisMgr() *_UserRedisMgr {
