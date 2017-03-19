@@ -530,6 +530,18 @@ type _UserMySQLMgr struct {
 	*orm.MySQLStore
 }
 
+func (m *_UserMgr) MySQL(cf *MySQLConfig) *_UserMySQLMgr {
+	if cf == nil {
+		return UserMySQLMgr()
+	}
+
+	mgr, err := NewUserMySQLMgr(cf)
+	if err != nil {
+		panic(err)
+	}
+	return mgr
+}
+
 func UserMySQLMgr() *_UserMySQLMgr {
 	return &_UserMySQLMgr{_mysql_store}
 }
@@ -1220,6 +1232,18 @@ func (tx *_UserMySQLTx) FetchBySQL(q string, args ...interface{}) (results []int
 
 type _UserRedisMgr struct {
 	*orm.RedisStore
+}
+
+func (m *_UserMgr) Redis(cf *RedisConfig) *_UserRedisMgr {
+	if cf == nil {
+		return UserRedisMgr()
+	}
+
+	mgr, err := NewUserRedisMgr(cf)
+	if err != nil {
+		panic(err)
+	}
+	return mgr
 }
 
 func UserRedisMgr() *_UserRedisMgr {

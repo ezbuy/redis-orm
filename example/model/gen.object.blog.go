@@ -199,6 +199,18 @@ type _BlogMySQLMgr struct {
 	*orm.MySQLStore
 }
 
+func (m *_BlogMgr) MySQL(cf *MySQLConfig) *_BlogMySQLMgr {
+	if cf == nil {
+		return BlogMySQLMgr()
+	}
+
+	mgr, err := NewBlogMySQLMgr(cf)
+	if err != nil {
+		panic(err)
+	}
+	return mgr
+}
+
 func BlogMySQLMgr() *_BlogMySQLMgr {
 	return &_BlogMySQLMgr{_mysql_store}
 }

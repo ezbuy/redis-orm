@@ -4,6 +4,18 @@ type _{{$obj.Name}}RedisMgr struct {
 	*orm.RedisStore
 }
 
+func (m *_{{$obj.Name}}Mgr) Redis(cf *RedisConfig) *_{{$obj.Name}}RedisMgr {
+	if cf == nil {
+		return {{$obj.Name}}RedisMgr()
+	}
+
+	mgr, err := New{{$obj.Name}}RedisMgr(cf)
+	if err != nil {
+		panic(err)
+	}
+	return mgr
+}
+
 func {{$obj.Name}}RedisMgr() *_{{$obj.Name}}RedisMgr {	
 	return &_{{$obj.Name}}RedisMgr{_redis_store}
 }
