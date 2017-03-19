@@ -389,14 +389,14 @@ func (tx *_{{$obj.Name}}MySQLTx) Fetch(pk PrimaryKey) (*{{$obj.Name}}, error) {
 	return nil, fmt.Errorf("{{$obj.Name}} fetch record not found")
 }
 
-{{if $primary.IsSingleField}}
-func (tx *_{{$obj.Name}}MySQLTx) FetchBy{{$primaryField.Name}}s({{$primaryField.Name | camel2name}}s []interface{}) ( []*{{$obj.Name}}, error) {
-	if len({{$primaryField.Name | camel2name}}s) == 0 {
-		return []*{{$obj.Name}}{}, nil
+func (tx *_{{$obj.Name}}MySQLTx) FetchByPrimaryKeys(pks []PrimaryKey) ([]*{{$obj.Name}}, error) {
+{{- if $primary.IsSingleField}}
+	params := make([]string, 0, len(pks))
+	for _, pk := range pks {
+		params = append(params, fmt.Sprint(pk.(*{{$primary.Name}}).{{$primary.FirstField.Name}}))
 	}
-		
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
-	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbTable}}` WHERE `{{$primaryField.Name}}` IN (%s)", strings.Join(obj.GetColumns(), ","), orm.SliceJoin({{$primaryField.Name | camel2name}}s, ","))
+	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` WHERE `{{$primaryField.Name}}` IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join(params, ","))
 	objs, err := tx.FetchBySQL(query)
 	if err != nil {
 		return nil, err
@@ -406,8 +406,18 @@ func (tx *_{{$obj.Name}}MySQLTx) FetchBy{{$primaryField.Name}}s({{$primaryField.
 		results = append(results, obj.(*{{$obj.Name}}))
 	}
 	return results, nil
+{{- else}}
+	results := make([]*{{$obj.Name}}, 0, len(pks))
+	for _, pk := range pks {
+		obj, err := tx.Fetch(pk)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, obj)
+	}
+	return results, nil
+{{- end}}
 }
-{{end}}
 
 func (tx *_{{$obj.Name}}MySQLTx) Search(where string, args ... interface{}) ([]*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()

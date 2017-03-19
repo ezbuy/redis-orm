@@ -961,6 +961,18 @@ func (tx *_UserBlogsMySQLTx) Fetch(pk PrimaryKey) (*UserBlogs, error) {
 	return nil, fmt.Errorf("UserBlogs fetch record not found")
 }
 
+func (tx *_UserBlogsMySQLTx) FetchByPrimaryKeys(pks []PrimaryKey) ([]*UserBlogs, error) {
+	results := make([]*UserBlogs, 0, len(pks))
+	for _, pk := range pks {
+		obj, err := tx.Fetch(pk)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, obj)
+	}
+	return results, nil
+}
+
 func (tx *_UserBlogsMySQLTx) Search(where string, args ...interface{}) ([]*UserBlogs, error) {
 	obj := UserBlogsMgr.NewUserBlogs()
 	if where != "" {

@@ -4,7 +4,7 @@ Blog:
   dbtable: blogs
   fields:
     - Id: int32
-      flags: [primary]
+    - UserId: int32
     - Title: string
     - Content: string
     - Status: int32
@@ -12,4 +12,5 @@ Blog:
     - Readed: int32
     - CreatedAt: timestamp
     - UpdatedAt: timestamp
+  primary: [Id, UserId]
   importSQL: "SELECT `id`,`user_id`,`title`,`content`,`status`,`readed`, `created_at`, `updated_at` FROM blogs"

@@ -1132,13 +1132,13 @@ func (tx *_UserMySQLTx) Fetch(pk PrimaryKey) (*User, error) {
 	return nil, fmt.Errorf("User fetch record not found")
 }
 
-func (tx *_UserMySQLTx) FetchByIds(ids []interface{}) ([]*User, error) {
-	if len(ids) == 0 {
-		return []*User{}, nil
+func (tx *_UserMySQLTx) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
+	params := make([]string, 0, len(pks))
+	for _, pk := range pks {
+		params = append(params, fmt.Sprint(pk.(*IdOfUserPK).Id))
 	}
-
 	obj := UserMgr.NewUser()
-	query := fmt.Sprintf("SELECT %s FROM `users` WHERE `Id` IN (%s)", strings.Join(obj.GetColumns(), ","), orm.SliceJoin(ids, ","))
+	query := fmt.Sprintf("SELECT %s FROM `users` WHERE `Id` IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join(params, ","))
 	objs, err := tx.FetchBySQL(query)
 	if err != nil {
 		return nil, err
