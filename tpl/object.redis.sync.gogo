@@ -7,6 +7,7 @@ func (m *_{{$obj.Name}}RedisMgr) Load(db DBFetcher) error {
 	{{if ne $obj.ImportSQL ""}}
 	return m.AddBySQL(db, "{{$obj.ImportSQL}}")
 	{{else if ne $obj.DbSource ""}}
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}`", strings.Join(obj.GetColumns(), ","))
 	return m.AddBySQL(db, query)
 	{{else}}
@@ -19,7 +20,6 @@ func (m *_{{$obj.Name}}RedisMgr) AddBySQL(db DBFetcher, sql string, args ...inte
 	if err != nil {
 		return err
 	}
-
 
 	redisObjs := make([]*{{$obj.Name}}, len(objs))
 	for i, obj := range objs {
