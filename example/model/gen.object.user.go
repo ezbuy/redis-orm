@@ -1276,7 +1276,9 @@ func (m *_UserRedisMgr) Load(db DBFetcher) error {
 		return err
 	}
 
-	return m.AddBySQL(db, "SELECT `id`,`name`,`mailbox`,`sex`, `age`, `longitude`,`latitude`,`description`,`password`,`head_url`,`status`,`created_at`, `updated_at`, `deleted_at` FROM users")
+	obj := UserMgr.NewUser()
+	query := fmt.Sprintf("SELECT %s FROM `users`", strings.Join(obj.GetColumns(), ","))
+	return m.AddBySQL(db, query)
 
 }
 

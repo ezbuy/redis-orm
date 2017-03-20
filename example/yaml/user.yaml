@@ -25,7 +25,6 @@ User:
     - DeletedAt: timeint
       flags: [nullable]
   uniques: [[Mailbox, Password]]
-  importSQL: "SELECT `id`,`name`,`mailbox`,`sex`, `age`, `longitude`,`latitude`,`description`,`password`,`head_url`,`status`,`created_at`, `updated_at`, `deleted_at` FROM users"
 
 UserBaseInfo:
   dbs: [mysql]
