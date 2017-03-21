@@ -7,28 +7,15 @@ type _{{$obj.Name}}MySQLMgr struct {
 }
 
 
-func (m *_{{$obj.Name}}Mgr) MySQL(cf *MySQLConfig) *_{{$obj.Name}}MySQLMgr {
-	if cf == nil {
-		return {{$obj.Name}}MySQLMgr()
-	}
-
-	mgr, err := New{{$obj.Name}}MySQLMgr(cf)
-	if err != nil {
-		panic(err)
-	}
-	return mgr
+func (m *_{{$obj.Name}}Mgr) MySQL(store *orm.MySQLStore) *_{{$obj.Name}}MySQLMgr {
+	return {{$obj.Name}}MySQLMgr(store)
 }
 
-func {{$obj.Name}}MySQLMgr() *_{{$obj.Name}}MySQLMgr {
+func {{$obj.Name}}MySQLMgr(store *orm.MySQLStore) *_{{$obj.Name}}MySQLMgr {
+	if store != nil {
+		return &_{{$obj.Name}}MySQLMgr{store}	
+	}
 	return &_{{$obj.Name}}MySQLMgr{_mysql_store}
-}
-
-func New{{$obj.Name}}MySQLMgr(cf *MySQLConfig) (*_{{$obj.Name}}MySQLMgr, error) {
-	store, err := orm.NewMySQLStore(cf.Host, cf.Port, cf.Database, cf.UserName, cf.Password)
-	if err != nil {
-		return nil, err
-	}
-	return &_{{$obj.Name}}MySQLMgr{store}, nil
 }
 
 func (m *_{{$obj.Name}}MySQLMgr) Search(where string, args ...interface{}) ([]*{{$obj.Name}}, error) {

@@ -70,6 +70,10 @@ func (store *MySQLStore) Exec(sql string, args ...interface{}) (sql.Result, erro
 	return store.DB.Exec(sql, args...)
 }
 
+func (store *MySQLStore) Close() {
+	store.DB = nil
+}
+
 type MySQLTx struct {
 	*sql.Tx
 	debug   bool

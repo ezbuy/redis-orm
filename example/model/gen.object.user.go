@@ -530,28 +530,15 @@ type _UserMySQLMgr struct {
 	*orm.MySQLStore
 }
 
-func (m *_UserMgr) MySQL(cf *MySQLConfig) *_UserMySQLMgr {
-	if cf == nil {
-		return UserMySQLMgr()
-	}
-
-	mgr, err := NewUserMySQLMgr(cf)
-	if err != nil {
-		panic(err)
-	}
-	return mgr
+func (m *_UserMgr) MySQL(store *orm.MySQLStore) *_UserMySQLMgr {
+	return UserMySQLMgr(store)
 }
 
-func UserMySQLMgr() *_UserMySQLMgr {
+func UserMySQLMgr(store *orm.MySQLStore) *_UserMySQLMgr {
+	if store != nil {
+		return &_UserMySQLMgr{store}
+	}
 	return &_UserMySQLMgr{_mysql_store}
-}
-
-func NewUserMySQLMgr(cf *MySQLConfig) (*_UserMySQLMgr, error) {
-	store, err := orm.NewMySQLStore(cf.Host, cf.Port, cf.Database, cf.UserName, cf.Password)
-	if err != nil {
-		return nil, err
-	}
-	return &_UserMySQLMgr{store}, nil
 }
 
 func (m *_UserMySQLMgr) Search(where string, args ...interface{}) ([]*User, error) {

@@ -448,28 +448,15 @@ type _UserBlogsMySQLMgr struct {
 	*orm.MySQLStore
 }
 
-func (m *_UserBlogsMgr) MySQL(cf *MySQLConfig) *_UserBlogsMySQLMgr {
-	if cf == nil {
-		return UserBlogsMySQLMgr()
-	}
-
-	mgr, err := NewUserBlogsMySQLMgr(cf)
-	if err != nil {
-		panic(err)
-	}
-	return mgr
+func (m *_UserBlogsMgr) MySQL(store *orm.MySQLStore) *_UserBlogsMySQLMgr {
+	return UserBlogsMySQLMgr(store)
 }
 
-func UserBlogsMySQLMgr() *_UserBlogsMySQLMgr {
+func UserBlogsMySQLMgr(store *orm.MySQLStore) *_UserBlogsMySQLMgr {
+	if store != nil {
+		return &_UserBlogsMySQLMgr{store}
+	}
 	return &_UserBlogsMySQLMgr{_mysql_store}
-}
-
-func NewUserBlogsMySQLMgr(cf *MySQLConfig) (*_UserBlogsMySQLMgr, error) {
-	store, err := orm.NewMySQLStore(cf.Host, cf.Port, cf.Database, cf.UserName, cf.Password)
-	if err != nil {
-		return nil, err
-	}
-	return &_UserBlogsMySQLMgr{store}, nil
 }
 
 func (m *_UserBlogsMySQLMgr) Search(where string, args ...interface{}) ([]*UserBlogs, error) {
