@@ -199,28 +199,15 @@ type _BlogMySQLMgr struct {
 	*orm.MySQLStore
 }
 
-func (m *_BlogMgr) MySQL(cf *MySQLConfig) *_BlogMySQLMgr {
-	if cf == nil {
-		return BlogMySQLMgr()
-	}
-
-	mgr, err := NewBlogMySQLMgr(cf)
-	if err != nil {
-		panic(err)
-	}
-	return mgr
+func (m *_BlogMgr) MySQL(store *orm.MySQLStore) *_BlogMySQLMgr {
+	return BlogMySQLMgr(store)
 }
 
-func BlogMySQLMgr() *_BlogMySQLMgr {
+func BlogMySQLMgr(store *orm.MySQLStore) *_BlogMySQLMgr {
+	if store != nil {
+		return &_BlogMySQLMgr{store}
+	}
 	return &_BlogMySQLMgr{_mysql_store}
-}
-
-func NewBlogMySQLMgr(cf *MySQLConfig) (*_BlogMySQLMgr, error) {
-	store, err := orm.NewMySQLStore(cf.Host, cf.Port, cf.Database, cf.UserName, cf.Password)
-	if err != nil {
-		return nil, err
-	}
-	return &_BlogMySQLMgr{store}, nil
 }
 
 func (m *_BlogMySQLMgr) Search(where string, args ...interface{}) ([]*Blog, error) {
