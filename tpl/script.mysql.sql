@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS `{{$obj.DbTable}}` (
 
 {{range $i, $unique := $obj.Uniques}}
 {{- if not $unique.HasPrimaryKey}}
-DROP UNIQUE INDEX `{{$unique.Name | camel2name}}` ON `{{$obj.DbTable}}`;
 CREATE UNIQUE INDEX `{{$unique.Name | camel2name}}` ON `{{$obj.DbTable}}`(
 	{{- range $i, $f := $unique.Fields -}}		
 		{{- if eq (add $i 1) (len $unique.Fields) -}}
@@ -24,7 +23,6 @@ CREATE UNIQUE INDEX `{{$unique.Name | camel2name}}` ON `{{$obj.DbTable}}`(
 
 {{- range $i, $index := $obj.Indexes}}
 {{- if not $index.HasPrimaryKey}}
-DROP INDEX `{{$index.Name | camel2name}}` ON `{{$obj.DbTable}}`
 CREATE INDEX `{{$index.Name | camel2name}}` ON `{{$obj.DbTable}}`(
 	{{- range $i, $f := $index.Fields -}}
 		{{- if eq (add $i 1) (len $index.Fields) -}}
@@ -39,7 +37,6 @@ CREATE INDEX `{{$index.Name | camel2name}}` ON `{{$obj.DbTable}}`(
 
 {{- range $i, $index := $obj.Ranges}}
 {{- if not $index.HasPrimaryKey}}
-DROP INDEX `{{$index.Name | camel2name}}` ON `{{$obj.DbTable}}`;
 CREATE INDEX `{{$index.Name | camel2name}}` ON `{{$obj.DbTable}}`(
 	{{- range $i, $f := $index.Fields -}}
 		{{- if eq (add $i 1) (len $index.Fields) -}}
