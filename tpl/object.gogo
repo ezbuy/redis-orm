@@ -21,7 +21,7 @@ var (
 )
 
 {{if not $relation}}	
-	{{- if or ($obj.DbContains "mysql") ($obj.DbContains "mssql") }}
+	{{- if or (eq $obj.Db "mysql") (eq $obj.Db "mysql") }}
 		type {{.Name}} struct {
 			{{- range $field := .Fields}}
 			{{$field.Name}}  {{$field.GetType}} {{$field.GetTag}} 
