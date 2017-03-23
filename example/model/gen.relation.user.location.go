@@ -150,24 +150,19 @@ func (m *_UserLocationRedisMgr) DelBySQL(db DBFetcher, sql string, args ...inter
 	return nil
 }
 
-type _UserLocationMySQLMgr struct {
-	*orm.MySQLStore
+type _UserLocationDBMgr struct {
+	db orm.DB
 }
 
-func UserLocationMySQLMgr() *_UserLocationMySQLMgr {
-	return &_UserLocationMySQLMgr{_mysql_store}
-}
-
-func NewUserLocationMySQLMgr(cf *MySQLConfig) (*_UserLocationMySQLMgr, error) {
-	store, err := orm.NewMySQLStore(cf.Host, cf.Port, cf.Database, cf.UserName, cf.Password)
-	if err != nil {
-		return nil, err
+func UserLocationDBMgr(db orm.DB) *_UserLocationDBMgr {
+	if db == nil {
+		panic(fmt.Errorf("UserLocationDBMgr init need db"))
 	}
-	return &_UserLocationMySQLMgr{store}, nil
+	return &_UserLocationDBMgr{db: db}
 }
 
-func (m *_UserLocationMySQLMgr) FetchBySQL(q string, args ...interface{}) (results []interface{}, err error) {
-	rows, err := m.Query(q, args...)
+func (m *_UserLocationDBMgr) FetchBySQL(q string, args ...interface{}) (results []interface{}, err error) {
+	rows, err := m.db.Query(q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("UserLocation fetch error: %v", err)
 	}

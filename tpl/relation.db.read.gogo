@@ -1,26 +1,21 @@
-{{define "relation.mysql.read"}}
+{{define "relation.db.read"}}
 {{$obj := .}}
 {{$primary := $obj.PrimaryKey}}
 {{$primaryField := $primary.FirstField }}
 
-type _{{$obj.Name}}MySQLMgr struct {
-	*orm.MySQLStore
+type _{{$obj.Name}}DBMgr struct {
+	db orm.DB
 }
 
-func {{$obj.Name}}MySQLMgr() *_{{$obj.Name}}MySQLMgr {
-	return &_{{$obj.Name}}MySQLMgr{_mysql_store}
-}
-
-func New{{$obj.Name}}MySQLMgr(cf *MySQLConfig) (*_{{$obj.Name}}MySQLMgr, error) {
-	store, err := orm.NewMySQLStore(cf.Host, cf.Port, cf.Database, cf.UserName, cf.Password)
-	if err != nil {
-		return nil, err
+func {{$obj.Name}}DBMgr(db orm.DB) *_{{$obj.Name}}DBMgr {
+	if db == nil {
+		panic(fmt.Errorf("{{$obj.Name}}DBMgr init need db"))
 	}
-	return &_{{$obj.Name}}MySQLMgr{store}, nil
+	return &_{{$obj.Name}}DBMgr{db: db}
 }
 
-func (m *_{{$obj.Name}}MySQLMgr) FetchBySQL(q string, args ... interface{}) (results []interface{}, err error) {
-	rows, err := m.Query(q, args...)	
+func (m *_{{$obj.Name}}DBMgr) FetchBySQL(q string, args ... interface{}) (results []interface{}, err error) {
+	rows, err := m.db.Query(q, args...)	
 	if err != nil {
 		return nil, fmt.Errorf("{{$obj.Name}} fetch error: %v", err)
 	}

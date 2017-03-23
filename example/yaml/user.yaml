@@ -4,7 +4,7 @@ User:
   dbtable: users
   fields:
     - Id: int32
-      flags: [primary, range]
+      flags: [primary, autoinc]
     - Name: string
     - Mailbox: string
       comment: 邮箱

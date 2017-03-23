@@ -1,0 +1,7 @@
+{{define "object.db"}}
+{{$obj := .}}
+{{- template "object.db.read" . -}}
+{{- if ne $obj.DbTable "" -}}
+{{- template "object.db.write" . -}}
+{{- end -}}
+{{end}}

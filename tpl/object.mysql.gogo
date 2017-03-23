@@ -1,7 +1,0 @@
-{{define "object.mysql"}}
-{{$obj := .}}
-{{- template "object.mysql.read" . -}}
-{{- if ne $obj.DbTable "" -}}
-{{- template "object.mysql.write" . -}}
-{{- end -}}
-{{end}}

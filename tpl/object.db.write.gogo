@@ -1,0 +1,158 @@
+{{define "object.db.write"}}
+{{$obj := .}}
+{{$primary := $obj.PrimaryKey}}
+{{$primaryField := $primary.FirstField }}
+
+func (m *_{{$obj.Name}}DBMgr) BatchCreate(objs []*{{$obj.Name}}) (int64, error) {
+	if len(objs) == 0 {
+		return 0, nil
+	}
+
+	params := make([]string, 0, len(objs))
+	values := make([]interface{}, 0, len(objs)*{{len $obj.Fields}})
+	for _, obj := range objs {
+		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice({{len $obj.Fields}}, "?"), ",")))
+		{{- range $i, $field := $obj.Fields -}}
+			{{- if $field.IsAutoIncrement}}
+				values = append(values, 0)
+			{{- else if and $field.IsNullable $field.IsNeedTransform}}
+				if obj.{{$field.Name}} == nil {
+					values = append(values, nil)
+				} else {
+					values = append(values, {{$field.GetTransformValue "obj."}})
+				}
+			{{- else }}
+				values = append(values, {{$field.GetTransformValue "obj."}})
+			{{- end}}			
+		{{- end}}
+	}
+	query := fmt.Sprintf("INSERT INTO `{{$obj.DbTable}}`(%s) VALUES %s", strings.Join(objs[0].GetColumns(), ","), strings.Join(params, ","))
+	result, err := m.db.Exec(query, values...)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+// argument example:
+// set:"a=?, b=?"
+// where:"c=? and d=?"
+// params:[]interface{}{"a", "b", "c", "d"}...
+func (m *_{{$obj.Name}}DBMgr) UpdateBySQL(set, where string, args ...interface{}) (int64, error) {
+	query := fmt.Sprintf("UPDATE `{{$obj.DbTable}}` SET %s", set)
+	if where != "" {
+		query = fmt.Sprintf("UPDATE `{{$obj.DbTable}}` SET %s WHERE %s", set, where)
+	}
+	result, err := m.db.Exec(query, args...)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+func (m *_{{$obj.Name}}DBMgr) Create(obj *{{$obj.Name}}) (int64, error) {
+	params := orm.NewStringSlice({{len $obj.Fields}}, "?")
+	q := fmt.Sprintf("INSERT INTO `{{$obj.DbTable}}`(%s) VALUES(%s)", 
+		strings.Join(obj.GetColumns(), ","), 
+		strings.Join(params, ","))
+
+	values := make([]interface{}, 0, {{len $obj.Fields}})
+	{{- range $i, $field := $obj.Fields -}}
+		{{- if $field.IsAutoIncrement}}
+			values = append(values, 0)
+		{{- else if and $field.IsNullable $field.IsNeedTransform}}
+			if obj.{{$field.Name}} == nil {
+				values = append(values, nil)
+			} else {
+				values = append(values, {{$field.GetTransformValue "obj."}})
+			}
+		{{- else }}
+			values = append(values, {{$field.GetTransformValue "obj."}})
+		{{- end}}			
+	{{- end}}
+	result, err := m.db.Exec(q, values...)
+	if err != nil {
+		return 0, err
+	}
+	{{- if $primary.IsAutocrement}}
+		lastInsertId, err := result.LastInsertId()
+		if err != nil {
+			return 0, err
+		}
+		obj.{{$primaryField.Name}} = {{$primaryField.GetType}}(lastInsertId)
+	{{- end}}
+	return result.RowsAffected()
+}
+
+func (m *_{{$obj.Name}}DBMgr) Update(obj *{{$obj.Name}}) (int64, error) {
+	columns := []string{
+	{{- range $i, $field := $obj.Fields}}
+		{{- if not $field.IsPrimary}}
+		"`{{$field.Name | camel2name}}` = ?",
+		{{- end}}
+	{{- end}}
+	}	
+	
+	pk := obj.GetPrimaryKey()
+	q := fmt.Sprintf("UPDATE `{{$obj.DbTable}}` SET %s %s", strings.Join(columns, ","), pk.SQLFormat())
+	values := make([]interface{}, 0, {{len $obj.Fields}} - {{len $primary.Fields}})
+	{{- range $i, $field := $obj.Fields -}}
+			{{- if not $field.IsPrimary}}
+				{{- if and $field.IsNullable $field.IsNeedTransform}}
+					if obj.{{$field.Name}} == nil {
+						values = append(values, nil)
+					} else {
+						values = append(values, {{$field.GetTransformValue "obj."}})
+					}	
+				{{- else}}
+					values = append(values, {{$field.GetTransformValue "obj."}})
+				{{- end}}
+			{{- end}}			
+		{{- end}}
+	values = append(values, pk.SQLParams()...)
+
+	result, err := m.db.Exec(q, values...)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+func (m *_{{$obj.Name}}DBMgr) Save(obj *{{$obj.Name}}) (int64, error) {
+	affected, err := m.Update(obj)
+	if err != nil {
+		return affected, err
+	}	
+	if affected == 0 {
+		return m.Create(obj)
+	}
+	return affected, err
+}
+
+func (m *_{{$obj.Name}}DBMgr) Delete(obj *{{$obj.Name}}) (int64, error) {
+	pk := obj.GetPrimaryKey()
+	return m.DeleteByPrimaryKey(pk)
+}
+
+func (m *_{{$obj.Name}}DBMgr) DeleteByPrimaryKey(pk PrimaryKey) (int64, error) {
+	q := fmt.Sprintf("DELETE FROM `{{$obj.DbTable}}` %s", pk.SQLFormat())
+	result, err := m.db.Exec(q , pk.SQLParams()...)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+func (m *_{{$obj.Name}}DBMgr) DeleteBySQL(where string, args ...interface{}) (int64, error) {
+	query := fmt.Sprintf("DELETE FROM `{{$obj.DbTable}}`")
+	if where != "" {
+		query = fmt.Sprintf("DELETE FROM `{{$obj.DbTable}}` WHERE %s", where)
+	}
+	result, err := m.db.Exec(query, args...)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+{{end}}

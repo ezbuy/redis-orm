@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	_mysql_store *orm.MySQLStore
+	_mysql_store *orm.DBStore
 )
 
 type MySQLConfig struct {
@@ -22,7 +22,7 @@ type MySQLConfig struct {
 }
 
 func MySQLSetup(cf *MySQLConfig) {
-	store, err := orm.NewMySQLStore(cf.Host, cf.Port, cf.Database, cf.UserName, cf.Password)
+	store, err := orm.NewDBStore("mysql", cf.Host, cf.Port, cf.Database, cf.UserName, cf.Password)
 	if err != nil {
 		panic(err)
 	}
@@ -34,4 +34,8 @@ func MySQLSetup(cf *MySQLConfig) {
 	store.SetMaxIdleConns(cf.PoolSize)
 	store.SetMaxOpenConns(cf.PoolSize)
 	_mysql_store = store
+}
+
+func MySQL() *orm.DBStore {
+	return _mysql_store
 }
