@@ -1,4 +1,0 @@
-{{define "relation.mssql.read"}}
-{{$relation := .}}
-
-{{end}}

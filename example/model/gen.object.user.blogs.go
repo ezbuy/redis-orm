@@ -444,27 +444,25 @@ func (u *BlogIdOfUserBlogsRNG) RNGRelation() RangeRelation {
 	return nil
 }
 
-type _UserBlogsMySQLMgr struct {
-	*orm.MySQLStore
+type _UserBlogsDBMgr struct {
+	db orm.DB
 }
 
-func (m *_UserBlogsMgr) MySQL(store *orm.MySQLStore) *_UserBlogsMySQLMgr {
-	return UserBlogsMySQLMgr(store)
+func (m *_UserBlogsMgr) DB(db orm.DB) *_UserBlogsDBMgr {
+	return UserBlogsDBMgr(db)
 }
 
-func UserBlogsMySQLMgr(store *orm.MySQLStore) *_UserBlogsMySQLMgr {
-	if store != nil {
-		return &_UserBlogsMySQLMgr{store}
+func UserBlogsDBMgr(db orm.DB) *_UserBlogsDBMgr {
+	if db == nil {
+		panic(fmt.Errorf("UserBlogsDBMgr init need db"))
 	}
-	return &_UserBlogsMySQLMgr{_mysql_store}
+	return &_UserBlogsDBMgr{db: db}
 }
 
-func (m *_UserBlogsMySQLMgr) Search(where string, args ...interface{}) ([]*UserBlogs, error) {
+func (m *_UserBlogsDBMgr) Search(where string, orderby string, limit string, args ...interface{}) ([]*UserBlogs, error) {
 	obj := UserBlogsMgr.NewUserBlogs()
-	if where != "" {
-		where = " WHERE " + where
-	}
-	query := fmt.Sprintf("SELECT %s FROM `user_blogs` %s", strings.Join(obj.GetColumns(), ","), where)
+	conditions := []string{where, orderby, limit}
+	query := fmt.Sprintf("SELECT %s FROM `user_blogs` %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
 	objs, err := m.FetchBySQL(query, args...)
 	if err != nil {
 		return nil, err
@@ -476,15 +474,34 @@ func (m *_UserBlogsMySQLMgr) Search(where string, args ...interface{}) ([]*UserB
 	return results, nil
 }
 
-func (m *_UserBlogsMySQLMgr) SearchCount(where string, args ...interface{}) (int64, error) {
-	if where != "" {
-		where = " WHERE " + where
+func (m *_UserBlogsDBMgr) SearchConditions(conditions []string, orderby string, offset int, limit int, args ...interface{}) ([]*UserBlogs, error) {
+	obj := UserBlogsMgr.NewUserBlogs()
+	q := fmt.Sprintf("SELECT %s FROM `user_blogs` %s %s %s",
+		strings.Join(obj.GetColumns(), ","),
+		orm.SQLWhere(conditions),
+		orderby,
+		orm.SQLOffsetLimit(offset, limit))
+	objs, err := m.FetchBySQL(q, args...)
+	if err != nil {
+		return nil, err
 	}
+	results := make([]*UserBlogs, 0, len(objs))
+	for _, obj := range objs {
+		results = append(results, obj.(*UserBlogs))
+	}
+	return results, nil
+}
+
+func (m *_UserBlogsDBMgr) SearchCount(where string, args ...interface{}) (int64, error) {
 	return m.queryCount(where, args...)
 }
 
-func (m *_UserBlogsMySQLMgr) FetchBySQL(q string, args ...interface{}) (results []interface{}, err error) {
-	rows, err := m.Query(q, args...)
+func (m *_UserBlogsDBMgr) SearchConditionsCount(conditions []string, args ...interface{}) (int64, error) {
+	return m.queryCount(orm.SQLWhere(conditions), args...)
+}
+
+func (m *_UserBlogsDBMgr) FetchBySQL(q string, args ...interface{}) (results []interface{}, err error) {
+	rows, err := m.db.Query(q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("UserBlogs fetch error: %v", err)
 	}
@@ -504,7 +521,7 @@ func (m *_UserBlogsMySQLMgr) FetchBySQL(q string, args ...interface{}) (results 
 	}
 	return
 }
-func (m *_UserBlogsMySQLMgr) Fetch(pk PrimaryKey) (*UserBlogs, error) {
+func (m *_UserBlogsDBMgr) Fetch(pk PrimaryKey) (*UserBlogs, error) {
 	obj := UserBlogsMgr.NewUserBlogs()
 	query := fmt.Sprintf("SELECT %s FROM `user_blogs` %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
 	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
@@ -517,7 +534,7 @@ func (m *_UserBlogsMySQLMgr) Fetch(pk PrimaryKey) (*UserBlogs, error) {
 	return nil, fmt.Errorf("UserBlogs fetch record not found")
 }
 
-func (m *_UserBlogsMySQLMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*UserBlogs, error) {
+func (m *_UserBlogsDBMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*UserBlogs, error) {
 	results := make([]*UserBlogs, 0, len(pks))
 	for _, pk := range pks {
 		obj, err := m.Fetch(pk)
@@ -529,7 +546,7 @@ func (m *_UserBlogsMySQLMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*UserBlogs,
 	return results, nil
 }
 
-func (m *_UserBlogsMySQLMgr) FindOne(unique Unique) (PrimaryKey, error) {
+func (m *_UserBlogsDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	objs, err := m.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
 		return nil, err
@@ -540,7 +557,7 @@ func (m *_UserBlogsMySQLMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	return nil, fmt.Errorf("UserBlogs find record not found")
 }
 
-func (m *_UserBlogsMySQLMgr) FindOneFetch(unique Unique) (*UserBlogs, error) {
+func (m *_UserBlogsDBMgr) FindOneFetch(unique Unique) (*UserBlogs, error) {
 	obj := UserBlogsMgr.NewUserBlogs()
 	query := fmt.Sprintf("SELECT %s FROM `user_blogs` %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, unique.SQLParams()...)
@@ -553,11 +570,11 @@ func (m *_UserBlogsMySQLMgr) FindOneFetch(unique Unique) (*UserBlogs, error) {
 	return nil, fmt.Errorf("none record")
 }
 
-func (m *_UserBlogsMySQLMgr) Find(index Index) ([]PrimaryKey, error) {
+func (m *_UserBlogsDBMgr) Find(index Index) ([]PrimaryKey, error) {
 	return m.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
 }
 
-func (m *_UserBlogsMySQLMgr) FindFetch(index Index) ([]*UserBlogs, error) {
+func (m *_UserBlogsDBMgr) FindFetch(index Index) ([]*UserBlogs, error) {
 	obj := UserBlogsMgr.NewUserBlogs()
 	query := fmt.Sprintf("SELECT %s FROM `user_blogs` %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, index.SQLParams()...)
@@ -571,15 +588,15 @@ func (m *_UserBlogsMySQLMgr) FindFetch(index Index) ([]*UserBlogs, error) {
 	return results, nil
 }
 
-func (m *_UserBlogsMySQLMgr) FindCount(index Index) (int64, error) {
+func (m *_UserBlogsDBMgr) FindCount(index Index) (int64, error) {
 	return m.queryCount(index.SQLFormat(false), index.SQLParams()...)
 }
 
-func (m *_UserBlogsMySQLMgr) Range(scope Range) ([]PrimaryKey, error) {
+func (m *_UserBlogsDBMgr) Range(scope Range) ([]PrimaryKey, error) {
 	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (m *_UserBlogsMySQLMgr) RangeFetch(scope Range) ([]*UserBlogs, error) {
+func (m *_UserBlogsDBMgr) RangeFetch(scope Range) ([]*UserBlogs, error) {
 	obj := UserBlogsMgr.NewUserBlogs()
 	query := fmt.Sprintf("SELECT %s FROM `user_blogs` %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, scope.SQLParams()...)
@@ -593,24 +610,24 @@ func (m *_UserBlogsMySQLMgr) RangeFetch(scope Range) ([]*UserBlogs, error) {
 	return results, nil
 }
 
-func (m *_UserBlogsMySQLMgr) RangeCount(scope Range) (int64, error) {
+func (m *_UserBlogsDBMgr) RangeCount(scope Range) (int64, error) {
 	return m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
 }
 
-func (m *_UserBlogsMySQLMgr) RangeRevert(scope Range) ([]PrimaryKey, error) {
+func (m *_UserBlogsDBMgr) RangeRevert(scope Range) ([]PrimaryKey, error) {
 	scope.Revert(true)
 	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (m *_UserBlogsMySQLMgr) RangeRevertFetch(scope Range) ([]*UserBlogs, error) {
+func (m *_UserBlogsDBMgr) RangeRevertFetch(scope Range) ([]*UserBlogs, error) {
 	scope.Revert(true)
 	return m.RangeFetch(scope)
 }
 
-func (m *_UserBlogsMySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []PrimaryKey, err error) {
+func (m *_UserBlogsDBMgr) queryLimit(where string, limit int, args ...interface{}) (results []PrimaryKey, err error) {
 	pk := UserBlogsMgr.NewPrimaryKey()
 	query := fmt.Sprintf("SELECT %s FROM `user_blogs` %s", strings.Join(pk.Columns(), ","), where)
-	rows, err := m.Query(query, args...)
+	rows, err := m.db.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("UserBlogs query limit error: %v", err)
 	}
@@ -638,9 +655,9 @@ func (m *_UserBlogsMySQLMgr) queryLimit(where string, limit int, args ...interfa
 	return
 }
 
-func (m *_UserBlogsMySQLMgr) queryCount(where string, args ...interface{}) (int64, error) {
+func (m *_UserBlogsDBMgr) queryCount(where string, args ...interface{}) (int64, error) {
 	query := fmt.Sprintf("SELECT count(`user_id`) FROM `user_blogs` %s", where)
-	rows, err := m.Query(query, args...)
+	rows, err := m.db.Query(query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("UserBlogs query count error: %v", err)
 	}
@@ -656,28 +673,9 @@ func (m *_UserBlogsMySQLMgr) queryCount(where string, args ...interface{}) (int6
 	return count, nil
 }
 
-//! tx write
-type _UserBlogsMySQLTx struct {
-	*orm.MySQLTx
-	err          error
-	rowsAffected int64
-}
-
-func (m *_UserBlogsMySQLMgr) BeginTx(tx *orm.MySQLTx) (*_UserBlogsMySQLTx, error) {
-	ux := tx
-	if ux == nil {
-		tx, err := m.MySQLStore.BeginTx()
-		if err != nil {
-			return nil, err
-		}
-		ux = tx
-	}
-	return &_UserBlogsMySQLTx{ux, nil, 0}, nil
-}
-
-func (tx *_UserBlogsMySQLTx) BatchCreate(objs []*UserBlogs) error {
+func (m *_UserBlogsDBMgr) BatchCreate(objs []*UserBlogs) (int64, error) {
 	if len(objs) == 0 {
-		return nil
+		return 0, nil
 	}
 
 	params := make([]string, 0, len(objs))
@@ -688,43 +686,30 @@ func (tx *_UserBlogsMySQLTx) BatchCreate(objs []*UserBlogs) error {
 		values = append(values, obj.BlogId)
 	}
 	query := fmt.Sprintf("INSERT INTO `user_blogs`(%s) VALUES %s", strings.Join(objs[0].GetColumns(), ","), strings.Join(params, ","))
-	result, err := tx.Exec(query, values...)
+	result, err := m.db.Exec(query, values...)
 	if err != nil {
-		tx.err = err
-		return err
+		return 0, err
 	}
-	tx.rowsAffected, tx.err = result.RowsAffected()
-	return tx.err
-}
-
-func (tx *_UserBlogsMySQLTx) BatchDelete(objs []*UserBlogs) error {
-	for _, obj := range objs {
-		if err := tx.Delete(obj); err != nil {
-			return err
-		}
-	}
-	return nil
+	return result.RowsAffected()
 }
 
 // argument example:
 // set:"a=?, b=?"
 // where:"c=? and d=?"
 // params:[]interface{}{"a", "b", "c", "d"}...
-func (tx *_UserBlogsMySQLTx) UpdateBySQL(set, where string, args ...interface{}) error {
+func (m *_UserBlogsDBMgr) UpdateBySQL(set, where string, args ...interface{}) (int64, error) {
 	query := fmt.Sprintf("UPDATE `user_blogs` SET %s", set)
 	if where != "" {
 		query = fmt.Sprintf("UPDATE `user_blogs` SET %s WHERE %s", set, where)
 	}
-	result, err := tx.Exec(query, args...)
+	result, err := m.db.Exec(query, args...)
 	if err != nil {
-		tx.err = err
-		return err
+		return 0, err
 	}
-	tx.rowsAffected, tx.err = result.RowsAffected()
-	return tx.err
+	return result.RowsAffected()
 }
 
-func (tx *_UserBlogsMySQLTx) Create(obj *UserBlogs) error {
+func (m *_UserBlogsDBMgr) Create(obj *UserBlogs) (int64, error) {
 	params := orm.NewStringSlice(2, "?")
 	q := fmt.Sprintf("INSERT INTO `user_blogs`(%s) VALUES(%s)",
 		strings.Join(obj.GetColumns(), ","),
@@ -733,22 +718,14 @@ func (tx *_UserBlogsMySQLTx) Create(obj *UserBlogs) error {
 	values := make([]interface{}, 0, 2)
 	values = append(values, obj.UserId)
 	values = append(values, obj.BlogId)
-	result, err := tx.Exec(q, values...)
+	result, err := m.db.Exec(q, values...)
 	if err != nil {
-		tx.err = err
-		return err
+		return 0, err
 	}
-	lastInsertId, err := result.LastInsertId()
-	if err != nil {
-		tx.err = err
-		return err
-	}
-	obj.UserId = int32(lastInsertId)
-	tx.rowsAffected, tx.err = result.RowsAffected()
-	return tx.err
+	return result.RowsAffected()
 }
 
-func (tx *_UserBlogsMySQLTx) Update(obj *UserBlogs) error {
+func (m *_UserBlogsDBMgr) Update(obj *UserBlogs) (int64, error) {
 	columns := []string{}
 
 	pk := obj.GetPrimaryKey()
@@ -756,266 +733,46 @@ func (tx *_UserBlogsMySQLTx) Update(obj *UserBlogs) error {
 	values := make([]interface{}, 0, 2-2)
 	values = append(values, pk.SQLParams()...)
 
-	result, err := tx.Exec(q, values...)
+	result, err := m.db.Exec(q, values...)
 	if err != nil {
-		tx.err = err
-		return err
+		return 0, err
 	}
-	tx.rowsAffected, tx.err = result.RowsAffected()
-	return tx.err
+	return result.RowsAffected()
 }
 
-func (tx *_UserBlogsMySQLTx) Save(obj *UserBlogs) error {
-	err := tx.Update(obj)
+func (m *_UserBlogsDBMgr) Save(obj *UserBlogs) (int64, error) {
+	affected, err := m.Update(obj)
 	if err != nil {
-		return err
+		return affected, err
 	}
-	if tx.rowsAffected > 0 {
-		return nil
+	if affected == 0 {
+		return m.Create(obj)
 	}
-	return tx.Create(obj)
+	return affected, err
 }
 
-func (tx *_UserBlogsMySQLTx) Delete(obj *UserBlogs) error {
+func (m *_UserBlogsDBMgr) Delete(obj *UserBlogs) (int64, error) {
 	pk := obj.GetPrimaryKey()
-	return tx.DeleteByPrimaryKey(pk)
+	return m.DeleteByPrimaryKey(pk)
 }
 
-func (tx *_UserBlogsMySQLTx) DeleteByPrimaryKey(pk PrimaryKey) error {
+func (m *_UserBlogsDBMgr) DeleteByPrimaryKey(pk PrimaryKey) (int64, error) {
 	q := fmt.Sprintf("DELETE FROM `user_blogs` %s", pk.SQLFormat())
-	result, err := tx.Exec(q, pk.SQLParams()...)
+	result, err := m.db.Exec(q, pk.SQLParams()...)
 	if err != nil {
-		tx.err = err
-		return err
+		return 0, err
 	}
-	tx.rowsAffected, tx.err = result.RowsAffected()
-	return tx.err
+	return result.RowsAffected()
 }
 
-func (tx *_UserBlogsMySQLTx) DeleteBySQL(where string, args ...interface{}) error {
+func (m *_UserBlogsDBMgr) DeleteBySQL(where string, args ...interface{}) (int64, error) {
 	query := fmt.Sprintf("DELETE FROM `user_blogs`")
 	if where != "" {
 		query = fmt.Sprintf("DELETE FROM `user_blogs` WHERE %s", where)
 	}
-	result, err := tx.Exec(query, args...)
+	result, err := m.db.Exec(query, args...)
 	if err != nil {
-		tx.err = err
-		return err
+		return 0, err
 	}
-	tx.rowsAffected, tx.err = result.RowsAffected()
-	return tx.err
-}
-
-func (tx *_UserBlogsMySQLTx) Close() error {
-	if tx.err != nil {
-		return tx.Rollback()
-	}
-	return tx.Commit()
-}
-
-//! tx read
-func (tx *_UserBlogsMySQLTx) FindOne(unique Unique) (PrimaryKey, error) {
-	objs, err := tx.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
-	if err != nil {
-		tx.err = err
-		return nil, err
-	}
-	if len(objs) > 0 {
-		return objs[0], nil
-	}
-	tx.err = fmt.Errorf("UserBlogs find record not found")
-	return nil, tx.err
-}
-
-func (tx *_UserBlogsMySQLTx) FindOneFetch(unique Unique) (*UserBlogs, error) {
-	obj := UserBlogsMgr.NewUserBlogs()
-	query := fmt.Sprintf("SELECT %s FROM `user_blogs` %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
-	objs, err := tx.FetchBySQL(query, unique.SQLParams()...)
-	if err != nil {
-		return nil, err
-	}
-	if len(objs) > 0 {
-		return objs[0].(*UserBlogs), nil
-	}
-	return nil, fmt.Errorf("none record")
-}
-
-func (tx *_UserBlogsMySQLTx) Find(index Index) ([]PrimaryKey, error) {
-	return tx.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
-}
-
-func (tx *_UserBlogsMySQLTx) FindFetch(index Index) ([]*UserBlogs, error) {
-	obj := UserBlogsMgr.NewUserBlogs()
-	query := fmt.Sprintf("SELECT %s FROM `user_blogs` %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
-	objs, err := tx.FetchBySQL(query, index.SQLParams()...)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]*UserBlogs, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*UserBlogs))
-	}
-	return results, nil
-}
-
-func (tx *_UserBlogsMySQLTx) FindCount(index Index) (int64, error) {
-	return tx.queryCount(index.SQLFormat(false), index.SQLParams()...)
-}
-
-func (tx *_UserBlogsMySQLTx) Range(scope Range) ([]PrimaryKey, error) {
-	return tx.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
-}
-
-func (tx *_UserBlogsMySQLTx) RangeFetch(scope Range) ([]*UserBlogs, error) {
-	obj := UserBlogsMgr.NewUserBlogs()
-	query := fmt.Sprintf("SELECT %s FROM `user_blogs` %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
-	objs, err := tx.FetchBySQL(query, scope.SQLParams()...)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]*UserBlogs, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*UserBlogs))
-	}
-	return results, nil
-}
-
-func (tx *_UserBlogsMySQLTx) RangeCount(scope Range) (int64, error) {
-	return tx.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
-}
-
-func (tx *_UserBlogsMySQLTx) RangeRevert(scope Range) ([]PrimaryKey, error) {
-	scope.Revert(true)
-	return tx.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
-}
-
-func (tx *_UserBlogsMySQLTx) RangeRevertFetch(scope Range) ([]*UserBlogs, error) {
-	scope.Revert(true)
-	return tx.RangeFetch(scope)
-}
-
-func (tx *_UserBlogsMySQLTx) queryLimit(where string, limit int, args ...interface{}) (results []PrimaryKey, err error) {
-	pk := UserBlogsMgr.NewPrimaryKey()
-	query := fmt.Sprintf("SELECT %s FROM `user_blogs` %s", strings.Join(pk.Columns(), ","), where)
-	rows, err := tx.Query(query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("UserBlogs query limit error: %v", err)
-	}
-	defer rows.Close()
-
-	offset := 0
-
-	for rows.Next() {
-		if limit >= 0 && offset >= limit {
-			break
-		}
-		offset++
-
-		result := UserBlogsMgr.NewPrimaryKey()
-		err = rows.Scan(&(result.UserId), &(result.BlogId))
-		if err != nil {
-			return nil, err
-		}
-
-		results = append(results, result)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("UserBlogs query limit result error: %v", err)
-	}
-	return
-}
-
-func (tx *_UserBlogsMySQLTx) queryCount(where string, args ...interface{}) (int64, error) {
-	query := fmt.Sprintf("SELECT count(`user_id`) FROM `user_blogs` %s", where)
-
-	rows, err := tx.Query(query, args...)
-	if err != nil {
-		tx.err = err
-		return 0, fmt.Errorf("UserBlogs query limit error: %v", err)
-	}
-	defer rows.Close()
-
-	var count int64
-	for rows.Next() {
-		if err = rows.Scan(&count); err != nil {
-			tx.err = err
-			return 0, err
-		}
-		break
-	}
-
-	return count, nil
-}
-
-func (tx *_UserBlogsMySQLTx) Fetch(pk PrimaryKey) (*UserBlogs, error) {
-	obj := UserBlogsMgr.NewUserBlogs()
-	query := fmt.Sprintf("SELECT %s FROM `user_blogs` %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
-	objs, err := tx.FetchBySQL(query, pk.SQLParams()...)
-	if err != nil {
-		return nil, err
-	}
-	if len(objs) > 0 {
-		return objs[0].(*UserBlogs), nil
-	}
-	return nil, fmt.Errorf("UserBlogs fetch record not found")
-}
-
-func (tx *_UserBlogsMySQLTx) FetchByPrimaryKeys(pks []PrimaryKey) ([]*UserBlogs, error) {
-	results := make([]*UserBlogs, 0, len(pks))
-	for _, pk := range pks {
-		obj, err := tx.Fetch(pk)
-		if err != nil {
-			return nil, err
-		}
-		results = append(results, obj)
-	}
-	return results, nil
-}
-
-func (tx *_UserBlogsMySQLTx) Search(where string, args ...interface{}) ([]*UserBlogs, error) {
-	obj := UserBlogsMgr.NewUserBlogs()
-	if where != "" {
-		where = " WHERE " + where
-	}
-	query := fmt.Sprintf("SELECT %s FROM `user_blogs` %s", strings.Join(obj.GetColumns(), ","), where)
-	objs, err := tx.FetchBySQL(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]*UserBlogs, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*UserBlogs))
-	}
-	return results, nil
-}
-
-func (tx *_UserBlogsMySQLTx) SearchCount(where string, args ...interface{}) (int64, error) {
-	if where != "" {
-		where = " WHERE " + where
-	}
-	return tx.queryCount(where, args...)
-}
-
-func (tx *_UserBlogsMySQLTx) FetchBySQL(q string, args ...interface{}) (results []interface{}, err error) {
-	rows, err := tx.Query(q, args...)
-	if err != nil {
-		tx.err = err
-		return nil, fmt.Errorf("UserBlogs fetch error: %v", err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var result UserBlogs
-		err = rows.Scan(&(result.UserId), &(result.BlogId))
-		if err != nil {
-			return nil, err
-		}
-
-		results = append(results, &result)
-	}
-	if err = rows.Err(); err != nil {
-		tx.err = err
-		return nil, fmt.Errorf("UserBlogs fetch result error: %v", err)
-	}
-	return
+	return result.RowsAffected()
 }

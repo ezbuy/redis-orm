@@ -52,13 +52,8 @@ type {{$relation.Name}} struct {
 	{{template "relation.list.sync" $relation}}
 {{end}}
 
-
-{{- if $obj.DbContains "mysql"}}
-{{template "relation.mysql.read" $relation}}
-{{- end}}
-
-{{- if $obj.DbContains "mssql"}}
-{{template "relation.mssql.read" $relation}}
+{{- if or ($obj.DbContains "mysql") ($obj.DbContains "mssql")}}
+{{template "relation.db.read" $relation}}
 {{- end}}
 
 {{end}}

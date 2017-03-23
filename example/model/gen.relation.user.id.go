@@ -175,24 +175,19 @@ func (m *_UserIdRedisMgr) DelBySQL(db DBFetcher, sql string, args ...interface{}
 	return nil
 }
 
-type _UserIdMySQLMgr struct {
-	*orm.MySQLStore
+type _UserIdDBMgr struct {
+	db orm.DB
 }
 
-func UserIdMySQLMgr() *_UserIdMySQLMgr {
-	return &_UserIdMySQLMgr{_mysql_store}
-}
-
-func NewUserIdMySQLMgr(cf *MySQLConfig) (*_UserIdMySQLMgr, error) {
-	store, err := orm.NewMySQLStore(cf.Host, cf.Port, cf.Database, cf.UserName, cf.Password)
-	if err != nil {
-		return nil, err
+func UserIdDBMgr(db orm.DB) *_UserIdDBMgr {
+	if db == nil {
+		panic(fmt.Errorf("UserIdDBMgr init need db"))
 	}
-	return &_UserIdMySQLMgr{store}, nil
+	return &_UserIdDBMgr{db: db}
 }
 
-func (m *_UserIdMySQLMgr) FetchBySQL(q string, args ...interface{}) (results []interface{}, err error) {
-	rows, err := m.Query(q, args...)
+func (m *_UserIdDBMgr) FetchBySQL(q string, args ...interface{}) (results []interface{}, err error) {
+	rows, err := m.db.Query(q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("UserId fetch error: %v", err)
 	}

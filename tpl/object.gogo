@@ -21,21 +21,13 @@ var (
 )
 
 {{if not $relation}}	
-	{{if eq $obj.Db "mysql"}}
+	{{- if or ($obj.DbContains "mysql") ($obj.DbContains "mssql") }}
 		type {{.Name}} struct {
 			{{- range $field := .Fields}}
 			{{$field.Name}}  {{$field.GetType}} {{$field.GetTag}} 
 			{{- end}}
 		}
-	{{end}}
-
-	{{if eq $obj.Db "mssql"}}
-		type {{.Name}} struct {
-			{{- range $field := .Fields}}
-			{{$field.Name}}  {{$field.GetType}} {{$field.GetTag}} 
-			{{- end}}
-		}
-	{{end}}
+	{{- end}}
 
 	{{if eq $obj.Db "redis"}}
 		type {{.Name}} struct {
@@ -91,12 +83,8 @@ var (
 	{{template "object.range" $rg}}
 	{{- end}}
 
-	{{- if $obj.DbContains "mysql"}}
-	{{template "object.mysql" $obj}}
-	{{- end}}
-
-	{{- if $obj.DbContains "mssql"}}
-	{{template "object.mssql" $obj}}
+	{{- if or ($obj.DbContains "mysql") ($obj.DbContains "mssql") }}
+	{{template "object.db" $obj}}
 	{{- end}}
 
 	{{- if $obj.DbContains "redis"}}

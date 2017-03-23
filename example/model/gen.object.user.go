@@ -526,27 +526,25 @@ func (u *AgeOfUserRNG) RNGRelation() RangeRelation {
 	return AgeOfUserRNGRelationRedisMgr()
 }
 
-type _UserMySQLMgr struct {
-	*orm.MySQLStore
+type _UserDBMgr struct {
+	db orm.DB
 }
 
-func (m *_UserMgr) MySQL(store *orm.MySQLStore) *_UserMySQLMgr {
-	return UserMySQLMgr(store)
+func (m *_UserMgr) DB(db orm.DB) *_UserDBMgr {
+	return UserDBMgr(db)
 }
 
-func UserMySQLMgr(store *orm.MySQLStore) *_UserMySQLMgr {
-	if store != nil {
-		return &_UserMySQLMgr{store}
+func UserDBMgr(db orm.DB) *_UserDBMgr {
+	if db == nil {
+		panic(fmt.Errorf("UserDBMgr init need db"))
 	}
-	return &_UserMySQLMgr{_mysql_store}
+	return &_UserDBMgr{db: db}
 }
 
-func (m *_UserMySQLMgr) Search(where string, args ...interface{}) ([]*User, error) {
+func (m *_UserDBMgr) Search(where string, orderby string, limit string, args ...interface{}) ([]*User, error) {
 	obj := UserMgr.NewUser()
-	if where != "" {
-		where = " WHERE " + where
-	}
-	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), where)
+	conditions := []string{where, orderby, limit}
+	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
 	objs, err := m.FetchBySQL(query, args...)
 	if err != nil {
 		return nil, err
@@ -558,15 +556,34 @@ func (m *_UserMySQLMgr) Search(where string, args ...interface{}) ([]*User, erro
 	return results, nil
 }
 
-func (m *_UserMySQLMgr) SearchCount(where string, args ...interface{}) (int64, error) {
-	if where != "" {
-		where = " WHERE " + where
+func (m *_UserDBMgr) SearchConditions(conditions []string, orderby string, offset int, limit int, args ...interface{}) ([]*User, error) {
+	obj := UserMgr.NewUser()
+	q := fmt.Sprintf("SELECT %s FROM `users` %s %s %s",
+		strings.Join(obj.GetColumns(), ","),
+		orm.SQLWhere(conditions),
+		orderby,
+		orm.SQLOffsetLimit(offset, limit))
+	objs, err := m.FetchBySQL(q, args...)
+	if err != nil {
+		return nil, err
 	}
+	results := make([]*User, 0, len(objs))
+	for _, obj := range objs {
+		results = append(results, obj.(*User))
+	}
+	return results, nil
+}
+
+func (m *_UserDBMgr) SearchCount(where string, args ...interface{}) (int64, error) {
 	return m.queryCount(where, args...)
 }
 
-func (m *_UserMySQLMgr) FetchBySQL(q string, args ...interface{}) (results []interface{}, err error) {
-	rows, err := m.Query(q, args...)
+func (m *_UserDBMgr) SearchConditionsCount(conditions []string, args ...interface{}) (int64, error) {
+	return m.queryCount(orm.SQLWhere(conditions), args...)
+}
+
+func (m *_UserDBMgr) FetchBySQL(q string, args ...interface{}) (results []interface{}, err error) {
+	rows, err := m.db.Query(q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("User fetch error: %v", err)
 	}
@@ -606,7 +623,7 @@ func (m *_UserMySQLMgr) FetchBySQL(q string, args ...interface{}) (results []int
 	}
 	return
 }
-func (m *_UserMySQLMgr) Fetch(pk PrimaryKey) (*User, error) {
+func (m *_UserDBMgr) Fetch(pk PrimaryKey) (*User, error) {
 	obj := UserMgr.NewUser()
 	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
 	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
@@ -619,7 +636,7 @@ func (m *_UserMySQLMgr) Fetch(pk PrimaryKey) (*User, error) {
 	return nil, fmt.Errorf("User fetch record not found")
 }
 
-func (m *_UserMySQLMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
+func (m *_UserDBMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 	params := make([]string, 0, len(pks))
 	for _, pk := range pks {
 		params = append(params, fmt.Sprint(pk.(*IdOfUserPK).Id))
@@ -637,7 +654,7 @@ func (m *_UserMySQLMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 	return results, nil
 }
 
-func (m *_UserMySQLMgr) FindOne(unique Unique) (PrimaryKey, error) {
+func (m *_UserDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	objs, err := m.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
 		return nil, err
@@ -648,7 +665,7 @@ func (m *_UserMySQLMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	return nil, fmt.Errorf("User find record not found")
 }
 
-func (m *_UserMySQLMgr) FindOneFetch(unique Unique) (*User, error) {
+func (m *_UserDBMgr) FindOneFetch(unique Unique) (*User, error) {
 	obj := UserMgr.NewUser()
 	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, unique.SQLParams()...)
@@ -661,11 +678,11 @@ func (m *_UserMySQLMgr) FindOneFetch(unique Unique) (*User, error) {
 	return nil, fmt.Errorf("none record")
 }
 
-func (m *_UserMySQLMgr) Find(index Index) ([]PrimaryKey, error) {
+func (m *_UserDBMgr) Find(index Index) ([]PrimaryKey, error) {
 	return m.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
 }
 
-func (m *_UserMySQLMgr) FindFetch(index Index) ([]*User, error) {
+func (m *_UserDBMgr) FindFetch(index Index) ([]*User, error) {
 	obj := UserMgr.NewUser()
 	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, index.SQLParams()...)
@@ -679,15 +696,15 @@ func (m *_UserMySQLMgr) FindFetch(index Index) ([]*User, error) {
 	return results, nil
 }
 
-func (m *_UserMySQLMgr) FindCount(index Index) (int64, error) {
+func (m *_UserDBMgr) FindCount(index Index) (int64, error) {
 	return m.queryCount(index.SQLFormat(false), index.SQLParams()...)
 }
 
-func (m *_UserMySQLMgr) Range(scope Range) ([]PrimaryKey, error) {
+func (m *_UserDBMgr) Range(scope Range) ([]PrimaryKey, error) {
 	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (m *_UserMySQLMgr) RangeFetch(scope Range) ([]*User, error) {
+func (m *_UserDBMgr) RangeFetch(scope Range) ([]*User, error) {
 	obj := UserMgr.NewUser()
 	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, scope.SQLParams()...)
@@ -701,24 +718,24 @@ func (m *_UserMySQLMgr) RangeFetch(scope Range) ([]*User, error) {
 	return results, nil
 }
 
-func (m *_UserMySQLMgr) RangeCount(scope Range) (int64, error) {
+func (m *_UserDBMgr) RangeCount(scope Range) (int64, error) {
 	return m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
 }
 
-func (m *_UserMySQLMgr) RangeRevert(scope Range) ([]PrimaryKey, error) {
+func (m *_UserDBMgr) RangeRevert(scope Range) ([]PrimaryKey, error) {
 	scope.Revert(true)
 	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 }
 
-func (m *_UserMySQLMgr) RangeRevertFetch(scope Range) ([]*User, error) {
+func (m *_UserDBMgr) RangeRevertFetch(scope Range) ([]*User, error) {
 	scope.Revert(true)
 	return m.RangeFetch(scope)
 }
 
-func (m *_UserMySQLMgr) queryLimit(where string, limit int, args ...interface{}) (results []PrimaryKey, err error) {
+func (m *_UserDBMgr) queryLimit(where string, limit int, args ...interface{}) (results []PrimaryKey, err error) {
 	pk := UserMgr.NewPrimaryKey()
 	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(pk.Columns(), ","), where)
-	rows, err := m.Query(query, args...)
+	rows, err := m.db.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("User query limit error: %v", err)
 	}
@@ -746,9 +763,9 @@ func (m *_UserMySQLMgr) queryLimit(where string, limit int, args ...interface{})
 	return
 }
 
-func (m *_UserMySQLMgr) queryCount(where string, args ...interface{}) (int64, error) {
+func (m *_UserDBMgr) queryCount(where string, args ...interface{}) (int64, error) {
 	query := fmt.Sprintf("SELECT count(`id`) FROM `users` %s", where)
-	rows, err := m.Query(query, args...)
+	rows, err := m.db.Query(query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("User query count error: %v", err)
 	}
@@ -764,35 +781,16 @@ func (m *_UserMySQLMgr) queryCount(where string, args ...interface{}) (int64, er
 	return count, nil
 }
 
-//! tx write
-type _UserMySQLTx struct {
-	*orm.MySQLTx
-	err          error
-	rowsAffected int64
-}
-
-func (m *_UserMySQLMgr) BeginTx(tx *orm.MySQLTx) (*_UserMySQLTx, error) {
-	ux := tx
-	if ux == nil {
-		tx, err := m.MySQLStore.BeginTx()
-		if err != nil {
-			return nil, err
-		}
-		ux = tx
-	}
-	return &_UserMySQLTx{ux, nil, 0}, nil
-}
-
-func (tx *_UserMySQLTx) BatchCreate(objs []*User) error {
+func (m *_UserDBMgr) BatchCreate(objs []*User) (int64, error) {
 	if len(objs) == 0 {
-		return nil
+		return 0, nil
 	}
 
 	params := make([]string, 0, len(objs))
 	values := make([]interface{}, 0, len(objs)*14)
 	for _, obj := range objs {
 		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice(14, "?"), ",")))
-		values = append(values, obj.Id)
+		values = append(values, 0)
 		values = append(values, obj.Name)
 		values = append(values, obj.Mailbox)
 		values = append(values, obj.Sex)
@@ -812,50 +810,37 @@ func (tx *_UserMySQLTx) BatchCreate(objs []*User) error {
 		}
 	}
 	query := fmt.Sprintf("INSERT INTO `users`(%s) VALUES %s", strings.Join(objs[0].GetColumns(), ","), strings.Join(params, ","))
-	result, err := tx.Exec(query, values...)
+	result, err := m.db.Exec(query, values...)
 	if err != nil {
-		tx.err = err
-		return err
+		return 0, err
 	}
-	tx.rowsAffected, tx.err = result.RowsAffected()
-	return tx.err
-}
-
-func (tx *_UserMySQLTx) BatchDelete(objs []*User) error {
-	for _, obj := range objs {
-		if err := tx.Delete(obj); err != nil {
-			return err
-		}
-	}
-	return nil
+	return result.RowsAffected()
 }
 
 // argument example:
 // set:"a=?, b=?"
 // where:"c=? and d=?"
 // params:[]interface{}{"a", "b", "c", "d"}...
-func (tx *_UserMySQLTx) UpdateBySQL(set, where string, args ...interface{}) error {
+func (m *_UserDBMgr) UpdateBySQL(set, where string, args ...interface{}) (int64, error) {
 	query := fmt.Sprintf("UPDATE `users` SET %s", set)
 	if where != "" {
 		query = fmt.Sprintf("UPDATE `users` SET %s WHERE %s", set, where)
 	}
-	result, err := tx.Exec(query, args...)
+	result, err := m.db.Exec(query, args...)
 	if err != nil {
-		tx.err = err
-		return err
+		return 0, err
 	}
-	tx.rowsAffected, tx.err = result.RowsAffected()
-	return tx.err
+	return result.RowsAffected()
 }
 
-func (tx *_UserMySQLTx) Create(obj *User) error {
+func (m *_UserDBMgr) Create(obj *User) (int64, error) {
 	params := orm.NewStringSlice(14, "?")
 	q := fmt.Sprintf("INSERT INTO `users`(%s) VALUES(%s)",
 		strings.Join(obj.GetColumns(), ","),
 		strings.Join(params, ","))
 
 	values := make([]interface{}, 0, 14)
-	values = append(values, obj.Id)
+	values = append(values, 0)
 	values = append(values, obj.Name)
 	values = append(values, obj.Mailbox)
 	values = append(values, obj.Sex)
@@ -873,22 +858,19 @@ func (tx *_UserMySQLTx) Create(obj *User) error {
 	} else {
 		values = append(values, obj.DeletedAt.Unix())
 	}
-	result, err := tx.Exec(q, values...)
+	result, err := m.db.Exec(q, values...)
 	if err != nil {
-		tx.err = err
-		return err
+		return 0, err
 	}
 	lastInsertId, err := result.LastInsertId()
 	if err != nil {
-		tx.err = err
-		return err
+		return 0, err
 	}
 	obj.Id = int32(lastInsertId)
-	tx.rowsAffected, tx.err = result.RowsAffected()
-	return tx.err
+	return result.RowsAffected()
 }
 
-func (tx *_UserMySQLTx) Update(obj *User) error {
+func (m *_UserDBMgr) Update(obj *User) (int64, error) {
 	columns := []string{
 		"`name` = ?",
 		"`mailbox` = ?",
@@ -927,294 +909,48 @@ func (tx *_UserMySQLTx) Update(obj *User) error {
 	}
 	values = append(values, pk.SQLParams()...)
 
-	result, err := tx.Exec(q, values...)
+	result, err := m.db.Exec(q, values...)
 	if err != nil {
-		tx.err = err
-		return err
+		return 0, err
 	}
-	tx.rowsAffected, tx.err = result.RowsAffected()
-	return tx.err
+	return result.RowsAffected()
 }
 
-func (tx *_UserMySQLTx) Save(obj *User) error {
-	err := tx.Update(obj)
+func (m *_UserDBMgr) Save(obj *User) (int64, error) {
+	affected, err := m.Update(obj)
 	if err != nil {
-		return err
+		return affected, err
 	}
-	if tx.rowsAffected > 0 {
-		return nil
+	if affected == 0 {
+		return m.Create(obj)
 	}
-	return tx.Create(obj)
+	return affected, err
 }
 
-func (tx *_UserMySQLTx) Delete(obj *User) error {
+func (m *_UserDBMgr) Delete(obj *User) (int64, error) {
 	pk := obj.GetPrimaryKey()
-	return tx.DeleteByPrimaryKey(pk)
+	return m.DeleteByPrimaryKey(pk)
 }
 
-func (tx *_UserMySQLTx) DeleteByPrimaryKey(pk PrimaryKey) error {
+func (m *_UserDBMgr) DeleteByPrimaryKey(pk PrimaryKey) (int64, error) {
 	q := fmt.Sprintf("DELETE FROM `users` %s", pk.SQLFormat())
-	result, err := tx.Exec(q, pk.SQLParams()...)
+	result, err := m.db.Exec(q, pk.SQLParams()...)
 	if err != nil {
-		tx.err = err
-		return err
+		return 0, err
 	}
-	tx.rowsAffected, tx.err = result.RowsAffected()
-	return tx.err
+	return result.RowsAffected()
 }
 
-func (tx *_UserMySQLTx) DeleteBySQL(where string, args ...interface{}) error {
+func (m *_UserDBMgr) DeleteBySQL(where string, args ...interface{}) (int64, error) {
 	query := fmt.Sprintf("DELETE FROM `users`")
 	if where != "" {
 		query = fmt.Sprintf("DELETE FROM `users` WHERE %s", where)
 	}
-	result, err := tx.Exec(query, args...)
+	result, err := m.db.Exec(query, args...)
 	if err != nil {
-		tx.err = err
-		return err
+		return 0, err
 	}
-	tx.rowsAffected, tx.err = result.RowsAffected()
-	return tx.err
-}
-
-func (tx *_UserMySQLTx) Close() error {
-	if tx.err != nil {
-		return tx.Rollback()
-	}
-	return tx.Commit()
-}
-
-//! tx read
-func (tx *_UserMySQLTx) FindOne(unique Unique) (PrimaryKey, error) {
-	objs, err := tx.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
-	if err != nil {
-		tx.err = err
-		return nil, err
-	}
-	if len(objs) > 0 {
-		return objs[0], nil
-	}
-	tx.err = fmt.Errorf("User find record not found")
-	return nil, tx.err
-}
-
-func (tx *_UserMySQLTx) FindOneFetch(unique Unique) (*User, error) {
-	obj := UserMgr.NewUser()
-	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
-	objs, err := tx.FetchBySQL(query, unique.SQLParams()...)
-	if err != nil {
-		return nil, err
-	}
-	if len(objs) > 0 {
-		return objs[0].(*User), nil
-	}
-	return nil, fmt.Errorf("none record")
-}
-
-func (tx *_UserMySQLTx) Find(index Index) ([]PrimaryKey, error) {
-	return tx.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
-}
-
-func (tx *_UserMySQLTx) FindFetch(index Index) ([]*User, error) {
-	obj := UserMgr.NewUser()
-	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
-	objs, err := tx.FetchBySQL(query, index.SQLParams()...)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]*User, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*User))
-	}
-	return results, nil
-}
-
-func (tx *_UserMySQLTx) FindCount(index Index) (int64, error) {
-	return tx.queryCount(index.SQLFormat(false), index.SQLParams()...)
-}
-
-func (tx *_UserMySQLTx) Range(scope Range) ([]PrimaryKey, error) {
-	return tx.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
-}
-
-func (tx *_UserMySQLTx) RangeFetch(scope Range) ([]*User, error) {
-	obj := UserMgr.NewUser()
-	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
-	objs, err := tx.FetchBySQL(query, scope.SQLParams()...)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]*User, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*User))
-	}
-	return results, nil
-}
-
-func (tx *_UserMySQLTx) RangeCount(scope Range) (int64, error) {
-	return tx.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
-}
-
-func (tx *_UserMySQLTx) RangeRevert(scope Range) ([]PrimaryKey, error) {
-	scope.Revert(true)
-	return tx.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
-}
-
-func (tx *_UserMySQLTx) RangeRevertFetch(scope Range) ([]*User, error) {
-	scope.Revert(true)
-	return tx.RangeFetch(scope)
-}
-
-func (tx *_UserMySQLTx) queryLimit(where string, limit int, args ...interface{}) (results []PrimaryKey, err error) {
-	pk := UserMgr.NewPrimaryKey()
-	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(pk.Columns(), ","), where)
-	rows, err := tx.Query(query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("User query limit error: %v", err)
-	}
-	defer rows.Close()
-
-	offset := 0
-
-	for rows.Next() {
-		if limit >= 0 && offset >= limit {
-			break
-		}
-		offset++
-
-		result := UserMgr.NewPrimaryKey()
-		err = rows.Scan(&(result.Id))
-		if err != nil {
-			return nil, err
-		}
-
-		results = append(results, result)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("User query limit result error: %v", err)
-	}
-	return
-}
-
-func (tx *_UserMySQLTx) queryCount(where string, args ...interface{}) (int64, error) {
-	query := fmt.Sprintf("SELECT count(`id`) FROM `users` %s", where)
-
-	rows, err := tx.Query(query, args...)
-	if err != nil {
-		tx.err = err
-		return 0, fmt.Errorf("User query limit error: %v", err)
-	}
-	defer rows.Close()
-
-	var count int64
-	for rows.Next() {
-		if err = rows.Scan(&count); err != nil {
-			tx.err = err
-			return 0, err
-		}
-		break
-	}
-
-	return count, nil
-}
-
-func (tx *_UserMySQLTx) Fetch(pk PrimaryKey) (*User, error) {
-	obj := UserMgr.NewUser()
-	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
-	objs, err := tx.FetchBySQL(query, pk.SQLParams()...)
-	if err != nil {
-		return nil, err
-	}
-	if len(objs) > 0 {
-		return objs[0].(*User), nil
-	}
-	return nil, fmt.Errorf("User fetch record not found")
-}
-
-func (tx *_UserMySQLTx) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
-	params := make([]string, 0, len(pks))
-	for _, pk := range pks {
-		params = append(params, fmt.Sprint(pk.(*IdOfUserPK).Id))
-	}
-	obj := UserMgr.NewUser()
-	query := fmt.Sprintf("SELECT %s FROM `users` WHERE `Id` IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join(params, ","))
-	objs, err := tx.FetchBySQL(query)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]*User, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*User))
-	}
-	return results, nil
-}
-
-func (tx *_UserMySQLTx) Search(where string, args ...interface{}) ([]*User, error) {
-	obj := UserMgr.NewUser()
-	if where != "" {
-		where = " WHERE " + where
-	}
-	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), where)
-	objs, err := tx.FetchBySQL(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]*User, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*User))
-	}
-	return results, nil
-}
-
-func (tx *_UserMySQLTx) SearchCount(where string, args ...interface{}) (int64, error) {
-	if where != "" {
-		where = " WHERE " + where
-	}
-	return tx.queryCount(where, args...)
-}
-
-func (tx *_UserMySQLTx) FetchBySQL(q string, args ...interface{}) (results []interface{}, err error) {
-	rows, err := tx.Query(q, args...)
-	if err != nil {
-		tx.err = err
-		return nil, fmt.Errorf("User fetch error: %v", err)
-	}
-	defer rows.Close()
-
-	var Description sql.NullString
-	var HeadUrl sql.NullString
-	var CreatedAt int64
-	var UpdatedAt int64
-	var DeletedAt sql.NullInt64
-
-	for rows.Next() {
-		var result User
-		err = rows.Scan(&(result.Id), &(result.Name), &(result.Mailbox), &(result.Sex), &(result.Age), &(result.Longitude), &(result.Latitude), &Description, &(result.Password), &HeadUrl, &(result.Status), &CreatedAt, &UpdatedAt, &DeletedAt)
-		if err != nil {
-			return nil, err
-		}
-
-		result.Description = Description.String
-
-		result.HeadUrl = HeadUrl.String
-
-		result.CreatedAt = time.Unix(CreatedAt, 0)
-		result.UpdatedAt = time.Unix(UpdatedAt, 0)
-		if DeletedAt.Valid {
-			DeletedAtValue := DeletedAt.Int64
-			DeletedAtPoint := time.Unix(DeletedAtValue, 0)
-			result.DeletedAt = &DeletedAtPoint
-		} else {
-			result.DeletedAt = nil
-		}
-
-		results = append(results, &result)
-	}
-	if err = rows.Err(); err != nil {
-		tx.err = err
-		return nil, fmt.Errorf("User fetch result error: %v", err)
-	}
-	return
+	return result.RowsAffected()
 }
 
 type _UserRedisMgr struct {

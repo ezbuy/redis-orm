@@ -9,13 +9,18 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-type MySQLStore struct {
+type DB interface {
+	Query(sql string, args ...interface{}) (*sql.Rows, error)
+	Exec(sql string, args ...interface{}) (sql.Result, error)
+}
+
+type DBStore struct {
 	*sql.DB
 	debug   bool
 	slowlog time.Duration
 }
 
-func NewMySQLStore(host string, port int, database, username, password string) (*MySQLStore, error) {
+func NewDBStore(driver, host string, port int, database, username, password string) (*DBStore, error) {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&autocommit=true&parseTime=True",
 		username,
 		password,
@@ -23,22 +28,22 @@ func NewMySQLStore(host string, port int, database, username, password string) (
 		port,
 		database)
 
-	db, err := sql.Open("mysql", dsn)
+	db, err := sql.Open(driver, dsn)
 	if err != nil {
 		return nil, err
 	}
-	return &MySQLStore{db, false, time.Duration(0)}, nil
+	return &DBStore{db, false, time.Duration(0)}, nil
 }
 
-func (store *MySQLStore) Debug(b bool) {
+func (store *DBStore) Debug(b bool) {
 	store.debug = b
 }
 
-func (store *MySQLStore) SlowLog(duration time.Duration) {
+func (store *DBStore) SlowLog(duration time.Duration) {
 	store.slowlog = duration
 }
 
-func (store *MySQLStore) Query(sql string, args ...interface{}) (*sql.Rows, error) {
+func (store *DBStore) Query(sql string, args ...interface{}) (*sql.Rows, error) {
 	t1 := time.Now()
 	if store.slowlog > 0 {
 		defer func(t time.Time) {
@@ -54,7 +59,7 @@ func (store *MySQLStore) Query(sql string, args ...interface{}) (*sql.Rows, erro
 	return store.DB.Query(sql, args...)
 }
 
-func (store *MySQLStore) Exec(sql string, args ...interface{}) (sql.Result, error) {
+func (store *DBStore) Exec(sql string, args ...interface{}) (sql.Result, error) {
 	t1 := time.Now()
 	if store.slowlog > 0 {
 		defer func(t time.Time) {
@@ -70,25 +75,43 @@ func (store *MySQLStore) Exec(sql string, args ...interface{}) (sql.Result, erro
 	return store.DB.Exec(sql, args...)
 }
 
-func (store *MySQLStore) Close() {
+func (store *DBStore) Close() error {
+	if err := store.DB.Close(); err != nil {
+		return err
+	}
 	store.DB = nil
+	return nil
 }
 
-type MySQLTx struct {
-	*sql.Tx
-	debug   bool
-	slowlog time.Duration
+type DBTx struct {
+	tx           *sql.Tx
+	debug        bool
+	slowlog      time.Duration
+	err          error
+	rowsAffected int64
 }
 
-func (store *MySQLStore) BeginTx() (*MySQLTx, error) {
+func (store *DBStore) BeginTx() (*DBTx, error) {
 	tx, err := store.Begin()
 	if err != nil {
 		return nil, err
 	}
-	return &MySQLTx{tx, store.debug, store.slowlog}, nil
+
+	return &DBTx{
+		tx:      tx,
+		debug:   store.debug,
+		slowlog: store.slowlog,
+	}, nil
 }
 
-func (tx *MySQLTx) Query(sql string, args ...interface{}) (*sql.Rows, error) {
+func (tx *DBTx) Close() error {
+	if tx.err != nil {
+		return tx.tx.Rollback()
+	}
+	return tx.tx.Commit()
+}
+
+func (tx *DBTx) Query(sql string, args ...interface{}) (*sql.Rows, error) {
 	t1 := time.Now()
 	if tx.slowlog > 0 {
 		defer func(t time.Time) {
@@ -101,10 +124,12 @@ func (tx *MySQLTx) Query(sql string, args ...interface{}) (*sql.Rows, error) {
 	if tx.debug {
 		log.Println("DEBUG: ", sql, args)
 	}
-	return tx.Tx.Query(sql, args...)
+	result, err := tx.tx.Query(sql, args...)
+	tx.err = err
+	return result, tx.err
 }
 
-func (tx *MySQLTx) Exec(sql string, args ...interface{}) (sql.Result, error) {
+func (tx *DBTx) Exec(sql string, args ...interface{}) (sql.Result, error) {
 	t1 := time.Now()
 	if tx.slowlog > 0 {
 		defer func(t time.Time) {
@@ -117,5 +142,7 @@ func (tx *MySQLTx) Exec(sql string, args ...interface{}) (sql.Result, error) {
 	if tx.debug {
 		log.Println("DEBUG: ", sql, args)
 	}
-	return tx.Tx.Exec(sql, args...)
+	result, err := tx.tx.Exec(sql, args...)
+	tx.err = err
+	return result, tx.err
 }
