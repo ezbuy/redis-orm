@@ -35,6 +35,11 @@ func (obj *{{.Name}}) GetPrimaryKey() PrimaryKey {
 	return pk
 }
 
+func (obj *{{.Name}}) Validate() error {
+	validate := validator.New()
+	return validate.Struct(obj)
+}
+
 {{- if $obj.DbContains "redis"}}
 func (obj *{{.Name}}) GetIndexes() []string {
 	idx := []string{

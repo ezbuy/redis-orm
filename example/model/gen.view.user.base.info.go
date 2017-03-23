@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/ezbuy/redis-orm/orm"
+	"gopkg.in/go-playground/validator.v9"
 	"strings"
 	"time"
 )
@@ -14,6 +15,7 @@ var (
 	_ fmt.Formatter
 	_ strings.Reader
 	_ orm.VSet
+	_ validator.Validate
 )
 
 type UserBaseInfo struct {
@@ -62,6 +64,11 @@ func (obj *UserBaseInfo) GetPrimaryKey() PrimaryKey {
 	pk := UserBaseInfoMgr.NewPrimaryKey()
 	pk.Id = obj.Id
 	return pk
+}
+
+func (obj *UserBaseInfo) Validate() error {
+	validate := validator.New()
+	return validate.Struct(obj)
 }
 
 //! primary key

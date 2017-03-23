@@ -120,6 +120,8 @@ var _ = Describe("redis-orm.mysql", func() {
 			defer tx.Close()
 
 			mgr := UserDBMgr(tx)
+			user.Name = ""
+			log.Println("user validator =>", user.Validate())
 
 			//! create
 			n, err := mgr.Create(user)

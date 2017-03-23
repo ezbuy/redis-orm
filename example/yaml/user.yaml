@@ -6,8 +6,10 @@ User:
     - Id: int32
       flags: [primary, autoinc]
     - Name: string
+      validator: required
     - Mailbox: string
       comment: 邮箱
+      validator: required
     - Sex: bool
       flags: [index]
     - Age: int32

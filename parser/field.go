@@ -27,14 +27,15 @@ var (
 )
 
 type Field struct {
-	Name    string
-	Type    string
-	sqlType string
-	Size    int
-	Flags   set.Set
-	Attrs   map[string]string
-	Comment string
-	Obj     *MetaObject
+	Name      string
+	Type      string
+	sqlType   string
+	Size      int
+	Flags     set.Set
+	Attrs     map[string]string
+	Comment   string
+	Validator string
+	Obj       *MetaObject
 }
 
 func NewField() *Field {
@@ -307,6 +308,9 @@ func (f *Field) GetTag() string {
 			}
 		}
 	}
+	if f.Validator != "" {
+		tagstr = append(tagstr, fmt.Sprintf("validate:\"%s\"", f.Validator))
+	}
 	sortstr := sort.StringSlice(tagstr)
 	sort.Sort(sortstr)
 	if len(sortstr) != 0 {
@@ -338,6 +342,8 @@ func (f *Field) Read(data map[interface{}]interface{}) error {
 			f.sqlType = v.(string)
 		case "comment":
 			f.Comment = v.(string)
+		case "validator":
+			f.Validator = strings.ToLower(v.(string))
 		case "attrs":
 			attrs := make(map[string]string)
 			for ki, vi := range v.(map[interface{}]interface{}) {

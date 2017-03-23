@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/ezbuy/redis-orm/orm"
+	"gopkg.in/go-playground/validator.v9"
 	redis "gopkg.in/redis.v5"
 	"strings"
 	"time"
@@ -15,12 +16,13 @@ var (
 	_ fmt.Formatter
 	_ strings.Reader
 	_ orm.VSet
+	_ validator.Validate
 )
 
 type User struct {
 	Id          int32      `db:"id" json:"id"`
-	Name        string     `db:"name" json:"name"`
-	Mailbox     string     `db:"mailbox" json:"mailbox"`
+	Name        string     `db:"name" json:"name" validate:"required"`
+	Mailbox     string     `db:"mailbox" json:"mailbox" validate:"required"`
 	Sex         bool       `db:"sex" json:"sex"`
 	Age         int32      `db:"age" json:"age"`
 	Longitude   float64    `db:"longitude" json:"longitude"`
@@ -81,6 +83,11 @@ func (obj *User) GetPrimaryKey() PrimaryKey {
 	pk := UserMgr.NewPrimaryKey()
 	pk.Id = obj.Id
 	return pk
+}
+
+func (obj *User) Validate() error {
+	validate := validator.New()
+	return validate.Struct(obj)
 }
 func (obj *User) GetIndexes() []string {
 	idx := []string{
