@@ -33,7 +33,7 @@ model.UserDBMgr(db).RangeRevert(scope)
 
 //! fetch object 
 model.UserDBMgr(db).Fetch(id string) (*User, error)
-model.UserDBMgr(db).FetchByIds(ids []string) ([]*User, error)
+model.UserDBMgr(db).FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error)
 
 # redis
 model.RedisSetup(cf)
@@ -46,7 +46,7 @@ model.UserRedisMgr().RangeRevert(scope)
 
 //! fetch object 
 model.UserRedisMgr().Fetch(id string) (*User, error)
-model.UserRedisMgr().FetchByIds(ids []string) ([]*User, error)
+model.UserRedisMgr().FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error)
 
 
 ````
@@ -74,7 +74,7 @@ model.UserDBMgr(tx).Range(scope)
 model.UserDBMgr(tx).RangeRevert(scope)
 
 model.UserDBMgr(tx).Fetch(id string) (*User, error)
-model.UserDBMgr(tx).FetchByIds(ids []string) ([]*User, error)
+model.UserDBMgr(tx).FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error)
 
 # redis
 model.RedisSetup(cf)
