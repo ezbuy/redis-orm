@@ -69,6 +69,9 @@ func (m *_{{$obj.Name}}DBMgr) FetchBySQL(q string, args ... interface{}) (result
 					{{- end -}}
 				{{- end -}}
 			{{- end}}
+			{{- if $field.IsEncode}}
+			result.{{$field.Name}} = orm.Decode(result.{{$field.Name}})
+			{{- end}}
 		{{end}}
 
 		results = append(results, &result)

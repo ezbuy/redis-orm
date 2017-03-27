@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"encoding/base64"
 )
 
 func TimeToLocalTime(c time.Time) string {
@@ -228,4 +230,16 @@ func StringScan(str string, v interface{}) error {
 			"can't unmarshal %T (consider implementing BinaryUnmarshaler)", v)
 	}
 
+}
+
+func Encode(src string) string {
+	return base64.StdEncoding.EncodeToString([]byte(src))
+}
+
+func Decode(src string) string {
+	decoded, err := base64.StdEncoding.DecodeString(src)
+	if err != nil {
+		panic(err)
+	}
+	return string(decoded)
 }

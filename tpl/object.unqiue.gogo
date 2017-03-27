@@ -13,7 +13,11 @@ func (u *{{$unique.Name}}) Key() string {
 	strs := []string{
 		{{- range $j, $field := $unique.Fields}}
 		"{{$field.Name}}",
-		fmt.Sprint(u.{{$field.Name}}),
+			{{- if $field.IsEncode}}
+			orm.Encode(fmt.Sprint(u.{{$field.Name}})),
+			{{- else}}
+			fmt.Sprint(u.{{$field.Name}}),
+			{{- end}}	
 		{{- end}}
 	}
 	return fmt.Sprintf("%s", strings.Join(strs, ":"))

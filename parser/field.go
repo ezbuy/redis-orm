@@ -112,6 +112,13 @@ func (f *Field) IsFullText() bool {
 	return f.Flags.Contains("fulltext")
 }
 
+func (f *Field) IsEncode() bool {
+	if f.IsString() {
+		return f.Flags.Contains("encode") || f.Flags.Contains("base64")
+	}
+	return false
+}
+
 func (f *Field) IsNumber() bool {
 	if transform := f.GetTransform(); transform != nil {
 		if strings.HasPrefix(transform.TypeOrigin, "uint") ||

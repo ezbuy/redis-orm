@@ -20,7 +20,11 @@ func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
 	uk_key_{{$i}} := []string{
 		{{- range $j, $field:= $unique.Fields}}
 		"{{$field.Name}}",
-		fmt.Sprint({{$field.GetTransformValue "obj."}}),
+			{{- if $field.IsEncode}}
+			orm.Encode(fmt.Sprint({{$field.GetTransformValue "obj."}})),
+			{{- else}}
+			fmt.Sprint({{$field.GetTransformValue "obj."}}),
+			{{- end}}	
 		{{- end}}
 	}
 	uk_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline)
@@ -35,7 +39,11 @@ func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
 	idx_key_{{$i}} := []string{
 		{{- range $j, $field:= $index.Fields}}
 		"{{$field.Name}}",
-		fmt.Sprint({{$field.GetTransformValue "obj."}}),
+			{{- if $field.IsEncode}}
+			orm.Encode(fmt.Sprint({{$field.GetTransformValue "obj."}})),
+			{{- else}}
+			fmt.Sprint({{$field.GetTransformValue "obj."}}),
+			{{- end}}
 		{{- end}}
 	}
 	idx_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline)
@@ -55,7 +63,11 @@ func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
 				"{{$field.Name}}",
 			{{- else}}
 				"{{$field.Name}}",
+				{{- if $field.IsEncode}}
+				orm.Encode(fmt.Sprint({{$field.GetTransformValue "obj."}})),
+				{{- else}}
 				fmt.Sprint({{$field.GetTransformValue "obj."}}),
+				{{- end}}
 			{{- end}}
 		{{- end}}
 	}
@@ -113,12 +125,20 @@ func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipelin
 	{{- range $i, $field := $obj.Fields}}
 		{{- if and $field.IsNullable $field.IsNeedTransform}}
 			if obj.{{$field.Name}} != nil {
+				{{- if $field.IsEncode}}
+				pipe.HSet(keyOfObject(obj, pk.Key()), "{{$field.Name}}", orm.Encode(fmt.Sprint({{$field.GetTransformValue "obj."}})))
+				{{- else}}
 				pipe.HSet(keyOfObject(obj, pk.Key()), "{{$field.Name}}", fmt.Sprint({{$field.GetTransformValue "obj."}}))
+				{{- end}}
 			} else {
 				pipe.HSet(keyOfObject(obj, pk.Key()), "{{$field.Name}}", "nil")
 			}
 		{{- else}}
+			{{- if $field.IsEncode}}
+			pipe.HSet(keyOfObject(obj, pk.Key()), "{{$field.Name}}", orm.Encode(fmt.Sprint({{$field.GetTransformValue "obj."}})))
+			{{- else}}
 			pipe.HSet(keyOfObject(obj, pk.Key()), "{{$field.Name}}", fmt.Sprint({{$field.GetTransformValue "obj."}}))
+			{{- end}}
 		{{- end}}	
 	{{- end}}
 
@@ -128,7 +148,11 @@ func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipelin
 	uk_key_{{$i}} := []string{
 		{{- range $j, $field:= $unique.Fields}}
 		"{{$field.Name}}",
-		fmt.Sprint({{$field.GetTransformValue "obj."}}),
+			{{- if $field.IsEncode}}
+			orm.Encode(fmt.Sprint({{$field.GetTransformValue "obj."}})),
+			{{- else}}
+			fmt.Sprint({{$field.GetTransformValue "obj."}}),
+			{{- end}}
 		{{- end}}
 	}
 	uk_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline)
@@ -145,7 +169,11 @@ func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipelin
 	idx_key_{{$i}} := []string{
 		{{- range $j, $field:= $index.Fields}}
 		"{{$field.Name}}",
-		fmt.Sprint({{$field.GetTransformValue "obj."}}),
+			{{- if $field.IsEncode}}
+			orm.Encode(fmt.Sprint({{$field.GetTransformValue "obj."}})),
+			{{- else}}
+			fmt.Sprint({{$field.GetTransformValue "obj."}}),
+			{{- end}}
 		{{- end}}
 	}
 	idx_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline)
@@ -165,7 +193,11 @@ func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipelin
 				"{{$field.Name}}",
 			{{- else}}
 				"{{$field.Name}}",
+				{{- if $field.IsEncode}}
+				orm.Encode(fmt.Sprint({{$field.GetTransformValue "obj."}})),
+				{{- else}}
 				fmt.Sprint({{$field.GetTransformValue "obj."}}),
+				{{- end}}
 			{{- end}}
 		{{- end}}
 	}
