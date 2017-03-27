@@ -22,7 +22,11 @@ func (u *{{$rg.Name}}) Key() string {
 		{{- range $j, $field := $rg.Fields}}
 			{{- if ne (add $j 1) (len $rg.Fields)}}
 				"{{$field.Name}}",
+				{{- if $field.IsEncode}}
+				orm.Encode(fmt.Sprint(u.{{$field.Name}})),
+				{{- else}}
 				fmt.Sprint(u.{{$field.Name}}),
+				{{- end}}	
 			{{- end}}
 		{{- end}}
 		"{{$rg.LastField.Name}}",

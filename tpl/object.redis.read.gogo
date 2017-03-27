@@ -182,6 +182,9 @@ func (m *_{{$obj.Name}}RedisMgr) Fetch(pk PrimaryKey) (*{{$obj.Name}}, error) {
 				return nil, err
 			}
 		{{- end}}
+		{{- if $field.IsEncode}}
+			obj.{{$field.Name}} = orm.Decode(obj.{{$field.Name}})
+		{{- end}}
 	{{- end}}
 	return obj, nil
 }
@@ -233,11 +236,14 @@ func (m *_{{$obj.Name}}RedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*{{$obj
 						return nil, err
 					}
 					obj.{{$field.Name}} = {{- printf $field.GetTransform.ConvertTo (printf "val%d" $i)}}
-				{{- end}}
+				{{- end}}				
 			{{- else}}
 				if err := m.StringScan(strs[{{$i}}].(string), &obj.{{$field.Name}}); err != nil {
 					return nil, err
 				}
+			{{- end}}
+			{{- if $field.IsEncode}}
+				obj.{{$field.Name}} = orm.Decode(obj.{{$field.Name}})
 			{{- end}}
 		{{- end}}
 		objs = append(objs, obj)

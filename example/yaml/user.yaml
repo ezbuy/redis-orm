@@ -20,7 +20,7 @@ User:
       flags: [nullable]
     - Password: string
     - HeadUrl: string
-      flags: [nullable]
+      flags: [nullable, encode]
     - Status: int32
     - CreatedAt: timeint
     - UpdatedAt: timeint

@@ -612,6 +612,7 @@ func (m *_UserDBMgr) FetchBySQL(q string, args ...interface{}) (results []interf
 		result.Description = Description.String
 
 		result.HeadUrl = HeadUrl.String
+		result.HeadUrl = orm.Decode(result.HeadUrl)
 
 		result.CreatedAt = time.Unix(CreatedAt, 0)
 		result.UpdatedAt = time.Unix(UpdatedAt, 0)
@@ -806,7 +807,7 @@ func (m *_UserDBMgr) BatchCreate(objs []*User) (int64, error) {
 		values = append(values, obj.Latitude)
 		values = append(values, obj.Description)
 		values = append(values, obj.Password)
-		values = append(values, obj.HeadUrl)
+		values = append(values, orm.Encode(obj.HeadUrl))
 		values = append(values, obj.Status)
 		values = append(values, obj.CreatedAt.Unix())
 		values = append(values, obj.UpdatedAt.Unix())
@@ -856,7 +857,7 @@ func (m *_UserDBMgr) Create(obj *User) (int64, error) {
 	values = append(values, obj.Latitude)
 	values = append(values, obj.Description)
 	values = append(values, obj.Password)
-	values = append(values, obj.HeadUrl)
+	values = append(values, orm.Encode(obj.HeadUrl))
 	values = append(values, obj.Status)
 	values = append(values, obj.CreatedAt.Unix())
 	values = append(values, obj.UpdatedAt.Unix())
@@ -905,7 +906,7 @@ func (m *_UserDBMgr) Update(obj *User) (int64, error) {
 	values = append(values, obj.Latitude)
 	values = append(values, obj.Description)
 	values = append(values, obj.Password)
-	values = append(values, obj.HeadUrl)
+	values = append(values, orm.Encode(obj.HeadUrl))
 	values = append(values, obj.Status)
 	values = append(values, obj.CreatedAt.Unix())
 	values = append(values, obj.UpdatedAt.Unix())
@@ -1233,6 +1234,7 @@ func (m *_UserRedisMgr) Fetch(pk PrimaryKey) (*User, error) {
 	if err := m.StringScan(strs[9].(string), &obj.HeadUrl); err != nil {
 		return nil, err
 	}
+	obj.HeadUrl = orm.Decode(obj.HeadUrl)
 	if err := m.StringScan(strs[10].(string), &obj.Status); err != nil {
 		return nil, err
 	}
@@ -1328,6 +1330,7 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 		if err := m.StringScan(strs[9].(string), &obj.HeadUrl); err != nil {
 			return nil, err
 		}
+		obj.HeadUrl = orm.Decode(obj.HeadUrl)
 		if err := m.StringScan(strs[10].(string), &obj.Status); err != nil {
 			return nil, err
 		}
@@ -1475,7 +1478,7 @@ func (m *_UserRedisMgr) addToPipeline(pipe *_UserRedisPipeline, obj *User) error
 	pipe.HSet(keyOfObject(obj, pk.Key()), "Latitude", fmt.Sprint(obj.Latitude))
 	pipe.HSet(keyOfObject(obj, pk.Key()), "Description", fmt.Sprint(obj.Description))
 	pipe.HSet(keyOfObject(obj, pk.Key()), "Password", fmt.Sprint(obj.Password))
-	pipe.HSet(keyOfObject(obj, pk.Key()), "HeadUrl", fmt.Sprint(obj.HeadUrl))
+	pipe.HSet(keyOfObject(obj, pk.Key()), "HeadUrl", orm.Encode(fmt.Sprint(obj.HeadUrl)))
 	pipe.HSet(keyOfObject(obj, pk.Key()), "Status", fmt.Sprint(obj.Status))
 	pipe.HSet(keyOfObject(obj, pk.Key()), "CreatedAt", fmt.Sprint(obj.CreatedAt.Unix()))
 	pipe.HSet(keyOfObject(obj, pk.Key()), "UpdatedAt", fmt.Sprint(obj.UpdatedAt.Unix()))

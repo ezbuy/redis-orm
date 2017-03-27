@@ -113,8 +113,10 @@ func (m *_{{$obj.Name}}DBMgr) FetchBySQL(q string, args ... interface{}) (result
 					{{- end -}}
 				{{- end -}}
 			{{- end}}
+			{{- if $field.IsEncode}}
+			result.{{$field.Name}} = orm.Decode(result.{{$field.Name}})
+			{{- end}}
 		{{end}}
-
 		results = append(results, &result)
 	}
 	if err = rows.Err() ;err != nil {
@@ -307,6 +309,9 @@ func (m *_{{$obj.Name}}DBMgr) queryLimit(where string, limit int, args ...interf
 					{{$field.Name}}.{{$field.NullSQLTypeValue}}
 					{{- end -}}
 				{{- end -}}
+			{{- end}}
+			{{- if $field.IsEncode}}
+			result.{{$field.Name}} = orm.Decode(result.{{$field.Name}})
 			{{- end}}
 		{{end}}
 		results = append(results, result)
