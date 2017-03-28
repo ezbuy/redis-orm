@@ -164,7 +164,7 @@ func (m *_{{$obj.Name}}RedisMgr) Fetch(pk PrimaryKey) (*{{$obj.Name}}, error) {
 					obj.{{$field.Name}} = nil	
 				} else {
 					var val{{$i}} {{$field.GetTransform.TypeOrigin}}
-					if err := m.StringScan(strs[{{$i}}].(string), &val{{$i}}); err != nil {
+					if err := orm.StringScan(strs[{{$i}}].(string), &val{{$i}}); err != nil {
 						return nil, err
 					}
 					{{$field.Name}}Value := {{- printf $field.GetTransform.ConvertTo (printf "val%d" $i)}}
@@ -172,13 +172,13 @@ func (m *_{{$obj.Name}}RedisMgr) Fetch(pk PrimaryKey) (*{{$obj.Name}}, error) {
 				}				
 			{{- else}}
 				var val{{$i}} {{$field.GetTransform.TypeOrigin}}
-				if err := m.StringScan(strs[{{$i}}].(string), &val{{$i}}); err != nil {
+				if err := orm.StringScan(strs[{{$i}}].(string), &val{{$i}}); err != nil {
 					return nil, err
 				}
 				obj.{{$field.Name}} = {{- printf $field.GetTransform.ConvertTo (printf "val%d" $i)}}
 			{{- end}}
 		{{- else}}
-			if err := m.StringScan(strs[{{$i}}].(string), &obj.{{$field.Name}}); err != nil {
+			if err := orm.StringScan(strs[{{$i}}].(string), &obj.{{$field.Name}}); err != nil {
 				return nil, err
 			}
 		{{- end}}
@@ -224,7 +224,7 @@ func (m *_{{$obj.Name}}RedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*{{$obj
 						obj.{{$field.Name}} = nil	
 					} else {
 						var val{{$i}} {{$field.GetTransform.TypeOrigin}}
-						if err := m.StringScan(strs[{{$i}}].(string), &val{{$i}}); err != nil {
+						if err := orm.StringScan(strs[{{$i}}].(string), &val{{$i}}); err != nil {
 							return nil, err
 						}
 						{{$field.Name}}Value := {{- printf $field.GetTransform.ConvertTo (printf "val%d" $i)}}
@@ -232,13 +232,13 @@ func (m *_{{$obj.Name}}RedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*{{$obj
 					}				
 				{{- else}}
 					var val{{$i}} {{$field.GetTransform.TypeOrigin}}
-					if err := m.StringScan(strs[{{$i}}].(string), &val{{$i}}); err != nil {
+					if err := orm.StringScan(strs[{{$i}}].(string), &val{{$i}}); err != nil {
 						return nil, err
 					}
 					obj.{{$field.Name}} = {{- printf $field.GetTransform.ConvertTo (printf "val%d" $i)}}
 				{{- end}}				
 			{{- else}}
-				if err := m.StringScan(strs[{{$i}}].(string), &obj.{{$field.Name}}); err != nil {
+				if err := orm.StringScan(strs[{{$i}}].(string), &obj.{{$field.Name}}); err != nil {
 					return nil, err
 				}
 			{{- end}}

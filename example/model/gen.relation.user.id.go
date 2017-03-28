@@ -80,7 +80,7 @@ func (m *_UserIdRedisMgr) ListLPop(key string) (*UserId, error) {
 	}
 
 	relation := m.NewUserId(key)
-	if err := m.StringScan(str, &relation.Value); err != nil {
+	if err := orm.StringScan(str, &relation.Value); err != nil {
 		return nil, err
 	}
 
@@ -94,7 +94,7 @@ func (m *_UserIdRedisMgr) ListRPop(key string) (*UserId, error) {
 	}
 
 	relation := m.NewUserId(key)
-	if err := m.StringScan(str, &relation.Value); err != nil {
+	if err := orm.StringScan(str, &relation.Value); err != nil {
 		return nil, err
 	}
 
@@ -110,7 +110,7 @@ func (m *_UserIdRedisMgr) ListLRange(key string, start, stop int64) ([]*UserId, 
 	relations := make([]*UserId, 0, len(strs))
 	for _, str := range strs {
 		relation := m.NewUserId(key)
-		if err := m.StringScan(str, &relation.Value); err != nil {
+		if err := orm.StringScan(str, &relation.Value); err != nil {
 			return nil, err
 		}
 		relations = append(relations, relation)
