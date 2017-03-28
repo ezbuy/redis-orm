@@ -366,12 +366,6 @@ func (f *Field) Read(data map[interface{}]interface{}) error {
 		}
 	}
 	//! single field primary adjust for redis ops
-	if f.IsPrimary() {
-		f.Flags.Add("unique")
-		if f.IsNumber() {
-			f.Flags.Add("range")
-		}
-	}
 	if f.IsUnique() {
 		index := NewIndex(f.Obj)
 		index.FieldNames = []string{f.Name}

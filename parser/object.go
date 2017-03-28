@@ -223,6 +223,12 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 			if err := o.primary.build(); err != nil {
 				return fmt.Errorf("object (%s) %s", o.Name, err.Error())
 			}
+
+			if o.primary.IsNumber() {
+				index := NewIndex(o)
+				index.FieldNames = o.primary.FieldNames
+				o.ranges = append(o.ranges, index)
+			}
 		}
 	}
 
