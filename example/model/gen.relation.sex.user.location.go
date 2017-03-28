@@ -86,7 +86,7 @@ func (m *_SexUserLocationRedisMgr) LocationRadius(key string, longitude float64,
 		relation := m.NewSexUserLocation(key)
 		relation.Longitude = location.Longitude
 		relation.Latitude = location.Latitude
-		if err := m.StringScan(location.Name, &relation.Value); err != nil {
+		if err := orm.StringScan(location.Name, &relation.Value); err != nil {
 			return nil, err
 		}
 		relations = append(relations, relation)

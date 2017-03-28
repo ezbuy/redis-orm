@@ -19,12 +19,12 @@ func (m *_{{$relation.Name}}RedisMgr) ListLPop(key string) (*{{$relation.Name}},
 	relation := m.New{{$relation.Name}}(key)
 	{{- if $relation.ValueField.IsNeedTransform}}
 		var val {{$relation.ValueField.GetTransform.TypeOrigin}}
-		if err := m.StringScan(str, &val); err != nil {
+		if err := orm.StringScan(str, &val); err != nil {
 			return nil, err
 		}
 		relation.{{$relation.ValueField.Name}} = {{- printf $relation.ValueField.GetTransform.ConvertTo "val"}}
 	{{- else}}
-		if err := m.StringScan(str, &relation.Value); err != nil {
+		if err := orm.StringScan(str, &relation.Value); err != nil {
 			return nil, err
 		}
 	{{- end}}
@@ -41,12 +41,12 @@ func (m *_{{$relation.Name}}RedisMgr) ListRPop(key string) (*{{$relation.Name}},
 	relation := m.New{{$relation.Name}}(key)
 	{{- if $relation.ValueField.IsNeedTransform}}
 		var val {{$relation.ValueField.GetTransform.TypeOrigin}}
-		if err := m.StringScan(str, &val); err != nil {
+		if err := orm.StringScan(str, &val); err != nil {
 			return nil, err
 		}
 		relation.{{$relation.ValueField.Name}} = {{- printf $relation.ValueField.GetTransform.ConvertTo "val"}}
 	{{- else}}
-		if err := m.StringScan(str, &relation.Value); err != nil {
+		if err := orm.StringScan(str, &relation.Value); err != nil {
 			return nil, err
 		}
 	{{- end}}
@@ -65,12 +65,12 @@ func (m *_{{$relation.Name}}RedisMgr) ListLRange(key string, start, stop int64) 
 		relation := m.New{{$relation.Name}}(key)
 		{{- if $relation.ValueField.IsNeedTransform}}
 			var val {{$relation.ValueField.GetTransform.TypeOrigin}}
-			if err := m.StringScan(str, &val); err != nil {
+			if err := orm.StringScan(str, &val); err != nil {
 				return nil, err
 			}
 			relation.{{$relation.ValueField.Name}} = {{- printf $relation.ValueField.GetTransform.ConvertTo "val"}}
 		{{- else}}
-		if err := m.StringScan(str, &relation.Value); err != nil {
+		if err := orm.StringScan(str, &relation.Value); err != nil {
 			return nil, err
 		}
 		{{- end}}

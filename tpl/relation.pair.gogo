@@ -19,12 +19,12 @@ func (m *_{{$relation.Name}}RedisMgr) PairGet(key string) (*{{$relation.Name}}, 
 	obj := m.New{{$relation.Name}}(key)
 	{{- if $relation.ValueField.IsNeedTransform}}
 		var val {{$relation.ValueField.GetTransform.TypeOrigin}}
-		if err := m.StringScan(str, &val); err != nil {
+		if err := orm.StringScan(str, &val); err != nil {
 			return nil, err
 		}
 		obj.{{$relation.ValueField.Name}} = {{- printf $relation.ValueField.GetTransform.ConvertTo "val"}}
 	{{- else}}
-		if err := m.StringScan(str, &obj.Value); err != nil {
+		if err := orm.StringScan(str, &obj.Value); err != nil {
 			return nil, err
 		}
 	{{- end}}

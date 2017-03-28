@@ -35,17 +35,21 @@ type RedisConfig struct {
 }
 
 func RedisSetUp(cf *RedisConfig) {
-	store, err := orm.NewRedisStore(cf.Host, cf.Port, cf.Password, 0)
+	store, err := orm.NewRedisClient(cf.Host, cf.Port, cf.Password, 0)
 	if err != nil {
 		panic(err)
 	}
 	_redis_store = store
 }
 
+func Redis() *orm.RedisStore {
+	return _redis_store
+}
+
 //! util functions
 func keyOfObject(obj Object, keys ...string) string {
-	suffix := strings.Join(keys, ":")
-	if suffix != "" {
+	if len(keys) > 0 {
+		suffix := strings.Join(keys, ":")
 		return fmt.Sprintf("%s:%s:object:%s", obj.GetStoreType(), obj.GetClassName(), suffix)
 	}
 	return keyOfClass(obj)
@@ -70,48 +74,48 @@ func keyOfClass(obj Object, keys ...string) string {
 }
 
 func pairOfClass(class string, keys ...string) string {
-	suffix := strings.Join(keys, ":")
-	if suffix != "" {
+	if len(keys) > 0 {
+		suffix := strings.Join(keys, ":")
 		return fmt.Sprintf("%s:%s:%s", PAIR, class, suffix)
 	}
 	return fmt.Sprintf("%s:%s", PAIR, class)
 }
 
 func hashOfClass(class string, keys ...string) string {
-	suffix := strings.Join(keys, ":")
-	if suffix != "" {
+	if len(keys) > 0 {
+		suffix := strings.Join(keys, ":")
 		return fmt.Sprintf("%s:%s:%s", HASH, class, suffix)
 	}
 	return fmt.Sprintf("%s:%s", HASH, class)
 }
 
 func setOfClass(class string, keys ...string) string {
-	suffix := strings.Join(keys, ":")
-	if suffix != "" {
+	if len(keys) > 0 {
+		suffix := strings.Join(keys, ":")
 		return fmt.Sprintf("%s:%s:%s", SET, class, suffix)
 	}
 	return fmt.Sprintf("%s:%s", SET, class)
 }
 
 func zsetOfClass(class string, keys ...string) string {
-	suffix := strings.Join(keys, ":")
-	if suffix != "" {
+	if len(keys) > 0 {
+		suffix := strings.Join(keys, ":")
 		return fmt.Sprintf("%s:%s:%s", ZSET, class, suffix)
 	}
 	return fmt.Sprintf("%s:%s", ZSET, class)
 }
 
 func geoOfClass(class string, keys ...string) string {
-	suffix := strings.Join(keys, ":")
-	if suffix != "" {
+	if len(keys) > 0 {
+		suffix := strings.Join(keys, ":")
 		return fmt.Sprintf("%s:%s:%s", GEO, class, suffix)
 	}
 	return fmt.Sprintf("%s:%s", GEO, class)
 }
 
 func listOfClass(class string, keys ...string) string {
-	suffix := strings.Join(keys, ":")
-	if suffix != "" {
+	if len(keys) > 0 {
+		suffix := strings.Join(keys, ":")
 		return fmt.Sprintf("%s:%s:%s", LIST, class, suffix)
 	}
 	return fmt.Sprintf("%s:%s", LIST, class)

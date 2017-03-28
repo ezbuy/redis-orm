@@ -4,27 +4,15 @@ type _{{$obj.Name}}RedisMgr struct {
 	*orm.RedisStore
 }
 
-func (m *_{{$obj.Name}}Mgr) Redis(cf *RedisConfig) *_{{$obj.Name}}RedisMgr {
-	if cf == nil {
-		return {{$obj.Name}}RedisMgr()
-	}
-
-	mgr, err := New{{$obj.Name}}RedisMgr(cf)
-	if err != nil {
-		panic(err)
-	}
-	return mgr
+func (m *_{{$obj.Name}}Mgr) Redis(store *orm.RedisStore) *_{{$obj.Name}}RedisMgr {
+	return {{$obj.Name}}RedisMgr(store)
 }
 
-func {{$obj.Name}}RedisMgr() *_{{$obj.Name}}RedisMgr {	
-	return &_{{$obj.Name}}RedisMgr{_redis_store}
+func {{$obj.Name}}RedisMgr(store *orm.RedisStore) *_{{$obj.Name}}RedisMgr {
+	if store == nil {
+		panic(fmt.Errorf("{{$obj.Name}}RedisMgr init need redis store"))
+	}
+	return &_{{$obj.Name}}RedisMgr{RedisStore: store}
 }
 
-func New{{$obj.Name}}RedisMgr(cf *RedisConfig) (*_{{$obj.Name}}RedisMgr, error) {
-	store, err := orm.NewRedisStore(cf.Host, cf.Port, cf.Password, 0)
-	if err != nil {
-		return nil, err
-	}
-	return &_{{$obj.Name}}RedisMgr{store}, nil
-}
 {{end}}

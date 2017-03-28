@@ -965,28 +965,15 @@ type _UserRedisMgr struct {
 	*orm.RedisStore
 }
 
-func (m *_UserMgr) Redis(cf *RedisConfig) *_UserRedisMgr {
-	if cf == nil {
-		return UserRedisMgr()
-	}
-
-	mgr, err := NewUserRedisMgr(cf)
-	if err != nil {
-		panic(err)
-	}
-	return mgr
+func (m *_UserMgr) Redis(store *orm.RedisStore) *_UserRedisMgr {
+	return UserRedisMgr(store)
 }
 
-func UserRedisMgr() *_UserRedisMgr {
-	return &_UserRedisMgr{_redis_store}
-}
-
-func NewUserRedisMgr(cf *RedisConfig) (*_UserRedisMgr, error) {
-	store, err := orm.NewRedisStore(cf.Host, cf.Port, cf.Password, 0)
-	if err != nil {
-		return nil, err
+func UserRedisMgr(store *orm.RedisStore) *_UserRedisMgr {
+	if store == nil {
+		panic(fmt.Errorf("UserRedisMgr init need redis store"))
 	}
-	return &_UserRedisMgr{store}, nil
+	return &_UserRedisMgr{RedisStore: store}
 }
 
 //! pipeline
@@ -1204,47 +1191,47 @@ func (m *_UserRedisMgr) Fetch(pk PrimaryKey) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := m.StringScan(strs[0].(string), &obj.Id); err != nil {
+	if err := orm.StringScan(strs[0].(string), &obj.Id); err != nil {
 		return nil, err
 	}
-	if err := m.StringScan(strs[1].(string), &obj.Name); err != nil {
+	if err := orm.StringScan(strs[1].(string), &obj.Name); err != nil {
 		return nil, err
 	}
-	if err := m.StringScan(strs[2].(string), &obj.Mailbox); err != nil {
+	if err := orm.StringScan(strs[2].(string), &obj.Mailbox); err != nil {
 		return nil, err
 	}
-	if err := m.StringScan(strs[3].(string), &obj.Sex); err != nil {
+	if err := orm.StringScan(strs[3].(string), &obj.Sex); err != nil {
 		return nil, err
 	}
-	if err := m.StringScan(strs[4].(string), &obj.Age); err != nil {
+	if err := orm.StringScan(strs[4].(string), &obj.Age); err != nil {
 		return nil, err
 	}
-	if err := m.StringScan(strs[5].(string), &obj.Longitude); err != nil {
+	if err := orm.StringScan(strs[5].(string), &obj.Longitude); err != nil {
 		return nil, err
 	}
-	if err := m.StringScan(strs[6].(string), &obj.Latitude); err != nil {
+	if err := orm.StringScan(strs[6].(string), &obj.Latitude); err != nil {
 		return nil, err
 	}
-	if err := m.StringScan(strs[7].(string), &obj.Description); err != nil {
+	if err := orm.StringScan(strs[7].(string), &obj.Description); err != nil {
 		return nil, err
 	}
-	if err := m.StringScan(strs[8].(string), &obj.Password); err != nil {
+	if err := orm.StringScan(strs[8].(string), &obj.Password); err != nil {
 		return nil, err
 	}
-	if err := m.StringScan(strs[9].(string), &obj.HeadUrl); err != nil {
+	if err := orm.StringScan(strs[9].(string), &obj.HeadUrl); err != nil {
 		return nil, err
 	}
 	obj.HeadUrl = orm.Decode(obj.HeadUrl)
-	if err := m.StringScan(strs[10].(string), &obj.Status); err != nil {
+	if err := orm.StringScan(strs[10].(string), &obj.Status); err != nil {
 		return nil, err
 	}
 	var val11 int64
-	if err := m.StringScan(strs[11].(string), &val11); err != nil {
+	if err := orm.StringScan(strs[11].(string), &val11); err != nil {
 		return nil, err
 	}
 	obj.CreatedAt = time.Unix(val11, 0)
 	var val12 int64
-	if err := m.StringScan(strs[12].(string), &val12); err != nil {
+	if err := orm.StringScan(strs[12].(string), &val12); err != nil {
 		return nil, err
 	}
 	obj.UpdatedAt = time.Unix(val12, 0)
@@ -1252,7 +1239,7 @@ func (m *_UserRedisMgr) Fetch(pk PrimaryKey) (*User, error) {
 		obj.DeletedAt = nil
 	} else {
 		var val13 int64
-		if err := m.StringScan(strs[13].(string), &val13); err != nil {
+		if err := orm.StringScan(strs[13].(string), &val13); err != nil {
 			return nil, err
 		}
 		DeletedAtValue := time.Unix(val13, 0)
@@ -1300,47 +1287,47 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 		}
 
 		obj := UserMgr.NewUser()
-		if err := m.StringScan(strs[0].(string), &obj.Id); err != nil {
+		if err := orm.StringScan(strs[0].(string), &obj.Id); err != nil {
 			return nil, err
 		}
-		if err := m.StringScan(strs[1].(string), &obj.Name); err != nil {
+		if err := orm.StringScan(strs[1].(string), &obj.Name); err != nil {
 			return nil, err
 		}
-		if err := m.StringScan(strs[2].(string), &obj.Mailbox); err != nil {
+		if err := orm.StringScan(strs[2].(string), &obj.Mailbox); err != nil {
 			return nil, err
 		}
-		if err := m.StringScan(strs[3].(string), &obj.Sex); err != nil {
+		if err := orm.StringScan(strs[3].(string), &obj.Sex); err != nil {
 			return nil, err
 		}
-		if err := m.StringScan(strs[4].(string), &obj.Age); err != nil {
+		if err := orm.StringScan(strs[4].(string), &obj.Age); err != nil {
 			return nil, err
 		}
-		if err := m.StringScan(strs[5].(string), &obj.Longitude); err != nil {
+		if err := orm.StringScan(strs[5].(string), &obj.Longitude); err != nil {
 			return nil, err
 		}
-		if err := m.StringScan(strs[6].(string), &obj.Latitude); err != nil {
+		if err := orm.StringScan(strs[6].(string), &obj.Latitude); err != nil {
 			return nil, err
 		}
-		if err := m.StringScan(strs[7].(string), &obj.Description); err != nil {
+		if err := orm.StringScan(strs[7].(string), &obj.Description); err != nil {
 			return nil, err
 		}
-		if err := m.StringScan(strs[8].(string), &obj.Password); err != nil {
+		if err := orm.StringScan(strs[8].(string), &obj.Password); err != nil {
 			return nil, err
 		}
-		if err := m.StringScan(strs[9].(string), &obj.HeadUrl); err != nil {
+		if err := orm.StringScan(strs[9].(string), &obj.HeadUrl); err != nil {
 			return nil, err
 		}
 		obj.HeadUrl = orm.Decode(obj.HeadUrl)
-		if err := m.StringScan(strs[10].(string), &obj.Status); err != nil {
+		if err := orm.StringScan(strs[10].(string), &obj.Status); err != nil {
 			return nil, err
 		}
 		var val11 int64
-		if err := m.StringScan(strs[11].(string), &val11); err != nil {
+		if err := orm.StringScan(strs[11].(string), &val11); err != nil {
 			return nil, err
 		}
 		obj.CreatedAt = time.Unix(val11, 0)
 		var val12 int64
-		if err := m.StringScan(strs[12].(string), &val12); err != nil {
+		if err := orm.StringScan(strs[12].(string), &val12); err != nil {
 			return nil, err
 		}
 		obj.UpdatedAt = time.Unix(val12, 0)
@@ -1348,7 +1335,7 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 			obj.DeletedAt = nil
 		} else {
 			var val13 int64
-			if err := m.StringScan(strs[13].(string), &val13); err != nil {
+			if err := orm.StringScan(strs[13].(string), &val13); err != nil {
 				return nil, err
 			}
 			DeletedAtValue := time.Unix(val13, 0)
@@ -1658,7 +1645,7 @@ func (m *_MailboxPasswordOfUserUKRelationRedisMgr) PairGet(key string) (*Mailbox
 	}
 
 	obj := m.NewMailboxPasswordOfUserUKRelation(key)
-	if err := m.StringScan(str, &obj.Value); err != nil {
+	if err := orm.StringScan(str, &obj.Value); err != nil {
 		return nil, err
 	}
 	return obj, nil
@@ -1752,7 +1739,7 @@ func (m *_IdOfUserUKRelationRedisMgr) PairGet(key string) (*IdOfUserUKRelation, 
 	}
 
 	obj := m.NewIdOfUserUKRelation(key)
-	if err := m.StringScan(str, &obj.Value); err != nil {
+	if err := orm.StringScan(str, &obj.Value); err != nil {
 		return nil, err
 	}
 	return obj, nil
@@ -1850,7 +1837,7 @@ func (m *_SexOfUserIDXRelationRedisMgr) SetGet(key string) ([]*SexOfUserIDXRelat
 	relations := make([]*SexOfUserIDXRelation, 0, len(strs))
 	for _, str := range strs {
 		relation := m.NewSexOfUserIDXRelation(key)
-		if err := m.StringScan(str, &relation.Value); err != nil {
+		if err := orm.StringScan(str, &relation.Value); err != nil {
 			return nil, err
 		}
 		relations = append(relations, relation)
@@ -1959,7 +1946,7 @@ func (m *_IdOfUserRNGRelationRedisMgr) ZSetRange(key string, min, max int64) ([]
 	relations := make([]*IdOfUserRNGRelation, 0, len(strs))
 	for _, str := range strs {
 		relation := m.NewIdOfUserRNGRelation(key)
-		if err := m.StringScan(str, &relation.Value); err != nil {
+		if err := orm.StringScan(str, &relation.Value); err != nil {
 			return nil, err
 		}
 		relations = append(relations, relation)
@@ -1976,7 +1963,7 @@ func (m *_IdOfUserRNGRelationRedisMgr) ZSetRevertRange(key string, min, max int6
 	relations := make([]*IdOfUserRNGRelation, 0, len(strs))
 	for _, str := range strs {
 		relation := m.NewIdOfUserRNGRelation(key)
-		if err := m.StringScan(str, &relation.Value); err != nil {
+		if err := orm.StringScan(str, &relation.Value); err != nil {
 			return nil, err
 		}
 		relations = append(relations, relation)
@@ -2087,7 +2074,7 @@ func (m *_AgeOfUserRNGRelationRedisMgr) ZSetRange(key string, min, max int64) ([
 	relations := make([]*AgeOfUserRNGRelation, 0, len(strs))
 	for _, str := range strs {
 		relation := m.NewAgeOfUserRNGRelation(key)
-		if err := m.StringScan(str, &relation.Value); err != nil {
+		if err := orm.StringScan(str, &relation.Value); err != nil {
 			return nil, err
 		}
 		relations = append(relations, relation)
@@ -2104,7 +2091,7 @@ func (m *_AgeOfUserRNGRelationRedisMgr) ZSetRevertRange(key string, min, max int
 	relations := make([]*AgeOfUserRNGRelation, 0, len(strs))
 	for _, str := range strs {
 		relation := m.NewAgeOfUserRNGRelation(key)
-		if err := m.StringScan(str, &relation.Value); err != nil {
+		if err := orm.StringScan(str, &relation.Value); err != nil {
 			return nil, err
 		}
 		relations = append(relations, relation)
