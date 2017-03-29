@@ -141,6 +141,128 @@ func (u *UserIdBlogIdOfUserBlogsPK) Columns() []string {
 
 //! ranges
 
+type UserIdBlogIdOfUserBlogsRNG struct {
+	UserId       int32
+	BlogIdBegin  int64
+	BlogIdEnd    int64
+	offset       int
+	limit        int
+	includeBegin bool
+	includeEnd   bool
+	revert       bool
+}
+
+func (u *UserIdBlogIdOfUserBlogsRNG) Key() string {
+	strs := []string{
+		"UserId",
+		fmt.Sprint(u.UserId),
+		"BlogId",
+	}
+	return fmt.Sprintf("%s", strings.Join(strs, ":"))
+}
+
+func (u *UserIdBlogIdOfUserBlogsRNG) beginOp() string {
+	if u.includeBegin {
+		return ">="
+	}
+	return ">"
+}
+func (u *UserIdBlogIdOfUserBlogsRNG) endOp() string {
+	if u.includeBegin {
+		return "<="
+	}
+	return "<"
+}
+
+func (u *UserIdBlogIdOfUserBlogsRNG) SQLFormat(limit bool) string {
+	conditions := []string{}
+	conditions = append(conditions, "user_id = ?")
+	if u.BlogIdBegin != u.BlogIdEnd {
+		if u.BlogIdBegin != -1 {
+			conditions = append(conditions, fmt.Sprintf("blog_id %s ?", u.beginOp()))
+		}
+		if u.BlogIdEnd != -1 {
+			conditions = append(conditions, fmt.Sprintf("blog_id %s ?", u.endOp()))
+		}
+	}
+	if limit {
+		return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("BlogId", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
+	}
+	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("BlogId", u.revert))
+}
+
+func (u *UserIdBlogIdOfUserBlogsRNG) SQLParams() []interface{} {
+	params := []interface{}{
+		u.UserId,
+	}
+	if u.BlogIdBegin != u.BlogIdEnd {
+		if u.BlogIdBegin != -1 {
+			params = append(params, u.BlogIdBegin)
+		}
+		if u.BlogIdEnd != -1 {
+			params = append(params, u.BlogIdEnd)
+		}
+	}
+	return params
+}
+
+func (u *UserIdBlogIdOfUserBlogsRNG) SQLLimit() int {
+	if u.limit > 0 {
+		return u.limit
+	}
+	return -1
+}
+
+func (u *UserIdBlogIdOfUserBlogsRNG) Limit(n int) {
+	u.limit = n
+}
+
+func (u *UserIdBlogIdOfUserBlogsRNG) Offset(n int) {
+	u.offset = n
+}
+
+func (u *UserIdBlogIdOfUserBlogsRNG) Begin() int64 {
+	start := u.BlogIdBegin
+	if start == -1 || start == 0 {
+		start = 0
+	}
+	if start > 0 {
+		if !u.includeBegin {
+			start = start + 1
+		}
+	}
+	return start
+}
+
+func (u *UserIdBlogIdOfUserBlogsRNG) End() int64 {
+	stop := u.BlogIdEnd
+	if stop == 0 || stop == -1 {
+		stop = -1
+	}
+	if stop > 0 {
+		if !u.includeBegin {
+			stop = stop - 1
+		}
+	}
+	return stop
+}
+
+func (u *UserIdBlogIdOfUserBlogsRNG) Revert(b bool) {
+	u.revert = b
+}
+
+func (u *UserIdBlogIdOfUserBlogsRNG) IncludeBegin(f bool) {
+	u.includeBegin = f
+}
+
+func (u *UserIdBlogIdOfUserBlogsRNG) IncludeEnd(f bool) {
+	u.includeEnd = f
+}
+
+func (u *UserIdBlogIdOfUserBlogsRNG) RNGRelation() RangeRelation {
+	return nil
+}
+
 type _UserBlogsDBMgr struct {
 	db orm.DB
 }

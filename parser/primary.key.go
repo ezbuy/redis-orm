@@ -37,9 +37,10 @@ func (pk *PrimaryKey) IsAutocrement() bool {
 	return false
 }
 
-func (pk *PrimaryKey) IsNumber() bool {
-	if len(pk.Fields) == 1 {
-		return pk.Fields[0].IsNumber()
+func (pk *PrimaryKey) IsRange() bool {
+	c := len(pk.Fields)
+	if c > 0 {
+		return pk.Fields[c-1].IsNumber()
 	}
 	return false
 }
