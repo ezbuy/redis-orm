@@ -29,6 +29,7 @@ type UniqueRelation interface {
 type Index interface {
 	SQL
 	Key() string
+	PositionOffsetLimit(len int) (int, int)
 	IDXRelation() IndexRelation
 }
 type IndexRelation interface {
@@ -43,6 +44,7 @@ type Range interface {
 	End() int64
 	Revert(flag bool)
 	Key() string
+	PositionOffsetLimit(len int) (int, int)
 	RNGRelation() RangeRelation
 }
 
@@ -53,11 +55,9 @@ type RangeRelation interface {
 
 type Finder interface {
 	FindOne(unique Unique) (PrimaryKey, error)
-	Find(index Index) ([]PrimaryKey, error)
-	FindCount(index Index) (int64, error)
-	Range(scope Range) ([]PrimaryKey, error)
-	RangeCount(scope Range) (int64, error)
-	RangeRevert(scope Range) ([]PrimaryKey, error)
+	Find(index Index) (int64, []PrimaryKey, error)
+	Range(scope Range) (int64, []PrimaryKey, error)
+	RangeRevert(scope Range) (int64, []PrimaryKey, error)
 }
 
 type DBFetcher interface {

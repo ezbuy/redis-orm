@@ -193,56 +193,67 @@ func (m *_{{$obj.Name}}DBMgr) FindOneFetch(unique Unique) (*{{$obj.Name}}, error
 	return nil, fmt.Errorf("none record")
 }
 
-func (m *_{{$obj.Name}}DBMgr) Find(index Index) ([]PrimaryKey, error) {
-	return m.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
+func (m *_{{$obj.Name}}DBMgr) Find(index Index) (int64, []PrimaryKey, error) {
+	total, err := m.queryCount(index.SQLFormat(false), index.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+	pks, err := m.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
+	return total, pks, err
 }
 
-func (m *_{{$obj.Name}}DBMgr) FindFetch(index Index) ([]*{{$obj.Name}}, error) {
+func (m *_{{$obj.Name}}DBMgr) FindFetch(index Index) (int64, []*{{$obj.Name}}, error) {
+	total, err := m.queryCount(index.SQLFormat(false), index.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, index.SQLParams()...)
 	if err != nil {
-		return nil, err
+		return total, nil, err
 	}
 	results := make([]*{{$obj.Name}}, 0, len(objs))
 	for _, obj := range objs {
 		results = append(results, obj.(*{{$obj.Name}}))
 	}
-	return results, nil
+	return total, results, nil
 }
 
-func (m *_{{$obj.Name}}DBMgr) FindCount(index Index) (int64, error) {
-	return m.queryCount(index.SQLFormat(false), index.SQLParams()...)
+func (m *_{{$obj.Name}}DBMgr) Range(scope Range) (int64, []PrimaryKey, error) {
+	total, err := m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+	pks, err := m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
+	return total, pks, err
 }
 
-func (m *_{{$obj.Name}}DBMgr) Range(scope Range) ([]PrimaryKey, error) {
-	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
-}
-
-func (m *_{{$obj.Name}}DBMgr) RangeFetch(scope Range) ([]*{{$obj.Name}}, error) {
+func (m *_{{$obj.Name}}DBMgr) RangeFetch(scope Range) (int64, []*{{$obj.Name}}, error) {
+	total, err := m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, scope.SQLParams()...)
 	if err != nil {
-		return nil, err
+		return total, nil, err
 	}
 	results := make([]*{{$obj.Name}}, 0, len(objs))
 	for _, obj := range objs {
 		results = append(results, obj.(*{{$obj.Name}}))
 	}
-	return results, nil
+	return total, results, nil
 }
 
-func (m *_{{$obj.Name}}DBMgr) RangeCount(scope Range) (int64, error) {
-	return m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
-}
-
-func (m *_{{$obj.Name}}DBMgr) RangeRevert(scope Range) ([]PrimaryKey, error) {
+func (m *_{{$obj.Name}}DBMgr) RangeRevert(scope Range) (int64, []PrimaryKey, error) {
 	scope.Revert(true)
-	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
+	return m.Range(scope)
 }
 
-func (m *_{{$obj.Name}}DBMgr) RangeRevertFetch(scope Range) ([]*{{$obj.Name}}, error) {
+func (m *_{{$obj.Name}}DBMgr) RangeRevertFetch(scope Range) (int64, []*{{$obj.Name}}, error) {
 	scope.Revert(true)
 	return m.RangeFetch(scope)
 }

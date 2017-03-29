@@ -220,6 +220,16 @@ func (u *NameOfUserBaseInfoIDX) Offset(n int) {
 	u.offset = n
 }
 
+func (u *NameOfUserBaseInfoIDX) PositionOffsetLimit(len int) (int, int) {
+	if u.limit <= 0 {
+		return 0, len
+	}
+	if u.offset+u.limit > len {
+		return u.offset, len
+	}
+	return u.offset, u.limit
+}
+
 func (u *NameOfUserBaseInfoIDX) IDXRelation() IndexRelation {
 	return nil
 }
@@ -298,6 +308,16 @@ func (u *IdOfUserBaseInfoRNG) Limit(n int) {
 
 func (u *IdOfUserBaseInfoRNG) Offset(n int) {
 	u.offset = n
+}
+
+func (u *IdOfUserBaseInfoRNG) PositionOffsetLimit(len int) (int, int) {
+	if u.limit <= 0 {
+		return 0, len
+	}
+	if u.offset+u.limit > len {
+		return u.offset, len
+	}
+	return u.offset, u.limit
 }
 
 func (u *IdOfUserBaseInfoRNG) Begin() int64 {
@@ -474,56 +494,67 @@ func (m *_UserBaseInfoDBMgr) FindOneFetch(unique Unique) (*UserBaseInfo, error) 
 	return nil, fmt.Errorf("none record")
 }
 
-func (m *_UserBaseInfoDBMgr) Find(index Index) ([]PrimaryKey, error) {
-	return m.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
+func (m *_UserBaseInfoDBMgr) Find(index Index) (int64, []PrimaryKey, error) {
+	total, err := m.queryCount(index.SQLFormat(false), index.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+	pks, err := m.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
+	return total, pks, err
 }
 
-func (m *_UserBaseInfoDBMgr) FindFetch(index Index) ([]*UserBaseInfo, error) {
+func (m *_UserBaseInfoDBMgr) FindFetch(index Index) (int64, []*UserBaseInfo, error) {
+	total, err := m.queryCount(index.SQLFormat(false), index.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+
 	obj := UserBaseInfoMgr.NewUserBaseInfo()
 	query := fmt.Sprintf("SELECT %s FROM `user_base_info` %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, index.SQLParams()...)
 	if err != nil {
-		return nil, err
+		return total, nil, err
 	}
 	results := make([]*UserBaseInfo, 0, len(objs))
 	for _, obj := range objs {
 		results = append(results, obj.(*UserBaseInfo))
 	}
-	return results, nil
+	return total, results, nil
 }
 
-func (m *_UserBaseInfoDBMgr) FindCount(index Index) (int64, error) {
-	return m.queryCount(index.SQLFormat(false), index.SQLParams()...)
+func (m *_UserBaseInfoDBMgr) Range(scope Range) (int64, []PrimaryKey, error) {
+	total, err := m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+	pks, err := m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
+	return total, pks, err
 }
 
-func (m *_UserBaseInfoDBMgr) Range(scope Range) ([]PrimaryKey, error) {
-	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
-}
-
-func (m *_UserBaseInfoDBMgr) RangeFetch(scope Range) ([]*UserBaseInfo, error) {
+func (m *_UserBaseInfoDBMgr) RangeFetch(scope Range) (int64, []*UserBaseInfo, error) {
+	total, err := m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
 	obj := UserBaseInfoMgr.NewUserBaseInfo()
 	query := fmt.Sprintf("SELECT %s FROM `user_base_info` %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, scope.SQLParams()...)
 	if err != nil {
-		return nil, err
+		return total, nil, err
 	}
 	results := make([]*UserBaseInfo, 0, len(objs))
 	for _, obj := range objs {
 		results = append(results, obj.(*UserBaseInfo))
 	}
-	return results, nil
+	return total, results, nil
 }
 
-func (m *_UserBaseInfoDBMgr) RangeCount(scope Range) (int64, error) {
-	return m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
-}
-
-func (m *_UserBaseInfoDBMgr) RangeRevert(scope Range) ([]PrimaryKey, error) {
+func (m *_UserBaseInfoDBMgr) RangeRevert(scope Range) (int64, []PrimaryKey, error) {
 	scope.Revert(true)
-	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
+	return m.Range(scope)
 }
 
-func (m *_UserBaseInfoDBMgr) RangeRevertFetch(scope Range) ([]*UserBaseInfo, error) {
+func (m *_UserBaseInfoDBMgr) RangeRevertFetch(scope Range) (int64, []*UserBaseInfo, error) {
 	scope.Revert(true)
 	return m.RangeFetch(scope)
 }

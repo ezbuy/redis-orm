@@ -32,21 +32,22 @@ model.UserDBMgr(db).Range(scope)
 model.UserDBMgr(db).RangeRevert(scope)
 
 //! fetch object 
-model.UserDBMgr(db).Fetch(id string) (*User, error)
+model.UserDBMgr(db).Fetch(pk PrimaryKey) (*User, error)
 model.UserDBMgr(db).FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error)
 
 # redis
 model.RedisSetup(cf)
 
+redis := model.Redis()
 //! query (ids []string) by unique & index & range definitions
-model.UserRedisMgr().FindOne(unique)
-model.UserRedisMgr().Find(index)
-model.UserRedisMgr().Range(scope)
-model.UserRedisMgr().RangeRevert(scope)
+model.UserRedisMgr(redis).FindOne(unique)
+model.UserRedisMgr(redis).Find(index)
+model.UserRedisMgr(redis).Range(scope)
+model.UserRedisMgr(redis).RangeRevert(scope)
 
 //! fetch object 
-model.UserRedisMgr().Fetch(id string) (*User, error)
-model.UserRedisMgr().FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error)
+model.UserRedisMgr(redis).Fetch(pk PrimaryKey) (*User, error)
+model.UserRedisMgr(redis).FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error)
 
 
 ````
@@ -79,10 +80,11 @@ model.UserDBMgr(tx).FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error)
 # redis
 model.RedisSetup(cf)
 
-model.UserRedisMgr().Save(obj)
-model.UserRedisMgr().Create(obj)
-model.UserRedisMgr().Update(obj)
-model.UserRedisMgr().Delete(obj)
+redis := model.Redis()
+model.UserRedisMgr(redis).Save(obj)
+model.UserRedisMgr(redis).Create(obj)
+model.UserRedisMgr(redis).Update(obj)
+model.UserRedisMgr(redis).Delete(obj)
 
 ````
 
@@ -94,7 +96,10 @@ import "github.com/ezbuy/redis-orm/example/model"
 model.MySQLSetup(cf)
 model.RedisSetup(cf)
 
-model.UserRedisMgr().Load(model.UserMySQLMgr())
+db := model.MySQL()
+redis := model.Redis()
+
+model.UserRedisMgr(redis).Load(model.UserDBMgr(db))
 
 ````
 

@@ -196,6 +196,16 @@ func (u *StatusOfBlogIDX) Offset(n int) {
 	u.offset = n
 }
 
+func (u *StatusOfBlogIDX) PositionOffsetLimit(len int) (int, int) {
+	if u.limit <= 0 {
+		return 0, len
+	}
+	if u.offset+u.limit > len {
+		return u.offset, len
+	}
+	return u.offset, u.limit
+}
+
 func (u *StatusOfBlogIDX) IDXRelation() IndexRelation {
 	return nil
 }
@@ -280,6 +290,16 @@ func (u *IdUserIdOfBlogRNG) Limit(n int) {
 
 func (u *IdUserIdOfBlogRNG) Offset(n int) {
 	u.offset = n
+}
+
+func (u *IdUserIdOfBlogRNG) PositionOffsetLimit(len int) (int, int) {
+	if u.limit <= 0 {
+		return 0, len
+	}
+	if u.offset+u.limit > len {
+		return u.offset, len
+	}
+	return u.offset, u.limit
 }
 
 func (u *IdUserIdOfBlogRNG) Begin() int64 {
@@ -456,56 +476,67 @@ func (m *_BlogDBMgr) FindOneFetch(unique Unique) (*Blog, error) {
 	return nil, fmt.Errorf("none record")
 }
 
-func (m *_BlogDBMgr) Find(index Index) ([]PrimaryKey, error) {
-	return m.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
+func (m *_BlogDBMgr) Find(index Index) (int64, []PrimaryKey, error) {
+	total, err := m.queryCount(index.SQLFormat(false), index.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+	pks, err := m.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
+	return total, pks, err
 }
 
-func (m *_BlogDBMgr) FindFetch(index Index) ([]*Blog, error) {
+func (m *_BlogDBMgr) FindFetch(index Index) (int64, []*Blog, error) {
+	total, err := m.queryCount(index.SQLFormat(false), index.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+
 	obj := BlogMgr.NewBlog()
 	query := fmt.Sprintf("SELECT %s FROM `blogs` %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, index.SQLParams()...)
 	if err != nil {
-		return nil, err
+		return total, nil, err
 	}
 	results := make([]*Blog, 0, len(objs))
 	for _, obj := range objs {
 		results = append(results, obj.(*Blog))
 	}
-	return results, nil
+	return total, results, nil
 }
 
-func (m *_BlogDBMgr) FindCount(index Index) (int64, error) {
-	return m.queryCount(index.SQLFormat(false), index.SQLParams()...)
+func (m *_BlogDBMgr) Range(scope Range) (int64, []PrimaryKey, error) {
+	total, err := m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+	pks, err := m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
+	return total, pks, err
 }
 
-func (m *_BlogDBMgr) Range(scope Range) ([]PrimaryKey, error) {
-	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
-}
-
-func (m *_BlogDBMgr) RangeFetch(scope Range) ([]*Blog, error) {
+func (m *_BlogDBMgr) RangeFetch(scope Range) (int64, []*Blog, error) {
+	total, err := m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
 	obj := BlogMgr.NewBlog()
 	query := fmt.Sprintf("SELECT %s FROM `blogs` %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, scope.SQLParams()...)
 	if err != nil {
-		return nil, err
+		return total, nil, err
 	}
 	results := make([]*Blog, 0, len(objs))
 	for _, obj := range objs {
 		results = append(results, obj.(*Blog))
 	}
-	return results, nil
+	return total, results, nil
 }
 
-func (m *_BlogDBMgr) RangeCount(scope Range) (int64, error) {
-	return m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
-}
-
-func (m *_BlogDBMgr) RangeRevert(scope Range) ([]PrimaryKey, error) {
+func (m *_BlogDBMgr) RangeRevert(scope Range) (int64, []PrimaryKey, error) {
 	scope.Revert(true)
-	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
+	return m.Range(scope)
 }
 
-func (m *_BlogDBMgr) RangeRevertFetch(scope Range) ([]*Blog, error) {
+func (m *_BlogDBMgr) RangeRevertFetch(scope Range) (int64, []*Blog, error) {
 	scope.Revert(true)
 	return m.RangeFetch(scope)
 }
