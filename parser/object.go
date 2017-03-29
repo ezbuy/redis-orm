@@ -224,7 +224,7 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 				return fmt.Errorf("object (%s) %s", o.Name, err.Error())
 			}
 
-			if o.primary.IsNumber() {
+			if o.primary.IsRange() {
 				index := NewIndex(o)
 				index.FieldNames = o.primary.FieldNames
 				o.ranges = append(o.ranges, index)

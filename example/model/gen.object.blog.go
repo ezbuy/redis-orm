@@ -202,6 +202,128 @@ func (u *StatusOfBlogIDX) IDXRelation() IndexRelation {
 
 //! ranges
 
+type IdUserIdOfBlogRNG struct {
+	Id           int32
+	UserIdBegin  int64
+	UserIdEnd    int64
+	offset       int
+	limit        int
+	includeBegin bool
+	includeEnd   bool
+	revert       bool
+}
+
+func (u *IdUserIdOfBlogRNG) Key() string {
+	strs := []string{
+		"Id",
+		fmt.Sprint(u.Id),
+		"UserId",
+	}
+	return fmt.Sprintf("%s", strings.Join(strs, ":"))
+}
+
+func (u *IdUserIdOfBlogRNG) beginOp() string {
+	if u.includeBegin {
+		return ">="
+	}
+	return ">"
+}
+func (u *IdUserIdOfBlogRNG) endOp() string {
+	if u.includeBegin {
+		return "<="
+	}
+	return "<"
+}
+
+func (u *IdUserIdOfBlogRNG) SQLFormat(limit bool) string {
+	conditions := []string{}
+	conditions = append(conditions, "id = ?")
+	if u.UserIdBegin != u.UserIdEnd {
+		if u.UserIdBegin != -1 {
+			conditions = append(conditions, fmt.Sprintf("user_id %s ?", u.beginOp()))
+		}
+		if u.UserIdEnd != -1 {
+			conditions = append(conditions, fmt.Sprintf("user_id %s ?", u.endOp()))
+		}
+	}
+	if limit {
+		return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("UserId", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
+	}
+	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("UserId", u.revert))
+}
+
+func (u *IdUserIdOfBlogRNG) SQLParams() []interface{} {
+	params := []interface{}{
+		u.Id,
+	}
+	if u.UserIdBegin != u.UserIdEnd {
+		if u.UserIdBegin != -1 {
+			params = append(params, u.UserIdBegin)
+		}
+		if u.UserIdEnd != -1 {
+			params = append(params, u.UserIdEnd)
+		}
+	}
+	return params
+}
+
+func (u *IdUserIdOfBlogRNG) SQLLimit() int {
+	if u.limit > 0 {
+		return u.limit
+	}
+	return -1
+}
+
+func (u *IdUserIdOfBlogRNG) Limit(n int) {
+	u.limit = n
+}
+
+func (u *IdUserIdOfBlogRNG) Offset(n int) {
+	u.offset = n
+}
+
+func (u *IdUserIdOfBlogRNG) Begin() int64 {
+	start := u.UserIdBegin
+	if start == -1 || start == 0 {
+		start = 0
+	}
+	if start > 0 {
+		if !u.includeBegin {
+			start = start + 1
+		}
+	}
+	return start
+}
+
+func (u *IdUserIdOfBlogRNG) End() int64 {
+	stop := u.UserIdEnd
+	if stop == 0 || stop == -1 {
+		stop = -1
+	}
+	if stop > 0 {
+		if !u.includeBegin {
+			stop = stop - 1
+		}
+	}
+	return stop
+}
+
+func (u *IdUserIdOfBlogRNG) Revert(b bool) {
+	u.revert = b
+}
+
+func (u *IdUserIdOfBlogRNG) IncludeBegin(f bool) {
+	u.includeBegin = f
+}
+
+func (u *IdUserIdOfBlogRNG) IncludeEnd(f bool) {
+	u.includeEnd = f
+}
+
+func (u *IdUserIdOfBlogRNG) RNGRelation() RangeRelation {
+	return nil
+}
+
 type _BlogDBMgr struct {
 	db orm.DB
 }
