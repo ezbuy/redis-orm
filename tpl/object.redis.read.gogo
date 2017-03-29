@@ -28,108 +28,102 @@ func (m *_{{$obj.Name}}RedisMgr) FindOneFetch(unique Unique) (*{{$obj.Name}}, er
 	return m.Fetch(v)
 }
 
-func (m *_{{$obj.Name}}RedisMgr) Find(index Index) ([]PrimaryKey, error) {
+func (m *_{{$obj.Name}}RedisMgr) Find(index Index) (int64, []PrimaryKey, error) {
 	if relation := index.IDXRelation(); relation != nil {
 		strs, err := relation.Find(index.Key())
 		if err != nil {
-			return nil, err
+			return 0, nil, err
 		}
+		total := int64(len(strs))
+		p1, p2 := index.PositionOffsetLimit(len(strs))
+		strs = strs[p1:p2]
+
 		results := make([]PrimaryKey, 0, len(strs))
 		for _, str := range strs {
 			pk := {{$obj.Name}}Mgr.NewPrimaryKey()
 			if err := pk.Parse(str); err != nil {
-				return nil , err
+				return total, nil , err
 			}
-			results = append(results, pk)
+			results = append(results, pk)	
 		}
-		return results, nil
+		return total, results, nil
 	}
-	return nil, fmt.Errorf("index none relation.")
+	return 0, nil, fmt.Errorf("index none relation.")
 }
 
-func (m *_{{$obj.Name}}RedisMgr) FindFetch(index Index) ([]*{{$obj.Name}}, error) {
-	vs, err := m.Find(index)
+func (m *_{{$obj.Name}}RedisMgr) FindFetch(index Index) (int64, []*{{$obj.Name}}, error) {
+	total, vs, err := m.Find(index)
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
-	return m.FetchByPrimaryKeys(vs)
+	objs, err := m.FetchByPrimaryKeys(vs)
+	return total, objs, err
 }
 
-func (m *_{{$obj.Name}}RedisMgr) FindCount(index Index) (int64, error) {
-	if relation := index.IDXRelation(); relation != nil {
-		strs, err := relation.Find(index.Key())
-		if err != nil {
-			return 0, err
-		}
-		return int64(len(strs)), nil
-	}
-	return 0, fmt.Errorf("index none relation.")
-}
-
-func (m *_{{$obj.Name}}RedisMgr) Range(scope Range) ([]PrimaryKey, error) {
+func (m *_{{$obj.Name}}RedisMgr) Range(scope Range) (int64, []PrimaryKey, error) {
 	if relation := scope.RNGRelation(); relation != nil {
 		strs, err := relation.Range(scope.Key(), scope.Begin(), scope.End())
 		if err != nil {
-			return nil, err
+			return 0, nil, err
 		}
+		total := int64(len(strs))
+		p1, p2 := scope.PositionOffsetLimit(len(strs))
+		strs = strs[p1:p2]
+
 		results := make([]PrimaryKey, 0, len(strs))
 		for _, str := range strs {
 			pk := {{$obj.Name}}Mgr.NewPrimaryKey()
 			if err := pk.Parse(str); err != nil {
-				return nil , err
+				return total, nil , err
 			}
 			results = append(results, pk)
 		}
-		return results, nil
+		return total, results, nil
 	}
-	return nil, fmt.Errorf("range none relation.")
+	return 0, nil, fmt.Errorf("range none relation.")
 }
 
-func (m *_{{$obj.Name}}RedisMgr) RangeFetch(scope Range) ([]*{{$obj.Name}}, error) {
-	vs, err := m.Range(scope)
+func (m *_{{$obj.Name}}RedisMgr) RangeFetch(scope Range) (int64, []*{{$obj.Name}}, error) {
+	total, vs, err := m.Range(scope)
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
-	return m.FetchByPrimaryKeys(vs)
+	objs, err := m.FetchByPrimaryKeys(vs)
+	return total, objs, err
 }
 
-func (m *_{{$obj.Name}}RedisMgr) RangeCount(scope Range) (int64, error) {
-	if relation := scope.RNGRelation(); relation != nil {
-		strs, err := relation.Range(scope.Key(), scope.Begin(), scope.End())
-		if err != nil {
-			return 0, err
-		}
-		return int64(len(strs)), nil
-	}
-	return 0, fmt.Errorf("range none relation.")
-}
-
-func (m *_{{$obj.Name}}RedisMgr) RangeRevert(scope Range) ([]PrimaryKey, error) {
+func (m *_{{$obj.Name}}RedisMgr) RangeRevert(scope Range) (int64, []PrimaryKey, error) {
 	if relation := scope.RNGRelation(); relation != nil {
 		scope.Revert(true)
 		strs, err := relation.RangeRevert(scope.Key(), scope.Begin(), scope.End())
 		if err != nil {
-			return nil, err
+			return 0, nil, err
 		}
+
+		total := int64(len(strs))
+		p1, p2 := scope.PositionOffsetLimit(len(strs))
+		strs = strs[p1:p2]
+
 		results := make([]PrimaryKey, 0, len(strs))
 		for _, str := range strs {
 			pk := {{$obj.Name}}Mgr.NewPrimaryKey()
 			if err := pk.Parse(str); err != nil {
-				return nil , err
+				return total, nil , err
 			}
 			results = append(results, pk)
 		}
-		return results, nil
+		return total, results, nil
 	}
-	return nil, fmt.Errorf("revert range none relation.")
+	return 0, nil, fmt.Errorf("revert range none relation.")
 }
 
-func (m *_{{$obj.Name}}RedisMgr) RangeRevertFetch(scope Range) ([]*{{$obj.Name}}, error) {
-	vs, err := m.RangeRevert(scope)
+func (m *_{{$obj.Name}}RedisMgr) RangeRevertFetch(scope Range) (int64, []*{{$obj.Name}}, error) {
+	total, vs, err := m.RangeRevert(scope)
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
-	return m.FetchByPrimaryKeys(vs)
+	objs, err := m.FetchByPrimaryKeys(vs)
+	return total, objs, err
 }
 
 func (m *_{{$obj.Name}}RedisMgr) Fetch(pk PrimaryKey) (*{{$obj.Name}}, error) {

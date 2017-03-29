@@ -255,6 +255,16 @@ func (u *SexOfUserIDX) Offset(n int) {
 	u.offset = n
 }
 
+func (u *SexOfUserIDX) PositionOffsetLimit(len int) (int, int) {
+	if u.limit <= 0 {
+		return 0, len
+	}
+	if u.offset+u.limit > len {
+		return u.offset, len
+	}
+	return u.offset, u.limit
+}
+
 func (u *SexOfUserIDX) IDXRelation() IndexRelation {
 	return SexOfUserIDXRelationRedisMgr()
 }
@@ -333,6 +343,16 @@ func (u *IdOfUserRNG) Limit(n int) {
 
 func (u *IdOfUserRNG) Offset(n int) {
 	u.offset = n
+}
+
+func (u *IdOfUserRNG) PositionOffsetLimit(len int) (int, int) {
+	if u.limit <= 0 {
+		return 0, len
+	}
+	if u.offset+u.limit > len {
+		return u.offset, len
+	}
+	return u.offset, u.limit
 }
 
 func (u *IdOfUserRNG) Begin() int64 {
@@ -449,6 +469,16 @@ func (u *AgeOfUserRNG) Limit(n int) {
 
 func (u *AgeOfUserRNG) Offset(n int) {
 	u.offset = n
+}
+
+func (u *AgeOfUserRNG) PositionOffsetLimit(len int) (int, int) {
+	if u.limit <= 0 {
+		return 0, len
+	}
+	if u.offset+u.limit > len {
+		return u.offset, len
+	}
+	return u.offset, u.limit
 }
 
 func (u *AgeOfUserRNG) Begin() int64 {
@@ -646,56 +676,67 @@ func (m *_UserDBMgr) FindOneFetch(unique Unique) (*User, error) {
 	return nil, fmt.Errorf("none record")
 }
 
-func (m *_UserDBMgr) Find(index Index) ([]PrimaryKey, error) {
-	return m.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
+func (m *_UserDBMgr) Find(index Index) (int64, []PrimaryKey, error) {
+	total, err := m.queryCount(index.SQLFormat(false), index.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+	pks, err := m.queryLimit(index.SQLFormat(true), index.SQLLimit(), index.SQLParams()...)
+	return total, pks, err
 }
 
-func (m *_UserDBMgr) FindFetch(index Index) ([]*User, error) {
+func (m *_UserDBMgr) FindFetch(index Index) (int64, []*User, error) {
+	total, err := m.queryCount(index.SQLFormat(false), index.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+
 	obj := UserMgr.NewUser()
 	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, index.SQLParams()...)
 	if err != nil {
-		return nil, err
+		return total, nil, err
 	}
 	results := make([]*User, 0, len(objs))
 	for _, obj := range objs {
 		results = append(results, obj.(*User))
 	}
-	return results, nil
+	return total, results, nil
 }
 
-func (m *_UserDBMgr) FindCount(index Index) (int64, error) {
-	return m.queryCount(index.SQLFormat(false), index.SQLParams()...)
+func (m *_UserDBMgr) Range(scope Range) (int64, []PrimaryKey, error) {
+	total, err := m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+	pks, err := m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
+	return total, pks, err
 }
 
-func (m *_UserDBMgr) Range(scope Range) ([]PrimaryKey, error) {
-	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
-}
-
-func (m *_UserDBMgr) RangeFetch(scope Range) ([]*User, error) {
+func (m *_UserDBMgr) RangeFetch(scope Range) (int64, []*User, error) {
+	total, err := m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
 	obj := UserMgr.NewUser()
 	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, scope.SQLParams()...)
 	if err != nil {
-		return nil, err
+		return total, nil, err
 	}
 	results := make([]*User, 0, len(objs))
 	for _, obj := range objs {
 		results = append(results, obj.(*User))
 	}
-	return results, nil
+	return total, results, nil
 }
 
-func (m *_UserDBMgr) RangeCount(scope Range) (int64, error) {
-	return m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
-}
-
-func (m *_UserDBMgr) RangeRevert(scope Range) ([]PrimaryKey, error) {
+func (m *_UserDBMgr) RangeRevert(scope Range) (int64, []PrimaryKey, error) {
 	scope.Revert(true)
-	return m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
+	return m.Range(scope)
 }
 
-func (m *_UserDBMgr) RangeRevertFetch(scope Range) ([]*User, error) {
+func (m *_UserDBMgr) RangeRevertFetch(scope Range) (int64, []*User, error) {
 	scope.Revert(true)
 	return m.RangeFetch(scope)
 }
@@ -1012,108 +1053,102 @@ func (m *_UserRedisMgr) FindOneFetch(unique Unique) (*User, error) {
 	return m.Fetch(v)
 }
 
-func (m *_UserRedisMgr) Find(index Index) ([]PrimaryKey, error) {
+func (m *_UserRedisMgr) Find(index Index) (int64, []PrimaryKey, error) {
 	if relation := index.IDXRelation(); relation != nil {
 		strs, err := relation.Find(index.Key())
 		if err != nil {
-			return nil, err
+			return 0, nil, err
 		}
+		total := int64(len(strs))
+		p1, p2 := index.PositionOffsetLimit(len(strs))
+		strs = strs[p1:p2]
+
 		results := make([]PrimaryKey, 0, len(strs))
 		for _, str := range strs {
 			pk := UserMgr.NewPrimaryKey()
 			if err := pk.Parse(str); err != nil {
-				return nil, err
+				return total, nil, err
 			}
 			results = append(results, pk)
 		}
-		return results, nil
+		return total, results, nil
 	}
-	return nil, fmt.Errorf("index none relation.")
+	return 0, nil, fmt.Errorf("index none relation.")
 }
 
-func (m *_UserRedisMgr) FindFetch(index Index) ([]*User, error) {
-	vs, err := m.Find(index)
+func (m *_UserRedisMgr) FindFetch(index Index) (int64, []*User, error) {
+	total, vs, err := m.Find(index)
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
-	return m.FetchByPrimaryKeys(vs)
+	objs, err := m.FetchByPrimaryKeys(vs)
+	return total, objs, err
 }
 
-func (m *_UserRedisMgr) FindCount(index Index) (int64, error) {
-	if relation := index.IDXRelation(); relation != nil {
-		strs, err := relation.Find(index.Key())
-		if err != nil {
-			return 0, err
-		}
-		return int64(len(strs)), nil
-	}
-	return 0, fmt.Errorf("index none relation.")
-}
-
-func (m *_UserRedisMgr) Range(scope Range) ([]PrimaryKey, error) {
+func (m *_UserRedisMgr) Range(scope Range) (int64, []PrimaryKey, error) {
 	if relation := scope.RNGRelation(); relation != nil {
 		strs, err := relation.Range(scope.Key(), scope.Begin(), scope.End())
 		if err != nil {
-			return nil, err
+			return 0, nil, err
 		}
+		total := int64(len(strs))
+		p1, p2 := scope.PositionOffsetLimit(len(strs))
+		strs = strs[p1:p2]
+
 		results := make([]PrimaryKey, 0, len(strs))
 		for _, str := range strs {
 			pk := UserMgr.NewPrimaryKey()
 			if err := pk.Parse(str); err != nil {
-				return nil, err
+				return total, nil, err
 			}
 			results = append(results, pk)
 		}
-		return results, nil
+		return total, results, nil
 	}
-	return nil, fmt.Errorf("range none relation.")
+	return 0, nil, fmt.Errorf("range none relation.")
 }
 
-func (m *_UserRedisMgr) RangeFetch(scope Range) ([]*User, error) {
-	vs, err := m.Range(scope)
+func (m *_UserRedisMgr) RangeFetch(scope Range) (int64, []*User, error) {
+	total, vs, err := m.Range(scope)
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
-	return m.FetchByPrimaryKeys(vs)
+	objs, err := m.FetchByPrimaryKeys(vs)
+	return total, objs, err
 }
 
-func (m *_UserRedisMgr) RangeCount(scope Range) (int64, error) {
-	if relation := scope.RNGRelation(); relation != nil {
-		strs, err := relation.Range(scope.Key(), scope.Begin(), scope.End())
-		if err != nil {
-			return 0, err
-		}
-		return int64(len(strs)), nil
-	}
-	return 0, fmt.Errorf("range none relation.")
-}
-
-func (m *_UserRedisMgr) RangeRevert(scope Range) ([]PrimaryKey, error) {
+func (m *_UserRedisMgr) RangeRevert(scope Range) (int64, []PrimaryKey, error) {
 	if relation := scope.RNGRelation(); relation != nil {
 		scope.Revert(true)
 		strs, err := relation.RangeRevert(scope.Key(), scope.Begin(), scope.End())
 		if err != nil {
-			return nil, err
+			return 0, nil, err
 		}
+
+		total := int64(len(strs))
+		p1, p2 := scope.PositionOffsetLimit(len(strs))
+		strs = strs[p1:p2]
+
 		results := make([]PrimaryKey, 0, len(strs))
 		for _, str := range strs {
 			pk := UserMgr.NewPrimaryKey()
 			if err := pk.Parse(str); err != nil {
-				return nil, err
+				return total, nil, err
 			}
 			results = append(results, pk)
 		}
-		return results, nil
+		return total, results, nil
 	}
-	return nil, fmt.Errorf("revert range none relation.")
+	return 0, nil, fmt.Errorf("revert range none relation.")
 }
 
-func (m *_UserRedisMgr) RangeRevertFetch(scope Range) ([]*User, error) {
-	vs, err := m.RangeRevert(scope)
+func (m *_UserRedisMgr) RangeRevertFetch(scope Range) (int64, []*User, error) {
+	total, vs, err := m.RangeRevert(scope)
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
-	return m.FetchByPrimaryKeys(vs)
+	objs, err := m.FetchByPrimaryKeys(vs)
+	return total, objs, err
 }
 
 func (m *_UserRedisMgr) Fetch(pk PrimaryKey) (*User, error) {

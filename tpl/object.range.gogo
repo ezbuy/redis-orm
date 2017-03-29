@@ -102,6 +102,17 @@ func (u *{{$rg.Name}}) Offset(n int) {
 	u.offset = n
 }
 
+
+func (u *{{$rg.Name}}) PositionOffsetLimit(len int) (int, int) {
+	if u.limit <= 0 {
+		return 0, len
+	}
+	if u.offset + u.limit > len {
+		return u.offset, len
+	}
+	return u.offset, u.limit
+}
+
 func (u *{{$rg.Name}}) Begin() int64 {
 	start := u.{{$rg.LastField.Name}}Begin
 	if start == -1 || start == 0 {

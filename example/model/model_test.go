@@ -285,8 +285,9 @@ var _ = Describe("redis-orm.mysql", func() {
 			sexIdx := &SexOfUserIDX{
 				Sex: false,
 			}
-			pks, err := UserDBMgr(MySQL()).Find(sexIdx)
+			total, pks, err := UserDBMgr(MySQL()).Find(sexIdx)
 			Ω(err).ShouldNot(HaveOccurred())
+			Ω(int(total)).To(Equal(50))
 			Ω(len(pks)).To(Equal(50))
 
 			objs, err := UserDBMgr(MySQL()).FetchByPrimaryKeys(pks)
@@ -300,18 +301,20 @@ var _ = Describe("redis-orm.mysql", func() {
 				AgeBegin: 10,
 				AgeEnd:   35,
 			}
-			pks, err := UserDBMgr(MySQL()).Range(scope)
+			scope.Limit(10)
+			total, pks, err := UserDBMgr(MySQL()).Range(scope)
 			Ω(err).ShouldNot(HaveOccurred())
-			Ω(len(pks)).To(Equal(24))
+			Ω(int(total)).To(Equal(24))
+			Ω(len(pks)).To(Equal(10))
 
 			objs, err := UserDBMgr(MySQL()).FetchByPrimaryKeys(pks)
 			Ω(err).ShouldNot(HaveOccurred())
-			Ω(len(objs)).To(Equal(24))
+			Ω(len(objs)).To(Equal(10))
 		})
 
 		It("range.revert", func() {
 			scope := &AgeOfUserRNG{}
-			us, err := UserDBMgr(MySQL()).RangeRevert(scope)
+			_, us, err := UserDBMgr(MySQL()).RangeRevert(scope)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(len(us)).To(Equal(100))
 			// Ω(us[1].(int32) > us[0].(int32)).To(Equal(false))
@@ -319,10 +322,10 @@ var _ = Describe("redis-orm.mysql", func() {
 
 		It("fetch", func() {
 			scope := &IdOfUserRNG{}
-			us, err := UserDBMgr(MySQL()).Range(scope)
+			_, us, err := UserDBMgr(MySQL()).Range(scope)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(len(us)).To(Equal(100))
-			objs2, err := UserDBMgr(MySQL()).RangeFetch(scope)
+			_, objs2, err := UserDBMgr(MySQL()).RangeFetch(scope)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(len(objs2)).To(Equal(100))
 			for i, obj := range objs2 {
@@ -354,7 +357,7 @@ var _ = Describe("redis-orm.mysql", func() {
 				sexIdx := &SexOfUserIDX{
 					Sex: false,
 				}
-				us, err := UserDBMgr(MySQL()).Find(sexIdx)
+				_, us, err := UserDBMgr(MySQL()).Find(sexIdx)
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(len(us)).To(Equal(50))
 			})
@@ -363,24 +366,22 @@ var _ = Describe("redis-orm.mysql", func() {
 					AgeBegin: 10,
 					AgeEnd:   35,
 				}
-				us, err := UserDBMgr(MySQL()).Range(scope)
+				total, us, err := UserDBMgr(MySQL()).Range(scope)
 				Ω(err).ShouldNot(HaveOccurred())
-				count, err := UserDBMgr(MySQL()).RangeCount(scope)
-				fmt.Println("err=>", err)
-				Ω(len(us)).To(Equal(int(count)))
+				Ω(len(us)).To(Equal(int(total)))
 			})
 			b.Time("range.revert.runtime", func() {
 				scope := &AgeOfUserRNG{}
-				us, err := UserDBMgr(MySQL()).RangeRevert(scope)
+				_, us, err := UserDBMgr(MySQL()).RangeRevert(scope)
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(len(us)).To(Equal(100))
 			})
 			b.Time("fetch.runtime", func() {
 				scope := &IdOfUserRNG{}
-				us, err := UserDBMgr(MySQL()).Range(scope)
+				_, us, err := UserDBMgr(MySQL()).Range(scope)
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(len(us)).To(Equal(100))
-				objs, err := UserDBMgr(MySQL()).RangeFetch(scope)
+				_, objs, err := UserDBMgr(MySQL()).RangeFetch(scope)
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(len(objs)).To(Equal(100))
 			})
@@ -542,10 +543,8 @@ var _ = Describe("redis-orm.redis", func() {
 			sexIdx := &SexOfUserIDX{
 				Sex: false,
 			}
-			us, err := UserRedisMgr(Redis()).Find(sexIdx)
+			_, us, err := UserRedisMgr(Redis()).Find(sexIdx)
 			Ω(err).ShouldNot(HaveOccurred())
-			count, err := UserRedisMgr(Redis()).FindCount(sexIdx)
-			Ω(len(us)).To(Equal(int(count)))
 			Ω(len(us)).To(Equal(50))
 		})
 		It("range", func() {
@@ -553,15 +552,13 @@ var _ = Describe("redis-orm.redis", func() {
 				AgeBegin: 10,
 				AgeEnd:   35,
 			}
-			us, err := UserRedisMgr(Redis()).Range(scope)
+			total, us, err := UserRedisMgr(Redis()).Range(scope)
 			Ω(err).ShouldNot(HaveOccurred())
-			count, err := UserRedisMgr(Redis()).RangeCount(scope)
-			Ω(len(us)).To(Equal(int(count)))
-			// Ω(us[1].(int32) > us[0].(int32)).To(Equal(true))
+			Ω(len(us)).To(Equal(int(total)))
 		})
 		It("range.revert", func() {
 			scope := &AgeOfUserRNG{}
-			us, err := UserRedisMgr(Redis()).RangeRevert(scope)
+			_, us, err := UserRedisMgr(Redis()).RangeRevert(scope)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(len(us)).To(Equal(100))
 			// Ω(us[1].(int32) > us[0].(int32)).To(Equal(false))
@@ -569,16 +566,16 @@ var _ = Describe("redis-orm.redis", func() {
 
 		It("fetch", func() {
 			scope := &IdOfUserRNG{}
-			us, err := UserRedisMgr(Redis()).Range(scope)
+			_, us, err := UserRedisMgr(Redis()).Range(scope)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(len(us)).To(Equal(100))
-			objs, err := UserRedisMgr(Redis()).RangeFetch(scope)
+			_, objs, err := UserRedisMgr(Redis()).RangeFetch(scope)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(len(objs)).To(Equal(100))
 			for i, obj := range objs {
 				Ω(obj.Name).To(Equal(fmt.Sprintf("name%d", i)))
 			}
-			objs2, err := UserRedisMgr(Redis()).RangeFetch(scope)
+			_, objs2, err := UserRedisMgr(Redis()).RangeFetch(scope)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(len(objs2)).To(Equal(100))
 			for i, obj := range objs2 {
@@ -600,7 +597,7 @@ var _ = Describe("redis-orm.redis", func() {
 				sexIdx := &SexOfUserIDX{
 					Sex: false,
 				}
-				us, err := UserRedisMgr(Redis()).Find(sexIdx)
+				_, us, err := UserRedisMgr(Redis()).Find(sexIdx)
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(len(us)).To(Equal(50))
 			})
@@ -609,24 +606,24 @@ var _ = Describe("redis-orm.redis", func() {
 					AgeBegin: 10,
 					AgeEnd:   35,
 				}
-				us, err := UserRedisMgr(Redis()).Range(scope)
+				_, us, err := UserRedisMgr(Redis()).Range(scope)
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(len(us)).To(Equal(24))
 				// Ω(us[1].(int32) > us[0].(int32)).To(Equal(true))
 			})
 			b.Time("range.revert.runtime", func() {
 				scope := &AgeOfUserRNG{}
-				us, err := UserRedisMgr(Redis()).RangeRevert(scope)
+				_, us, err := UserRedisMgr(Redis()).RangeRevert(scope)
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(len(us)).To(Equal(100))
 				// Ω(us[1].(int32) > us[0].(int32)).To(Equal(false))
 			})
 			b.Time("fetch.runtime", func() {
 				scope := &AgeOfUserRNG{}
-				us, err := UserRedisMgr(Redis()).RangeRevert(scope)
+				_, us, err := UserRedisMgr(Redis()).RangeRevert(scope)
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(len(us)).To(Equal(100))
-				objs, err := UserRedisMgr(Redis()).RangeRevertFetch(scope)
+				_, objs, err := UserRedisMgr(Redis()).RangeRevertFetch(scope)
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(len(objs)).To(Equal(100))
 			})

@@ -58,6 +58,16 @@ func (u *{{$index.Name}}) Offset(n int) {
 	u.offset = n
 }
 
+func (u *{{$index.Name}}) PositionOffsetLimit(len int) (int, int) {
+	if u.limit <= 0 {
+		return 0, len
+	}
+	if u.offset + u.limit > len {
+		return u.offset, len
+	}
+	return u.offset, u.limit
+}
+
 {{$relation := $index.GetRelation "pair" $primaryField.GetType $obj.Name}}
 func (u *{{$index.Name}}) IDXRelation() IndexRelation {
 	{{- if $index.Obj.DbContains "redis"}}
@@ -66,5 +76,4 @@ func (u *{{$index.Name}}) IDXRelation() IndexRelation {
 	return nil
 	{{- end}}
 }
-
 {{end}}
