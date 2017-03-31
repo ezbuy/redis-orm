@@ -1,0 +1,15 @@
+Office:
+  dbs: [mssql]
+  dbname: Pro_test
+  dbtable: testCRUD
+  fields:
+    - OfficeId: int32
+      flags: [primary, autoinc]
+    - OfficeArea: string
+    - OfficeName: string
+    - SearchOriginCode: string
+    - ProcessingOriginCode: string
+    - CreateBy: string
+    - UpdateBy: string
+    - CreateDate: datetime
+    - UpdateDate: datetime

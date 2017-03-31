@@ -81,6 +81,13 @@ func (f *Field) SetType(t string) error {
 	return nil
 }
 
+func (f *Field) FieldName() string {
+	if f.Obj.DbContains("mysql") {
+		return fmt.Sprintf("`%s`", Camel2Name(f.Name))
+	}
+	return f.Name
+}
+
 func (f *Field) IsPrimary() bool {
 	return f.Flags.Contains("primary")
 }
@@ -238,6 +245,18 @@ type Transform struct {
 // convert `TypeOrigin` in datebase to `TypeTarget` when quering
 // convert `TypeTarget` back to `TypeOrigin` when updating/inserting
 var transformMap = map[string]Transform{
+	"mssql_timestamp": { // TIMESTAMP (string, UTC)
+		"string", `orm.MsSQLTimeParse(%v)`,
+		"time.Time", `orm.MsSQLTimeFormat(%v)`,
+	},
+	"mssql_timeint": { // INT(11)
+		"int64", "time.Unix(%v, 0)",
+		"time.Time", "%v.Unix()",
+	},
+	"mssql_datetime": { // DATETIME (string, localtime)
+		"string", "orm.MsSQLTimeParse(%v)",
+		"time.Time", "orm.MsSQLTimeFormat(%v)",
+	},
 	"mysql_timestamp": { // TIMESTAMP (string, UTC)
 		"string", `orm.TimeParse(%v)`,
 		"time.Time", `orm.TimeFormat(%v)`,

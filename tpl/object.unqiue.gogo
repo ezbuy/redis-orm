@@ -26,7 +26,7 @@ func (u *{{$unique.Name}}) Key() string {
 func (u *{{$unique.Name}}) SQLFormat(limit bool) string {
 	conditions := []string{
 		{{- range $j, $field := $unique.Fields}}
-		"{{$field.Name | camel2name}} = ?",
+		"{{$field.FieldName}} = ?",
 		{{- end}}
 	}
 	return orm.SQLWhere(conditions)

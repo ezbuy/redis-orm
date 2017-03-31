@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ezbuy/redis-orm/orm"
-
 	. "github.com/ezbuy/redis-orm/example/model"
+	"github.com/ezbuy/redis-orm/orm"
 
 	"log"
 
@@ -90,6 +89,133 @@ var _ = Describe("manager", func() {
 })
 
 var _ = Describe("redis-orm.mysql", func() {
+	Describe("CRUD", func() {
+		It("create", func() {
+			MySQLSetup(&MySQLConfig{
+				Host:     "localhost",
+				Port:     3306,
+				UserName: "ezorm_user",
+				Password: "ezorm_pass",
+				Database: "ezorm",
+			})
+
+			user := UserMgr.NewUser()
+			user.Name = "user01"
+			user.Mailbox = "user01@sss.fff"
+			user.HeadUrl = "aaaa.png"
+			user.Password = "123456"
+			user.CreatedAt = time.Now()
+			user.UpdatedAt = user.CreatedAt
+			user.Longitude = 103.754
+			user.Latitude = 1.3282
+
+			tx, err := MySQL().BeginTx()
+			Ω(err).ShouldNot(HaveOccurred())
+			defer tx.Close()
+
+			mgr := UserDBMgr(tx)
+			user.Name = ""
+			log.Println("user validator =>", user.Validate())
+
+			//! create
+			n, err := mgr.Create(user)
+			Ω(n).To(Equal(int64(1)))
+			log.Println("mysql.tx.crud.create =>", n, err)
+			Ω(err).ShouldNot(HaveOccurred())
+
+			log.Println("create User :", user)
+
+			//! update
+			user.HeadUrl = "bbbb.png"
+			user.UpdatedAt = time.Now()
+			n, err = mgr.Update(user)
+			Ω(n).To(Equal(int64(1)))
+			Ω(err).ShouldNot(HaveOccurred())
+
+			//! fetch check
+			obj, err := mgr.Fetch(user.GetPrimaryKey())
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(obj.HeadUrl).To(Equal(user.HeadUrl))
+
+			//! delete
+			n, err = mgr.Delete(user)
+			log.Println("mysql.tx.crud.delete =>", n, err)
+			Ω(n).To(Equal(int64(1)))
+			Ω(err).ShouldNot(HaveOccurred())
+
+			//! fetch check
+			_, err = mgr.Fetch(user.GetPrimaryKey())
+			Ω(err).Should(HaveOccurred())
+
+			//! save
+
+			user.HeadUrl = "ccc.png"
+			n, err = mgr.Save(user)
+			Ω(n).To(Equal(int64(1)))
+			Ω(err).ShouldNot(HaveOccurred())
+
+			n, err = mgr.Delete(user)
+			Ω(n).To(Equal(int64(1)))
+			Ω(err).ShouldNot(HaveOccurred())
+
+		})
+
+	})
+})
+
+var _ = Describe("redis-orm.mssql", func() {
+	Describe("CRUD", func() {
+		It("create", func() {
+			MsSQLSetup(&MsSQLConfig{
+				Host:     "192.168.199.66",
+				Port:     1433,
+				UserName: "manager",
+				Password: "65ezbuy@nicemanager",
+				Database: "Pro_test",
+			})
+
+			db := MsSQL()
+			Ω(db).ShouldNot(BeNil())
+
+			objs, err := OfficeDBMgr(db).SearchConditions([]string{}, "", 0, 2)
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(len(objs)).To(Equal(2))
+
+			office := OfficeMgr.NewOffice()
+			office.OfficeName = "Test"
+			office.OfficeArea = "SH"
+			office.SearchOriginCode = "xxx"
+			office.ProcessingOriginCode = "yyy"
+			office.CreateBy = "Jay"
+			office.CreateDate = time.Now()
+			office.UpdateDate = office.CreateDate
+
+			tx, err := db.BeginTx()
+			Ω(err).ShouldNot(HaveOccurred())
+			defer tx.Close()
+
+			n, err := OfficeDBMgr(tx).Create(office)
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(n).To(Equal(int64(1)))
+
+			log.Println("mssql created office:", office)
+			office.OfficeName = "UpdateTest"
+			office.UpdateBy = "ljp"
+			office.UpdateDate = time.Now()
+			n, err = OfficeDBMgr(tx).Update(office)
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(n).To(Equal(int64(1)))
+
+			n, err = OfficeDBMgr(tx).Delete(office)
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(n).To(Equal(int64(1)))
+
+		})
+
+	})
+})
+
+var _ = Describe("redis-orm.mysql", func() {
 	BeforeEach(func() {
 		MySQLSetup(&MySQLConfig{
 			Host:     "localhost",
@@ -114,7 +240,6 @@ var _ = Describe("redis-orm.mysql", func() {
 			user.Longitude = 103.754
 			user.Latitude = 1.3282
 
-			MySQL().Debug(true)
 			tx, err := MySQL().BeginTx()
 			Ω(err).ShouldNot(HaveOccurred())
 			defer tx.Close()

@@ -1,7 +1,8 @@
 {{define "object.range"}}
 {{$rg := .}}
 {{$obj := .Obj}}
-{{$primaryField := .Obj.PrimaryField}}
+{{$primary := $obj.PrimaryKey}}
+{{$primaryField := $primary.FirstField }}
 
 type {{$rg.Name}} struct{
 	{{- range $j, $field := $rg.Fields}}
@@ -51,21 +52,25 @@ func (u *{{$rg.Name}}) SQLFormat(limit bool) string {
 	conditions := []string{}
 	{{- range $j, $field := $rg.Fields}}
 		{{- if ne (add $j 1) (len $rg.Fields)}}
-			conditions = append(conditions, "{{$field.Name | camel2name}} = ?")
+			conditions = append(conditions, "{{$field.FieldName}} = ?")
 		{{- end}}		
 	{{- end}}
 	if u.{{$rg.LastField.Name}}Begin != u.{{$rg.LastField.Name}}End {
 		if u.{{$rg.LastField.Name}}Begin != -1 {
-			conditions = append(conditions, fmt.Sprintf("{{$rg.LastField.Name | camel2name}} %s ?", u.beginOp()))
+			conditions = append(conditions, fmt.Sprintf("{{$rg.LastField.FieldName}} %s ?", u.beginOp()))
 		}
 		if u.{{$rg.LastField.Name}}End != -1 {
-			conditions = append(conditions, fmt.Sprintf("{{$rg.LastField.Name | camel2name}} %s ?", u.endOp()))
+			conditions = append(conditions, fmt.Sprintf("{{$rg.LastField.FieldName}} %s ?", u.endOp()))
 		}
 	}
-	if limit {
-		return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("{{$rg.LastField.Name}}", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
+	if limit {		
+		{{- if $obj.DbContains "mssql"}}
+		return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("{{$rg.LastField.FieldName}}", u.revert), orm.MsSQLOffsetLimit(u.offset, u.limit))
+		{{- else}}
+		return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("{{$rg.LastField.FieldName}}", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
+		{{- end}}
 	}
-	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("{{$rg.LastField.Name}}", u.revert))
+	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("{{$rg.LastField.FieldName}}", u.revert))
 }
 
 func (u *{{$rg.Name}}) SQLParams() []interface{} {

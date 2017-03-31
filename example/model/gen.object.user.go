@@ -79,6 +79,25 @@ func (obj *User) GetColumns() []string {
 	return columns
 }
 
+func (obj *User) GetNoneIncrementColumns() []string {
+	columns := []string{
+		"`name`",
+		"`mailbox`",
+		"`sex`",
+		"`age`",
+		"`longitude`",
+		"`latitude`",
+		"`description`",
+		"`password`",
+		"`head_url`",
+		"`status`",
+		"`created_at`",
+		"`updated_at`",
+		"`deleted_at`",
+	}
+	return columns
+}
+
 func (obj *User) GetPrimaryKey() PrimaryKey {
 	pk := UserMgr.NewPrimaryKey()
 	pk.Id = obj.Id
@@ -145,7 +164,7 @@ func (u *IdOfUserPK) Parse(key string) error {
 
 func (u *IdOfUserPK) SQLFormat() string {
 	conditions := []string{
-		"id = ?",
+		"`id` = ?",
 	}
 	return orm.SQLWhere(conditions)
 }
@@ -181,8 +200,8 @@ func (u *MailboxPasswordOfUserUK) Key() string {
 
 func (u *MailboxPasswordOfUserUK) SQLFormat(limit bool) string {
 	conditions := []string{
-		"mailbox = ?",
-		"password = ?",
+		"`mailbox` = ?",
+		"`password` = ?",
 	}
 	return orm.SQLWhere(conditions)
 }
@@ -226,7 +245,7 @@ func (u *SexOfUserIDX) Key() string {
 
 func (u *SexOfUserIDX) SQLFormat(limit bool) string {
 	conditions := []string{
-		"sex = ?",
+		"`sex` = ?",
 	}
 	if limit {
 		return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOffsetLimit(u.offset, u.limit))
@@ -305,16 +324,16 @@ func (u *IdOfUserRNG) SQLFormat(limit bool) string {
 	conditions := []string{}
 	if u.IdBegin != u.IdEnd {
 		if u.IdBegin != -1 {
-			conditions = append(conditions, fmt.Sprintf("id %s ?", u.beginOp()))
+			conditions = append(conditions, fmt.Sprintf("`id` %s ?", u.beginOp()))
 		}
 		if u.IdEnd != -1 {
-			conditions = append(conditions, fmt.Sprintf("id %s ?", u.endOp()))
+			conditions = append(conditions, fmt.Sprintf("`id` %s ?", u.endOp()))
 		}
 	}
 	if limit {
-		return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Id", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
+		return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("`id`", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
 	}
-	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Id", u.revert))
+	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("`id`", u.revert))
 }
 
 func (u *IdOfUserRNG) SQLParams() []interface{} {
@@ -431,16 +450,16 @@ func (u *AgeOfUserRNG) SQLFormat(limit bool) string {
 	conditions := []string{}
 	if u.AgeBegin != u.AgeEnd {
 		if u.AgeBegin != -1 {
-			conditions = append(conditions, fmt.Sprintf("age %s ?", u.beginOp()))
+			conditions = append(conditions, fmt.Sprintf("`age` %s ?", u.beginOp()))
 		}
 		if u.AgeEnd != -1 {
-			conditions = append(conditions, fmt.Sprintf("age %s ?", u.endOp()))
+			conditions = append(conditions, fmt.Sprintf("`age` %s ?", u.endOp()))
 		}
 	}
 	if limit {
-		return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Age", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
+		return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("`age`", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
 	}
-	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("Age", u.revert))
+	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("`age`", u.revert))
 }
 
 func (u *AgeOfUserRNG) SQLParams() []interface{} {
@@ -541,7 +560,7 @@ func UserDBMgr(db orm.DB) *_UserDBMgr {
 func (m *_UserDBMgr) Search(where string, orderby string, limit string, args ...interface{}) ([]*User, error) {
 	obj := UserMgr.NewUser()
 	conditions := []string{where, orderby, limit}
-	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
+	query := fmt.Sprintf("SELECT %s FROM ezorm.users %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
 	objs, err := m.FetchBySQL(query, args...)
 	if err != nil {
 		return nil, err
@@ -555,11 +574,12 @@ func (m *_UserDBMgr) Search(where string, orderby string, limit string, args ...
 
 func (m *_UserDBMgr) SearchConditions(conditions []string, orderby string, offset int, limit int, args ...interface{}) ([]*User, error) {
 	obj := UserMgr.NewUser()
-	q := fmt.Sprintf("SELECT %s FROM `users` %s %s %s",
+	q := fmt.Sprintf("SELECT %s FROM ezorm.users %s %s %s",
 		strings.Join(obj.GetColumns(), ","),
 		orm.SQLWhere(conditions),
 		orderby,
 		orm.SQLOffsetLimit(offset, limit))
+
 	objs, err := m.FetchBySQL(q, args...)
 	if err != nil {
 		return nil, err
@@ -623,7 +643,7 @@ func (m *_UserDBMgr) FetchBySQL(q string, args ...interface{}) (results []interf
 }
 func (m *_UserDBMgr) Fetch(pk PrimaryKey) (*User, error) {
 	obj := UserMgr.NewUser()
-	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	query := fmt.Sprintf("SELECT %s FROM ezorm.users %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
 	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
 	if err != nil {
 		return nil, err
@@ -640,7 +660,7 @@ func (m *_UserDBMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 		params = append(params, fmt.Sprint(pk.(*IdOfUserPK).Id))
 	}
 	obj := UserMgr.NewUser()
-	query := fmt.Sprintf("SELECT %s FROM `users` WHERE `Id` IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join(params, ","))
+	query := fmt.Sprintf("SELECT %s FROM ezorm.users WHERE `id` IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join(params, ","))
 	objs, err := m.FetchBySQL(query)
 	if err != nil {
 		return nil, err
@@ -665,7 +685,7 @@ func (m *_UserDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 
 func (m *_UserDBMgr) FindOneFetch(unique Unique) (*User, error) {
 	obj := UserMgr.NewUser()
-	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
+	query := fmt.Sprintf("SELECT %s FROM ezorm.users %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, unique.SQLParams()...)
 	if err != nil {
 		return nil, err
@@ -692,7 +712,7 @@ func (m *_UserDBMgr) FindFetch(index Index) (int64, []*User, error) {
 	}
 
 	obj := UserMgr.NewUser()
-	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
+	query := fmt.Sprintf("SELECT %s FROM ezorm.users %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, index.SQLParams()...)
 	if err != nil {
 		return total, nil, err
@@ -719,7 +739,7 @@ func (m *_UserDBMgr) RangeFetch(scope Range) (int64, []*User, error) {
 		return total, nil, err
 	}
 	obj := UserMgr.NewUser()
-	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
+	query := fmt.Sprintf("SELECT %s FROM ezorm.users %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, scope.SQLParams()...)
 	if err != nil {
 		return total, nil, err
@@ -743,7 +763,7 @@ func (m *_UserDBMgr) RangeRevertFetch(scope Range) (int64, []*User, error) {
 
 func (m *_UserDBMgr) queryLimit(where string, limit int, args ...interface{}) (results []PrimaryKey, err error) {
 	pk := UserMgr.NewPrimaryKey()
-	query := fmt.Sprintf("SELECT %s FROM `users` %s", strings.Join(pk.Columns(), ","), where)
+	query := fmt.Sprintf("SELECT %s FROM ezorm.users %s", strings.Join(pk.Columns(), ","), where)
 	rows, err := m.db.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("User query limit error: %v", err)
@@ -773,7 +793,7 @@ func (m *_UserDBMgr) queryLimit(where string, limit int, args ...interface{}) (r
 }
 
 func (m *_UserDBMgr) queryCount(where string, args ...interface{}) (int64, error) {
-	query := fmt.Sprintf("SELECT count(`id`) FROM `users` %s", where)
+	query := fmt.Sprintf("SELECT count(`id`) FROM ezorm.users %s", where)
 	rows, err := m.db.Query(query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("User query count error: %v", err)
@@ -796,10 +816,9 @@ func (m *_UserDBMgr) BatchCreate(objs []*User) (int64, error) {
 	}
 
 	params := make([]string, 0, len(objs))
-	values := make([]interface{}, 0, len(objs)*14)
+	values := make([]interface{}, 0, len(objs)*13)
 	for _, obj := range objs {
-		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice(14, "?"), ",")))
-		values = append(values, 0)
+		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice(13, "?"), ",")))
 		values = append(values, obj.Name)
 		values = append(values, obj.Mailbox)
 		values = append(values, obj.Sex)
@@ -818,7 +837,7 @@ func (m *_UserDBMgr) BatchCreate(objs []*User) (int64, error) {
 			values = append(values, obj.DeletedAt.Unix())
 		}
 	}
-	query := fmt.Sprintf("INSERT INTO `users`(%s) VALUES %s", strings.Join(objs[0].GetColumns(), ","), strings.Join(params, ","))
+	query := fmt.Sprintf("INSERT INTO ezorm.users(%s) VALUES %s", strings.Join(objs[0].GetNoneIncrementColumns(), ","), strings.Join(params, ","))
 	result, err := m.db.Exec(query, values...)
 	if err != nil {
 		return 0, err
@@ -831,9 +850,9 @@ func (m *_UserDBMgr) BatchCreate(objs []*User) (int64, error) {
 // where:"c=? and d=?"
 // params:[]interface{}{"a", "b", "c", "d"}...
 func (m *_UserDBMgr) UpdateBySQL(set, where string, args ...interface{}) (int64, error) {
-	query := fmt.Sprintf("UPDATE `users` SET %s", set)
+	query := fmt.Sprintf("UPDATE ezorm.users SET %s", set)
 	if where != "" {
-		query = fmt.Sprintf("UPDATE `users` SET %s WHERE %s", set, where)
+		query = fmt.Sprintf("UPDATE ezorm.users SET %s WHERE %s", set, where)
 	}
 	result, err := m.db.Exec(query, args...)
 	if err != nil {
@@ -843,13 +862,12 @@ func (m *_UserDBMgr) UpdateBySQL(set, where string, args ...interface{}) (int64,
 }
 
 func (m *_UserDBMgr) Create(obj *User) (int64, error) {
-	params := orm.NewStringSlice(14, "?")
-	q := fmt.Sprintf("INSERT INTO `users`(%s) VALUES(%s)",
-		strings.Join(obj.GetColumns(), ","),
+	params := orm.NewStringSlice(13, "?")
+	q := fmt.Sprintf("INSERT INTO ezorm.users(%s) VALUES(%s)",
+		strings.Join(obj.GetNoneIncrementColumns(), ","),
 		strings.Join(params, ","))
 
 	values := make([]interface{}, 0, 14)
-	values = append(values, 0)
 	values = append(values, obj.Name)
 	values = append(values, obj.Mailbox)
 	values = append(values, obj.Sex)
@@ -897,7 +915,7 @@ func (m *_UserDBMgr) Update(obj *User) (int64, error) {
 	}
 
 	pk := obj.GetPrimaryKey()
-	q := fmt.Sprintf("UPDATE `users` SET %s %s", strings.Join(columns, ","), pk.SQLFormat())
+	q := fmt.Sprintf("UPDATE ezorm.users SET %s %s", strings.Join(columns, ","), pk.SQLFormat())
 	values := make([]interface{}, 0, 14-1)
 	values = append(values, obj.Name)
 	values = append(values, obj.Mailbox)
@@ -942,7 +960,7 @@ func (m *_UserDBMgr) Delete(obj *User) (int64, error) {
 }
 
 func (m *_UserDBMgr) DeleteByPrimaryKey(pk PrimaryKey) (int64, error) {
-	q := fmt.Sprintf("DELETE FROM `users` %s", pk.SQLFormat())
+	q := fmt.Sprintf("DELETE FROM ezorm.users %s", pk.SQLFormat())
 	result, err := m.db.Exec(q, pk.SQLParams()...)
 	if err != nil {
 		return 0, err
@@ -951,9 +969,9 @@ func (m *_UserDBMgr) DeleteByPrimaryKey(pk PrimaryKey) (int64, error) {
 }
 
 func (m *_UserDBMgr) DeleteBySQL(where string, args ...interface{}) (int64, error) {
-	query := fmt.Sprintf("DELETE FROM `users`")
+	query := fmt.Sprintf("DELETE FROM ezorm.users")
 	if where != "" {
-		query = fmt.Sprintf("DELETE FROM `users` WHERE %s", where)
+		query = fmt.Sprintf("DELETE FROM ezorm.users WHERE %s", where)
 	}
 	result, err := m.db.Exec(query, args...)
 	if err != nil {

@@ -6,6 +6,9 @@ import (
 	"log"
 	"time"
 
+	"strings"
+
+	_ "github.com/denisenkom/go-mssqldb"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -21,13 +24,21 @@ type DBStore struct {
 }
 
 func NewDBStore(driver, host string, port int, database, username, password string) (*DBStore, error) {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&autocommit=true&parseTime=True",
-		username,
-		password,
-		host,
-		port,
-		database)
-
+	var dsn string
+	switch strings.ToLower(driver) {
+	case "mysql":
+		dsn = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&autocommit=true&parseTime=True",
+			username,
+			password,
+			host,
+			port,
+			database)
+	case "mssql":
+		dsn = fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d;database=%s",
+			host, username, password, port, database)
+	default:
+		return nil, fmt.Errorf("unsupport db driver: %s", driver)
+	}
 	db, err := sql.Open(driver, dsn)
 	if err != nil {
 		return nil, err

@@ -85,11 +85,32 @@ func (o *MetaObject) DbSource() string {
 	return ""
 }
 
+func (o *MetaObject) FromDB() string {
+	switch o.Db {
+	case "mssql":
+		return fmt.Sprintf("[dbo].[%s]", o.DbSource())
+	}
+	return fmt.Sprintf("%s.%s", o.DbName, o.DbSource())
+}
+
 func (o *MetaObject) Fields() []*Field {
 	if o.Relation != nil {
-		return o.Relation.Fields
+		return o.Relation.Fields()
 	}
 	return o.fields
+}
+
+func (o *MetaObject) NoneIncrementFields() []*Field {
+	if o.Relation != nil {
+		return o.Relation.NoneIncrementFields()
+	}
+	fields := make([]*Field, 0, len(o.fields))
+	for _, f := range o.fields {
+		if f.IsAutoIncrement() == false {
+			fields = append(fields, f)
+		}
+	}
+	return fields
 }
 
 func (o *MetaObject) Uniques() []*Index {
