@@ -11,6 +11,18 @@ import (
 	"encoding/base64"
 )
 
+func MsSQLTimeParse(s string) time.Time {
+	t, err := time.Parse(time.RFC3339Nano, s)
+	if err != nil {
+		fmt.Println("MsSQLTimeParse failed:", err)
+	}
+	return t.Local()
+}
+
+func MsSQLTimeFormat(t time.Time) string {
+	return t.UTC().Format("2006-01-02 15:04:05")
+}
+
 func TimeToLocalTime(c time.Time) string {
 	return c.Local().Format("2006-01-02 15:04:05")
 }
@@ -98,9 +110,9 @@ func SQLWhere(conditions []string) string {
 func SQLOrderBy(field string, revert bool) string {
 	if field != "" {
 		if revert {
-			return fmt.Sprintf("ORDER BY `%s` DESC", field)
+			return fmt.Sprintf("ORDER BY %s DESC", field)
 		}
-		return fmt.Sprintf("ORDER BY `%s` ASC", field)
+		return fmt.Sprintf("ORDER BY %s ASC", field)
 	}
 	return ""
 }
@@ -113,6 +125,16 @@ func SQLOffsetLimit(offset, limit int) string {
 		return fmt.Sprintf("LIMIT %d", limit)
 	}
 	return fmt.Sprintf("LIMIT %d, %d", offset, limit)
+}
+
+func MsSQLOffsetLimit(offset, limit int) string {
+	if limit <= 0 {
+		return ""
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	return fmt.Sprintf("OFFSET %d ROWS FETCH NEXT %d ROWS ONLY", offset, limit)
 }
 
 func atoi(b []byte) (int, error) {

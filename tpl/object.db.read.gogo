@@ -20,7 +20,7 @@ func {{$obj.Name}}DBMgr(db orm.DB) *_{{$obj.Name}}DBMgr {
 func (m *_{{$obj.Name}}DBMgr) Search(where string, orderby string, limit string, args ...interface{}) ([]*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	conditions := []string{where, orderby, limit}
-	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
 	objs, err := m.FetchBySQL(query, args...)
 	if err != nil {
 		return nil, err
@@ -34,11 +34,21 @@ func (m *_{{$obj.Name}}DBMgr) Search(where string, orderby string, limit string,
 
 func (m *_{{$obj.Name}}DBMgr) SearchConditions(conditions []string, orderby string, offset int, limit int, args ...interface{}) ([]*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
-	q := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s %s %s", 
+	{{- if $obj.DbContains "mssql"}}
+	if orderby == "" {
+		orderby = orm.SQLOrderBy("{{$primaryField.FieldName}}", false)
+	}
+	{{- end}}
+	q := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s %s %s", 
 			strings.Join(obj.GetColumns(), ","), 
 			orm.SQLWhere(conditions), 
 			orderby,
+			{{- if $obj.DbContains "mssql"}}
+			orm.MsSQLOffsetLimit(offset, limit))
+			{{- else}}
 			orm.SQLOffsetLimit(offset, limit))
+			{{- end}}
+			
 	objs, err := m.FetchBySQL(q, args...)
 	if err != nil {
 		return nil, err
@@ -128,7 +138,7 @@ func (m *_{{$obj.Name}}DBMgr) FetchBySQL(q string, args ... interface{}) (result
 {{- if ne $obj.DbSource ""}}
 func (m *_{{$obj.Name}}DBMgr) Fetch(pk PrimaryKey) (*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
-	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
 	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
 	if err != nil {
 		return nil, err
@@ -146,7 +156,7 @@ func (m *_{{$obj.Name}}DBMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*{{$obj.Na
 		params = append(params, fmt.Sprint(pk.(*{{$primary.Name}}).{{$primary.FirstField.Name}}))
 	}
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
-	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` WHERE `{{$primaryField.Name}}` IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join(params, ","))
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} WHERE {{$primaryField.FieldName}} IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join(params, ","))
 	objs, err := m.FetchBySQL(query)
 	if err != nil {
 		return nil, err
@@ -182,7 +192,7 @@ func (m *_{{$obj.Name}}DBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 
 func (m *_{{$obj.Name}}DBMgr) FindOneFetch(unique Unique) (*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
-	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, unique.SQLParams()...)
 	if err != nil {
 		return nil, err
@@ -209,7 +219,7 @@ func (m *_{{$obj.Name}}DBMgr) FindFetch(index Index) (int64, []*{{$obj.Name}}, e
 	}
 
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
-	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, index.SQLParams()...)
 	if err != nil {
 		return total, nil, err
@@ -236,7 +246,7 @@ func (m *_{{$obj.Name}}DBMgr) RangeFetch(scope Range) (int64, []*{{$obj.Name}}, 
 		return total, nil, err
 	}
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
-	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, scope.SQLParams()...)
 	if err != nil {
 		return total, nil, err
@@ -260,7 +270,7 @@ func (m *_{{$obj.Name}}DBMgr) RangeRevertFetch(scope Range) (int64, []*{{$obj.Na
 
 func (m *_{{$obj.Name}}DBMgr) queryLimit(where string, limit int, args ...interface{}) (results []PrimaryKey, err error){
 	pk := {{$obj.Name}}Mgr.NewPrimaryKey()
-	query := fmt.Sprintf("SELECT %s FROM `{{$obj.DbSource}}` %s", strings.Join(pk.Columns(), ","), where)
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(pk.Columns(), ","), where)
 	rows, err := m.db.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("{{$obj.Name}} query limit error: %v", err)
@@ -334,7 +344,7 @@ func (m *_{{$obj.Name}}DBMgr) queryLimit(where string, limit int, args ...interf
 }
 
 func (m *_{{$obj.Name}}DBMgr) queryCount(where string, args ...interface{}) (int64, error){
-	query := fmt.Sprintf("SELECT count(`{{$primaryField.Name | camel2name}}`) FROM `{{$obj.DbSource}}` %s", where)
+	query := fmt.Sprintf("SELECT count({{$primaryField.FieldName}}) FROM {{$obj.FromDB}} %s", where)
 	rows, err := m.db.Query(query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("{{$obj.Name}} query count error: %v", err)

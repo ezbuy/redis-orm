@@ -17,11 +17,16 @@ func (obj *{{.Name}}) GetTableName() string {
 func (obj *{{.Name}}) GetColumns() []string {
 	columns := []string{
 	{{- range $field := .Fields}}
-	{{- if $obj.DbContains "mysql"}}
-		"`{{$field.Name | camel2name}}`",
-	{{- else}}
-		"`{{$field.Name}}`",
+	"{{$field.FieldName}}",
 	{{- end}}
+	}
+	return columns
+}
+
+func (obj *{{.Name}}) GetNoneIncrementColumns() []string {
+	columns := []string{
+	{{- range $field := .NoneIncrementFields}}
+	"{{$field.FieldName}}",
 	{{- end}}
 	}
 	return columns

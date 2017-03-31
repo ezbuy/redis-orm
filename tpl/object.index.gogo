@@ -1,7 +1,8 @@
 {{define "object.index"}}
 {{$index := .}}
 {{$obj := .Obj}}
-{{$primaryField := .Obj.PrimaryField}}
+{{$primary := $obj.PrimaryKey}}
+{{$primaryField := $primary.FirstField }}
 type {{$index.Name}} struct{
 	{{- range $j, $field := $index.Fields}}
 	{{$field.Name}} {{$field.GetType}}
@@ -26,11 +27,15 @@ func (u *{{$index.Name}}) Key() string {
 func (u *{{$index.Name}}) SQLFormat(limit bool) string {
 	conditions := []string{
 		{{- range $j, $field := $index.Fields}}
-		"{{$field.Name | camel2name}} = ?",
+		"{{$field.FieldName}} = ?",
 		{{- end}}
 	}
 	if limit {
+		{{- if $obj.DbContains "mssql"}}
+		return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("{{$primaryField.FieldName}}", false), orm.MsSQLOffsetLimit(u.offset, u.limit))
+		{{- else}}
 		return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOffsetLimit(u.offset, u.limit))
+		{{- end}}
 	}
 	return orm.SQLWhere(conditions)
 }

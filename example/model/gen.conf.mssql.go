@@ -1,20 +1,21 @@
-{{define "conf.mssql"}}package {{.GoPackage}}
+package model
+
 import (
-	"time"
 	"github.com/ezbuy/redis-orm/orm"
+	"time"
 )
 
 var (
 	_mssql_store *orm.DBStore
 )
 
-type MsSQLConfig struct{
-	Host 	 	string
-	Port 		int
-	UserName 	string
-	Password 	string
-	Database 	string
-	PoolSize 	int
+type MsSQLConfig struct {
+	Host            string
+	Port            int
+	UserName        string
+	Password        string
+	Database        string
+	PoolSize        int
 	ConnMaxLifeTime time.Duration
 }
 
@@ -36,4 +37,3 @@ func MsSQLSetup(cf *MsSQLConfig) {
 func MsSQL() *orm.DBStore {
 	return _mssql_store
 }
-{{end}}
