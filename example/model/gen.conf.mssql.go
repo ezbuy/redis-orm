@@ -1,12 +1,16 @@
 package model
 
 import (
-	"github.com/ezbuy/redis-orm/orm"
+	"sync"
 	"time"
+
+	"github.com/ezbuy/redis-orm/orm"
 )
 
 var (
 	_mssql_store *orm.DBStore
+	_mssql_cfg   MsSQLConfig
+	_mssql_once  sync.Once
 )
 
 type MsSQLConfig struct {
@@ -20,20 +24,27 @@ type MsSQLConfig struct {
 }
 
 func MsSQLSetup(cf *MsSQLConfig) {
-	store, err := orm.NewDBStore("mssql", cf.Host, cf.Port, cf.Database, cf.UserName, cf.Password)
-	if err != nil {
-		panic(err)
-	}
-
-	store.SetConnMaxLifetime(time.Hour)
-	if cf.ConnMaxLifeTime > 0 {
-		store.SetConnMaxLifetime(cf.ConnMaxLifeTime)
-	}
-	store.SetMaxIdleConns(cf.PoolSize)
-	store.SetMaxOpenConns(cf.PoolSize)
-	_mssql_store = store
+	_mssql_cfg = *cf
 }
 
 func MsSQL() *orm.DBStore {
+	var err error
+	_mssql_once.Do(func() {
+		_mssql_store, err = orm.NewDBStore("mssql",
+			_mssql_cfg.Host,
+			_mssql_cfg.Port,
+			_mssql_cfg.Database,
+			_mssql_cfg.UserName,
+			_mssql_cfg.Password)
+		if err != nil {
+			panic(err)
+		}
+		_mssql_store.SetConnMaxLifetime(time.Hour)
+		if _mssql_cfg.ConnMaxLifeTime > 0 {
+			_mssql_store.SetConnMaxLifetime(_mssql_cfg.ConnMaxLifeTime)
+		}
+		_mssql_store.SetMaxIdleConns(_mssql_cfg.PoolSize)
+		_mssql_store.SetMaxOpenConns(_mssql_cfg.PoolSize)
+	})
 	return _mssql_store
 }
