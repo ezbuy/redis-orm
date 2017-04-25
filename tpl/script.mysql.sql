@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS `{{$obj.DbTable}}` (
 	{{$field.SQLColumn "mysql"}}, 
 	{{- end}}
 	{{$obj.PrimaryKey.SQLColumn "mysql"}}
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 {{range $i, $unique := $obj.Uniques}}
 {{- if not $unique.HasPrimaryKey}}
