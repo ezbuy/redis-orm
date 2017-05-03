@@ -180,7 +180,7 @@ func (u *MailboxPasswordOfUserBaseInfoUK) Limit(n int) {
 func (u *MailboxPasswordOfUserBaseInfoUK) Offset(n int) {
 }
 
-func (u *MailboxPasswordOfUserBaseInfoUK) UKRelation() UniqueRelation {
+func (u *MailboxPasswordOfUserBaseInfoUK) UKRelation(store *orm.RedisStore) UniqueRelation {
 	return nil
 }
 
@@ -241,7 +241,7 @@ func (u *NameOfUserBaseInfoIDX) PositionOffsetLimit(len int) (int, int) {
 	return u.offset, u.limit
 }
 
-func (u *NameOfUserBaseInfoIDX) IDXRelation() IndexRelation {
+func (u *NameOfUserBaseInfoIDX) IDXRelation(store *orm.RedisStore) IndexRelation {
 	return nil
 }
 
@@ -369,7 +369,7 @@ func (u *IdOfUserBaseInfoRNG) IncludeEnd(f bool) {
 	u.includeEnd = f
 }
 
-func (u *IdOfUserBaseInfoRNG) RNGRelation() RangeRelation {
+func (u *IdOfUserBaseInfoRNG) RNGRelation(store *orm.RedisStore) RangeRelation {
 	return nil
 }
 

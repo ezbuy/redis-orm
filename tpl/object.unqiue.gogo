@@ -51,9 +51,9 @@ func (u *{{$unique.Name}}) Offset(n int) {
 }
 
 {{$relation := $unique.GetRelation "pair" $primaryField.GetType $obj.Name}}
-func (u *{{$unique.Name}}) UKRelation() UniqueRelation {
+func (u *{{$unique.Name}}) UKRelation(store *orm.RedisStore) UniqueRelation {
 	{{- if $unique.Obj.DbContains "redis"}}
-	return {{$relation.Name}}RedisMgr()
+	return {{$relation.Name}}RedisMgr(store)
 	{{- else}}
 	return nil
 	{{- end}}

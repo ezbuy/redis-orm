@@ -277,7 +277,7 @@ func (u *OfficeIdOfOfficeRNG) IncludeEnd(f bool) {
 	u.includeEnd = f
 }
 
-func (u *OfficeIdOfOfficeRNG) RNGRelation() RangeRelation {
+func (u *OfficeIdOfOfficeRNG) RNGRelation(store *orm.RedisStore) RangeRelation {
 	return nil
 }
 

@@ -277,7 +277,7 @@ func (u *UserIdBlogIdOfUserBlogsRNG) IncludeEnd(f bool) {
 	u.includeEnd = f
 }
 
-func (u *UserIdBlogIdOfUserBlogsRNG) RNGRelation() RangeRelation {
+func (u *UserIdBlogIdOfUserBlogsRNG) RNGRelation(store *orm.RedisStore) RangeRelation {
 	return nil
 }
 
