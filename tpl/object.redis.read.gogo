@@ -5,7 +5,7 @@
 
 //! redis model read
 func (m *_{{$obj.Name}}RedisMgr) FindOne(unique Unique) (PrimaryKey, error) {
-	if relation := unique.UKRelation(); relation != nil {
+	if relation := unique.UKRelation(m.RedisStore); relation != nil {
 		str, err := relation.FindOne(unique.Key())
 		if err != nil {
 			return nil, err
@@ -29,7 +29,7 @@ func (m *_{{$obj.Name}}RedisMgr) FindOneFetch(unique Unique) (*{{$obj.Name}}, er
 }
 
 func (m *_{{$obj.Name}}RedisMgr) Find(index Index) (int64, []PrimaryKey, error) {
-	if relation := index.IDXRelation(); relation != nil {
+	if relation := index.IDXRelation(m.RedisStore); relation != nil {
 		strs, err := relation.Find(index.Key())
 		if err != nil {
 			return 0, nil, err
@@ -61,7 +61,7 @@ func (m *_{{$obj.Name}}RedisMgr) FindFetch(index Index) (int64, []*{{$obj.Name}}
 }
 
 func (m *_{{$obj.Name}}RedisMgr) Range(scope Range) (int64, []PrimaryKey, error) {
-	if relation := scope.RNGRelation(); relation != nil {
+	if relation := scope.RNGRelation(m.RedisStore); relation != nil {
 		strs, err := relation.Range(scope.Key(), scope.Begin(), scope.End())
 		if err != nil {
 			return 0, nil, err
@@ -93,7 +93,7 @@ func (m *_{{$obj.Name}}RedisMgr) RangeFetch(scope Range) (int64, []*{{$obj.Name}
 }
 
 func (m *_{{$obj.Name}}RedisMgr) RangeRevert(scope Range) (int64, []PrimaryKey, error) {
-	if relation := scope.RNGRelation(); relation != nil {
+	if relation := scope.RNGRelation(m.RedisStore); relation != nil {
 		scope.Revert(true)
 		strs, err := relation.RangeRevert(scope.Key(), scope.Begin(), scope.End())
 		if err != nil {

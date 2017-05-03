@@ -220,7 +220,7 @@ func (u *StatusOfBlogIDX) PositionOffsetLimit(len int) (int, int) {
 	return u.offset, u.limit
 }
 
-func (u *StatusOfBlogIDX) IDXRelation() IndexRelation {
+func (u *StatusOfBlogIDX) IDXRelation(store *orm.RedisStore) IndexRelation {
 	return nil
 }
 
@@ -354,7 +354,7 @@ func (u *IdUserIdOfBlogRNG) IncludeEnd(f bool) {
 	u.includeEnd = f
 }
 
-func (u *IdUserIdOfBlogRNG) RNGRelation() RangeRelation {
+func (u *IdUserIdOfBlogRNG) RNGRelation(store *orm.RedisStore) RangeRelation {
 	return nil
 }
 

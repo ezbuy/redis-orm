@@ -223,8 +223,8 @@ func (u *MailboxPasswordOfUserUK) Limit(n int) {
 func (u *MailboxPasswordOfUserUK) Offset(n int) {
 }
 
-func (u *MailboxPasswordOfUserUK) UKRelation() UniqueRelation {
-	return MailboxPasswordOfUserUKRelationRedisMgr()
+func (u *MailboxPasswordOfUserUK) UKRelation(store *orm.RedisStore) UniqueRelation {
+	return MailboxPasswordOfUserUKRelationRedisMgr(store)
 }
 
 //! indexes
@@ -284,8 +284,8 @@ func (u *SexOfUserIDX) PositionOffsetLimit(len int) (int, int) {
 	return u.offset, u.limit
 }
 
-func (u *SexOfUserIDX) IDXRelation() IndexRelation {
-	return SexOfUserIDXRelationRedisMgr()
+func (u *SexOfUserIDX) IDXRelation(store *orm.RedisStore) IndexRelation {
+	return SexOfUserIDXRelationRedisMgr(store)
 }
 
 //! ranges
@@ -412,8 +412,8 @@ func (u *IdOfUserRNG) IncludeEnd(f bool) {
 	u.includeEnd = f
 }
 
-func (u *IdOfUserRNG) RNGRelation() RangeRelation {
-	return IdOfUserRNGRelationRedisMgr()
+func (u *IdOfUserRNG) RNGRelation(store *orm.RedisStore) RangeRelation {
+	return IdOfUserRNGRelationRedisMgr(store)
 }
 
 type AgeOfUserRNG struct {
@@ -538,8 +538,8 @@ func (u *AgeOfUserRNG) IncludeEnd(f bool) {
 	u.includeEnd = f
 }
 
-func (u *AgeOfUserRNG) RNGRelation() RangeRelation {
-	return AgeOfUserRNGRelationRedisMgr()
+func (u *AgeOfUserRNG) RNGRelation(store *orm.RedisStore) RangeRelation {
+	return AgeOfUserRNGRelationRedisMgr(store)
 }
 
 type _UserDBMgr struct {
@@ -1048,7 +1048,7 @@ func (m *_UserRedisMgr) DelBySQL(db DBFetcher, sql string, args ...interface{}) 
 
 //! redis model read
 func (m *_UserRedisMgr) FindOne(unique Unique) (PrimaryKey, error) {
-	if relation := unique.UKRelation(); relation != nil {
+	if relation := unique.UKRelation(m.RedisStore); relation != nil {
 		str, err := relation.FindOne(unique.Key())
 		if err != nil {
 			return nil, err
@@ -1072,7 +1072,7 @@ func (m *_UserRedisMgr) FindOneFetch(unique Unique) (*User, error) {
 }
 
 func (m *_UserRedisMgr) Find(index Index) (int64, []PrimaryKey, error) {
-	if relation := index.IDXRelation(); relation != nil {
+	if relation := index.IDXRelation(m.RedisStore); relation != nil {
 		strs, err := relation.Find(index.Key())
 		if err != nil {
 			return 0, nil, err
@@ -1104,7 +1104,7 @@ func (m *_UserRedisMgr) FindFetch(index Index) (int64, []*User, error) {
 }
 
 func (m *_UserRedisMgr) Range(scope Range) (int64, []PrimaryKey, error) {
-	if relation := scope.RNGRelation(); relation != nil {
+	if relation := scope.RNGRelation(m.RedisStore); relation != nil {
 		strs, err := relation.Range(scope.Key(), scope.Begin(), scope.End())
 		if err != nil {
 			return 0, nil, err
@@ -1136,7 +1136,7 @@ func (m *_UserRedisMgr) RangeFetch(scope Range) (int64, []*User, error) {
 }
 
 func (m *_UserRedisMgr) RangeRevert(scope Range) (int64, []PrimaryKey, error) {
-	if relation := scope.RNGRelation(); relation != nil {
+	if relation := scope.RNGRelation(m.RedisStore); relation != nil {
 		scope.Revert(true)
 		strs, err := relation.RangeRevert(scope.Key(), scope.Begin(), scope.End())
 		if err != nil {

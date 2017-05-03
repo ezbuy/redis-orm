@@ -157,9 +157,9 @@ func (u *{{$rg.Name}}) IncludeEnd(f bool) {
 }
 
 {{$relation := $rg.GetRelation "zset" $primaryField.GetType $obj.Name}}
-func (u *{{$rg.Name}}) RNGRelation() RangeRelation {
+func (u *{{$rg.Name}}) RNGRelation(store *orm.RedisStore) RangeRelation {
 	{{- if $rg.Obj.DbContains "redis"}}
-	return {{$relation.Name}}RedisMgr()
+	return {{$relation.Name}}RedisMgr(store)
 	{{- else}}
 	return nil
 	{{- end}}

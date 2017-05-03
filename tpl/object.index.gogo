@@ -74,9 +74,9 @@ func (u *{{$index.Name}}) PositionOffsetLimit(len int) (int, int) {
 }
 
 {{$relation := $index.GetRelation "pair" $primaryField.GetType $obj.Name}}
-func (u *{{$index.Name}}) IDXRelation() IndexRelation {
+func (u *{{$index.Name}}) IDXRelation(store *orm.RedisStore) IndexRelation {
 	{{- if $index.Obj.DbContains "redis"}}
-	return {{$relation.Name}}RedisMgr()
+	return {{$relation.Name}}RedisMgr(store)
 	{{- else}}
 	return nil
 	{{- end}}

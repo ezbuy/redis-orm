@@ -1,5 +1,7 @@
 {{define "conf.orm"}}package {{.GoPackage}}
 
+import "github.com/ezbuy/redis-orm/orm"
+
 type SQL interface{
 	SQLFormat(limit bool) string
 	SQLParams() []interface{}
@@ -20,7 +22,7 @@ type PrimaryKey interface{
 type Unique interface{
 	SQL
 	Key() string
-	UKRelation() UniqueRelation
+	UKRelation(store *orm.RedisStore) UniqueRelation
 }
 type UniqueRelation interface {
 	FindOne(key string) (string, error)
@@ -30,7 +32,7 @@ type Index interface{
 	SQL
 	Key() string
 	PositionOffsetLimit(len int) (int, int)
-	IDXRelation() IndexRelation
+	IDXRelation(store *orm.RedisStore) IndexRelation
 }
 type IndexRelation interface {
 	Find(key string) ([]string, error)
@@ -45,7 +47,7 @@ type Range interface{
 	Revert(flag bool)
 	Key() string
 	PositionOffsetLimit(len int) (int, int)
-	RNGRelation() RangeRelation
+	RNGRelation(store *orm.RedisStore) RangeRelation
 }
 
 type RangeRelation interface {
