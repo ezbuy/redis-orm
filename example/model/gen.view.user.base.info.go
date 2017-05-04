@@ -3,7 +3,7 @@ package model
 import (
 	"database/sql"
 	"fmt"
-	"github.com/ezbuy/redis-orm/orm"
+	"gopkg.in/ezbuy/redis-orm.v1/orm"
 	"gopkg.in/go-playground/validator.v9"
 	"strings"
 	"time"
@@ -391,7 +391,7 @@ func UserBaseInfoDBMgr(db orm.DB) *_UserBaseInfoDBMgr {
 func (m *_UserBaseInfoDBMgr) Search(where string, orderby string, limit string, args ...interface{}) ([]*UserBaseInfo, error) {
 	obj := UserBaseInfoMgr.NewUserBaseInfo()
 	conditions := []string{where, orderby, limit}
-	query := fmt.Sprintf("SELECT %s FROM ezorm.user_base_info %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
+	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
 	objs, err := m.FetchBySQL(query, args...)
 	if err != nil {
 		return nil, err
@@ -405,7 +405,7 @@ func (m *_UserBaseInfoDBMgr) Search(where string, orderby string, limit string, 
 
 func (m *_UserBaseInfoDBMgr) SearchConditions(conditions []string, orderby string, offset int, limit int, args ...interface{}) ([]*UserBaseInfo, error) {
 	obj := UserBaseInfoMgr.NewUserBaseInfo()
-	q := fmt.Sprintf("SELECT %s FROM ezorm.user_base_info %s %s %s",
+	q := fmt.Sprintf("SELECT %s FROM user_base_info %s %s %s",
 		strings.Join(obj.GetColumns(), ","),
 		orm.SQLWhere(conditions),
 		orderby,
@@ -453,7 +453,7 @@ func (m *_UserBaseInfoDBMgr) FetchBySQL(q string, args ...interface{}) (results 
 }
 func (m *_UserBaseInfoDBMgr) Fetch(pk PrimaryKey) (*UserBaseInfo, error) {
 	obj := UserBaseInfoMgr.NewUserBaseInfo()
-	query := fmt.Sprintf("SELECT %s FROM ezorm.user_base_info %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
 	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
 	if err != nil {
 		return nil, err
@@ -470,7 +470,7 @@ func (m *_UserBaseInfoDBMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*UserBaseIn
 		params = append(params, fmt.Sprint(pk.(*IdOfUserBaseInfoPK).Id))
 	}
 	obj := UserBaseInfoMgr.NewUserBaseInfo()
-	query := fmt.Sprintf("SELECT %s FROM ezorm.user_base_info WHERE `id` IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join(params, ","))
+	query := fmt.Sprintf("SELECT %s FROM user_base_info WHERE `id` IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join(params, ","))
 	objs, err := m.FetchBySQL(query)
 	if err != nil {
 		return nil, err
@@ -495,7 +495,7 @@ func (m *_UserBaseInfoDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 
 func (m *_UserBaseInfoDBMgr) FindOneFetch(unique Unique) (*UserBaseInfo, error) {
 	obj := UserBaseInfoMgr.NewUserBaseInfo()
-	query := fmt.Sprintf("SELECT %s FROM ezorm.user_base_info %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
+	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, unique.SQLParams()...)
 	if err != nil {
 		return nil, err
@@ -522,7 +522,7 @@ func (m *_UserBaseInfoDBMgr) FindFetch(index Index) (int64, []*UserBaseInfo, err
 	}
 
 	obj := UserBaseInfoMgr.NewUserBaseInfo()
-	query := fmt.Sprintf("SELECT %s FROM ezorm.user_base_info %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
+	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, index.SQLParams()...)
 	if err != nil {
 		return total, nil, err
@@ -549,7 +549,7 @@ func (m *_UserBaseInfoDBMgr) RangeFetch(scope Range) (int64, []*UserBaseInfo, er
 		return total, nil, err
 	}
 	obj := UserBaseInfoMgr.NewUserBaseInfo()
-	query := fmt.Sprintf("SELECT %s FROM ezorm.user_base_info %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
+	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, scope.SQLParams()...)
 	if err != nil {
 		return total, nil, err
@@ -573,7 +573,7 @@ func (m *_UserBaseInfoDBMgr) RangeRevertFetch(scope Range) (int64, []*UserBaseIn
 
 func (m *_UserBaseInfoDBMgr) queryLimit(where string, limit int, args ...interface{}) (results []PrimaryKey, err error) {
 	pk := UserBaseInfoMgr.NewPrimaryKey()
-	query := fmt.Sprintf("SELECT %s FROM ezorm.user_base_info %s", strings.Join(pk.Columns(), ","), where)
+	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(pk.Columns(), ","), where)
 	rows, err := m.db.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("UserBaseInfo query limit error: %v", err)
@@ -603,7 +603,7 @@ func (m *_UserBaseInfoDBMgr) queryLimit(where string, limit int, args ...interfa
 }
 
 func (m *_UserBaseInfoDBMgr) queryCount(where string, args ...interface{}) (int64, error) {
-	query := fmt.Sprintf("SELECT count(`id`) FROM ezorm.user_base_info %s", where)
+	query := fmt.Sprintf("SELECT count(`id`) FROM user_base_info %s", where)
 	rows, err := m.db.Query(query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("UserBaseInfo query count error: %v", err)

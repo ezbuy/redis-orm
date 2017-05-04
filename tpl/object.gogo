@@ -7,7 +7,7 @@ import (
 	"time"
 	"strings"
 	"database/sql"
-	"github.com/ezbuy/redis-orm/orm"
+	"gopkg.in/ezbuy/redis-orm.v1/orm"
 	"gopkg.in/go-playground/validator.v9"
 	{{- if $obj.DbContains "redis"}}
 	redis "gopkg.in/redis.v5"

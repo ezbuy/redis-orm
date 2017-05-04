@@ -1,6 +1,6 @@
 {{define "conf.orm"}}package {{.GoPackage}}
 
-import "github.com/ezbuy/redis-orm/orm"
+import "gopkg.in/ezbuy/redis-orm.v1/orm"
 
 type SQL interface{
 	SQLFormat(limit bool) string

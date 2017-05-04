@@ -90,7 +90,7 @@ func (o *MetaObject) FromDB() string {
 	case "mssql":
 		return fmt.Sprintf("[dbo].[%s]", o.DbSource())
 	}
-	return fmt.Sprintf("%s.%s", o.DbName, o.DbSource())
+	return fmt.Sprintf("%s", o.DbSource())
 }
 
 func (o *MetaObject) Fields() []*Field {

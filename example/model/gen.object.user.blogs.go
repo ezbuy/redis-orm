@@ -3,7 +3,7 @@ package model
 import (
 	"database/sql"
 	"fmt"
-	"github.com/ezbuy/redis-orm/orm"
+	"gopkg.in/ezbuy/redis-orm.v1/orm"
 	"gopkg.in/go-playground/validator.v9"
 	"strings"
 	"time"
@@ -299,7 +299,7 @@ func UserBlogsDBMgr(db orm.DB) *_UserBlogsDBMgr {
 func (m *_UserBlogsDBMgr) Search(where string, orderby string, limit string, args ...interface{}) ([]*UserBlogs, error) {
 	obj := UserBlogsMgr.NewUserBlogs()
 	conditions := []string{where, orderby, limit}
-	query := fmt.Sprintf("SELECT %s FROM ezorm.user_blogs %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
+	query := fmt.Sprintf("SELECT %s FROM user_blogs %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
 	objs, err := m.FetchBySQL(query, args...)
 	if err != nil {
 		return nil, err
@@ -313,7 +313,7 @@ func (m *_UserBlogsDBMgr) Search(where string, orderby string, limit string, arg
 
 func (m *_UserBlogsDBMgr) SearchConditions(conditions []string, orderby string, offset int, limit int, args ...interface{}) ([]*UserBlogs, error) {
 	obj := UserBlogsMgr.NewUserBlogs()
-	q := fmt.Sprintf("SELECT %s FROM ezorm.user_blogs %s %s %s",
+	q := fmt.Sprintf("SELECT %s FROM user_blogs %s %s %s",
 		strings.Join(obj.GetColumns(), ","),
 		orm.SQLWhere(conditions),
 		orderby,
@@ -361,7 +361,7 @@ func (m *_UserBlogsDBMgr) FetchBySQL(q string, args ...interface{}) (results []i
 }
 func (m *_UserBlogsDBMgr) Fetch(pk PrimaryKey) (*UserBlogs, error) {
 	obj := UserBlogsMgr.NewUserBlogs()
-	query := fmt.Sprintf("SELECT %s FROM ezorm.user_blogs %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	query := fmt.Sprintf("SELECT %s FROM user_blogs %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
 	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
 	if err != nil {
 		return nil, err
@@ -397,7 +397,7 @@ func (m *_UserBlogsDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 
 func (m *_UserBlogsDBMgr) FindOneFetch(unique Unique) (*UserBlogs, error) {
 	obj := UserBlogsMgr.NewUserBlogs()
-	query := fmt.Sprintf("SELECT %s FROM ezorm.user_blogs %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
+	query := fmt.Sprintf("SELECT %s FROM user_blogs %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, unique.SQLParams()...)
 	if err != nil {
 		return nil, err
@@ -424,7 +424,7 @@ func (m *_UserBlogsDBMgr) FindFetch(index Index) (int64, []*UserBlogs, error) {
 	}
 
 	obj := UserBlogsMgr.NewUserBlogs()
-	query := fmt.Sprintf("SELECT %s FROM ezorm.user_blogs %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
+	query := fmt.Sprintf("SELECT %s FROM user_blogs %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, index.SQLParams()...)
 	if err != nil {
 		return total, nil, err
@@ -451,7 +451,7 @@ func (m *_UserBlogsDBMgr) RangeFetch(scope Range) (int64, []*UserBlogs, error) {
 		return total, nil, err
 	}
 	obj := UserBlogsMgr.NewUserBlogs()
-	query := fmt.Sprintf("SELECT %s FROM ezorm.user_blogs %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
+	query := fmt.Sprintf("SELECT %s FROM user_blogs %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, scope.SQLParams()...)
 	if err != nil {
 		return total, nil, err
@@ -475,7 +475,7 @@ func (m *_UserBlogsDBMgr) RangeRevertFetch(scope Range) (int64, []*UserBlogs, er
 
 func (m *_UserBlogsDBMgr) queryLimit(where string, limit int, args ...interface{}) (results []PrimaryKey, err error) {
 	pk := UserBlogsMgr.NewPrimaryKey()
-	query := fmt.Sprintf("SELECT %s FROM ezorm.user_blogs %s", strings.Join(pk.Columns(), ","), where)
+	query := fmt.Sprintf("SELECT %s FROM user_blogs %s", strings.Join(pk.Columns(), ","), where)
 	rows, err := m.db.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("UserBlogs query limit error: %v", err)
@@ -505,7 +505,7 @@ func (m *_UserBlogsDBMgr) queryLimit(where string, limit int, args ...interface{
 }
 
 func (m *_UserBlogsDBMgr) queryCount(where string, args ...interface{}) (int64, error) {
-	query := fmt.Sprintf("SELECT count(`user_id`) FROM ezorm.user_blogs %s", where)
+	query := fmt.Sprintf("SELECT count(`user_id`) FROM user_blogs %s", where)
 	rows, err := m.db.Query(query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("UserBlogs query count error: %v", err)
@@ -534,7 +534,7 @@ func (m *_UserBlogsDBMgr) BatchCreate(objs []*UserBlogs) (int64, error) {
 		values = append(values, obj.UserId)
 		values = append(values, obj.BlogId)
 	}
-	query := fmt.Sprintf("INSERT INTO ezorm.user_blogs(%s) VALUES %s", strings.Join(objs[0].GetNoneIncrementColumns(), ","), strings.Join(params, ","))
+	query := fmt.Sprintf("INSERT INTO user_blogs(%s) VALUES %s", strings.Join(objs[0].GetNoneIncrementColumns(), ","), strings.Join(params, ","))
 	result, err := m.db.Exec(query, values...)
 	if err != nil {
 		return 0, err
@@ -547,9 +547,9 @@ func (m *_UserBlogsDBMgr) BatchCreate(objs []*UserBlogs) (int64, error) {
 // where:"c=? and d=?"
 // params:[]interface{}{"a", "b", "c", "d"}...
 func (m *_UserBlogsDBMgr) UpdateBySQL(set, where string, args ...interface{}) (int64, error) {
-	query := fmt.Sprintf("UPDATE ezorm.user_blogs SET %s", set)
+	query := fmt.Sprintf("UPDATE user_blogs SET %s", set)
 	if where != "" {
-		query = fmt.Sprintf("UPDATE ezorm.user_blogs SET %s WHERE %s", set, where)
+		query = fmt.Sprintf("UPDATE user_blogs SET %s WHERE %s", set, where)
 	}
 	result, err := m.db.Exec(query, args...)
 	if err != nil {
@@ -560,7 +560,7 @@ func (m *_UserBlogsDBMgr) UpdateBySQL(set, where string, args ...interface{}) (i
 
 func (m *_UserBlogsDBMgr) Create(obj *UserBlogs) (int64, error) {
 	params := orm.NewStringSlice(2, "?")
-	q := fmt.Sprintf("INSERT INTO ezorm.user_blogs(%s) VALUES(%s)",
+	q := fmt.Sprintf("INSERT INTO user_blogs(%s) VALUES(%s)",
 		strings.Join(obj.GetNoneIncrementColumns(), ","),
 		strings.Join(params, ","))
 
@@ -578,7 +578,7 @@ func (m *_UserBlogsDBMgr) Update(obj *UserBlogs) (int64, error) {
 	columns := []string{}
 
 	pk := obj.GetPrimaryKey()
-	q := fmt.Sprintf("UPDATE ezorm.user_blogs SET %s %s", strings.Join(columns, ","), pk.SQLFormat())
+	q := fmt.Sprintf("UPDATE user_blogs SET %s %s", strings.Join(columns, ","), pk.SQLFormat())
 	values := make([]interface{}, 0, 2-2)
 	values = append(values, pk.SQLParams()...)
 
@@ -606,7 +606,7 @@ func (m *_UserBlogsDBMgr) Delete(obj *UserBlogs) (int64, error) {
 }
 
 func (m *_UserBlogsDBMgr) DeleteByPrimaryKey(pk PrimaryKey) (int64, error) {
-	q := fmt.Sprintf("DELETE FROM ezorm.user_blogs %s", pk.SQLFormat())
+	q := fmt.Sprintf("DELETE FROM user_blogs %s", pk.SQLFormat())
 	result, err := m.db.Exec(q, pk.SQLParams()...)
 	if err != nil {
 		return 0, err
@@ -615,9 +615,9 @@ func (m *_UserBlogsDBMgr) DeleteByPrimaryKey(pk PrimaryKey) (int64, error) {
 }
 
 func (m *_UserBlogsDBMgr) DeleteBySQL(where string, args ...interface{}) (int64, error) {
-	query := fmt.Sprintf("DELETE FROM ezorm.user_blogs")
+	query := fmt.Sprintf("DELETE FROM user_blogs")
 	if where != "" {
-		query = fmt.Sprintf("DELETE FROM ezorm.user_blogs WHERE %s", where)
+		query = fmt.Sprintf("DELETE FROM user_blogs WHERE %s", where)
 	}
 	result, err := m.db.Exec(query, args...)
 	if err != nil {
