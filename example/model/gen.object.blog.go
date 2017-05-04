@@ -3,7 +3,7 @@ package model
 import (
 	"database/sql"
 	"fmt"
-	"github.com/ezbuy/redis-orm/orm"
+	"gopkg.in/ezbuy/redis-orm.v1/orm"
 	"gopkg.in/go-playground/validator.v9"
 	"strings"
 	"time"
@@ -376,7 +376,7 @@ func BlogDBMgr(db orm.DB) *_BlogDBMgr {
 func (m *_BlogDBMgr) Search(where string, orderby string, limit string, args ...interface{}) ([]*Blog, error) {
 	obj := BlogMgr.NewBlog()
 	conditions := []string{where, orderby, limit}
-	query := fmt.Sprintf("SELECT %s FROM ezorm.blogs %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
+	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
 	objs, err := m.FetchBySQL(query, args...)
 	if err != nil {
 		return nil, err
@@ -390,7 +390,7 @@ func (m *_BlogDBMgr) Search(where string, orderby string, limit string, args ...
 
 func (m *_BlogDBMgr) SearchConditions(conditions []string, orderby string, offset int, limit int, args ...interface{}) ([]*Blog, error) {
 	obj := BlogMgr.NewBlog()
-	q := fmt.Sprintf("SELECT %s FROM ezorm.blogs %s %s %s",
+	q := fmt.Sprintf("SELECT %s FROM blogs %s %s %s",
 		strings.Join(obj.GetColumns(), ","),
 		orm.SQLWhere(conditions),
 		orderby,
@@ -444,7 +444,7 @@ func (m *_BlogDBMgr) FetchBySQL(q string, args ...interface{}) (results []interf
 }
 func (m *_BlogDBMgr) Fetch(pk PrimaryKey) (*Blog, error) {
 	obj := BlogMgr.NewBlog()
-	query := fmt.Sprintf("SELECT %s FROM ezorm.blogs %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
 	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
 	if err != nil {
 		return nil, err
@@ -480,7 +480,7 @@ func (m *_BlogDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 
 func (m *_BlogDBMgr) FindOneFetch(unique Unique) (*Blog, error) {
 	obj := BlogMgr.NewBlog()
-	query := fmt.Sprintf("SELECT %s FROM ezorm.blogs %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
+	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, unique.SQLParams()...)
 	if err != nil {
 		return nil, err
@@ -507,7 +507,7 @@ func (m *_BlogDBMgr) FindFetch(index Index) (int64, []*Blog, error) {
 	}
 
 	obj := BlogMgr.NewBlog()
-	query := fmt.Sprintf("SELECT %s FROM ezorm.blogs %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
+	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, index.SQLParams()...)
 	if err != nil {
 		return total, nil, err
@@ -534,7 +534,7 @@ func (m *_BlogDBMgr) RangeFetch(scope Range) (int64, []*Blog, error) {
 		return total, nil, err
 	}
 	obj := BlogMgr.NewBlog()
-	query := fmt.Sprintf("SELECT %s FROM ezorm.blogs %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
+	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
 	objs, err := m.FetchBySQL(query, scope.SQLParams()...)
 	if err != nil {
 		return total, nil, err
@@ -558,7 +558,7 @@ func (m *_BlogDBMgr) RangeRevertFetch(scope Range) (int64, []*Blog, error) {
 
 func (m *_BlogDBMgr) queryLimit(where string, limit int, args ...interface{}) (results []PrimaryKey, err error) {
 	pk := BlogMgr.NewPrimaryKey()
-	query := fmt.Sprintf("SELECT %s FROM ezorm.blogs %s", strings.Join(pk.Columns(), ","), where)
+	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(pk.Columns(), ","), where)
 	rows, err := m.db.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("Blog query limit error: %v", err)
@@ -588,7 +588,7 @@ func (m *_BlogDBMgr) queryLimit(where string, limit int, args ...interface{}) (r
 }
 
 func (m *_BlogDBMgr) queryCount(where string, args ...interface{}) (int64, error) {
-	query := fmt.Sprintf("SELECT count(`id`) FROM ezorm.blogs %s", where)
+	query := fmt.Sprintf("SELECT count(`id`) FROM blogs %s", where)
 	rows, err := m.db.Query(query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("Blog query count error: %v", err)
@@ -623,7 +623,7 @@ func (m *_BlogDBMgr) BatchCreate(objs []*Blog) (int64, error) {
 		values = append(values, orm.TimeFormat(obj.CreatedAt))
 		values = append(values, orm.TimeFormat(obj.UpdatedAt))
 	}
-	query := fmt.Sprintf("INSERT INTO ezorm.blogs(%s) VALUES %s", strings.Join(objs[0].GetNoneIncrementColumns(), ","), strings.Join(params, ","))
+	query := fmt.Sprintf("INSERT INTO blogs(%s) VALUES %s", strings.Join(objs[0].GetNoneIncrementColumns(), ","), strings.Join(params, ","))
 	result, err := m.db.Exec(query, values...)
 	if err != nil {
 		return 0, err
@@ -636,9 +636,9 @@ func (m *_BlogDBMgr) BatchCreate(objs []*Blog) (int64, error) {
 // where:"c=? and d=?"
 // params:[]interface{}{"a", "b", "c", "d"}...
 func (m *_BlogDBMgr) UpdateBySQL(set, where string, args ...interface{}) (int64, error) {
-	query := fmt.Sprintf("UPDATE ezorm.blogs SET %s", set)
+	query := fmt.Sprintf("UPDATE blogs SET %s", set)
 	if where != "" {
-		query = fmt.Sprintf("UPDATE ezorm.blogs SET %s WHERE %s", set, where)
+		query = fmt.Sprintf("UPDATE blogs SET %s WHERE %s", set, where)
 	}
 	result, err := m.db.Exec(query, args...)
 	if err != nil {
@@ -649,7 +649,7 @@ func (m *_BlogDBMgr) UpdateBySQL(set, where string, args ...interface{}) (int64,
 
 func (m *_BlogDBMgr) Create(obj *Blog) (int64, error) {
 	params := orm.NewStringSlice(8, "?")
-	q := fmt.Sprintf("INSERT INTO ezorm.blogs(%s) VALUES(%s)",
+	q := fmt.Sprintf("INSERT INTO blogs(%s) VALUES(%s)",
 		strings.Join(obj.GetNoneIncrementColumns(), ","),
 		strings.Join(params, ","))
 
@@ -680,7 +680,7 @@ func (m *_BlogDBMgr) Update(obj *Blog) (int64, error) {
 	}
 
 	pk := obj.GetPrimaryKey()
-	q := fmt.Sprintf("UPDATE ezorm.blogs SET %s %s", strings.Join(columns, ","), pk.SQLFormat())
+	q := fmt.Sprintf("UPDATE blogs SET %s %s", strings.Join(columns, ","), pk.SQLFormat())
 	values := make([]interface{}, 0, 8-2)
 	values = append(values, obj.Title)
 	values = append(values, obj.Content)
@@ -714,7 +714,7 @@ func (m *_BlogDBMgr) Delete(obj *Blog) (int64, error) {
 }
 
 func (m *_BlogDBMgr) DeleteByPrimaryKey(pk PrimaryKey) (int64, error) {
-	q := fmt.Sprintf("DELETE FROM ezorm.blogs %s", pk.SQLFormat())
+	q := fmt.Sprintf("DELETE FROM blogs %s", pk.SQLFormat())
 	result, err := m.db.Exec(q, pk.SQLParams()...)
 	if err != nil {
 		return 0, err
@@ -723,9 +723,9 @@ func (m *_BlogDBMgr) DeleteByPrimaryKey(pk PrimaryKey) (int64, error) {
 }
 
 func (m *_BlogDBMgr) DeleteBySQL(where string, args ...interface{}) (int64, error) {
-	query := fmt.Sprintf("DELETE FROM ezorm.blogs")
+	query := fmt.Sprintf("DELETE FROM blogs")
 	if where != "" {
-		query = fmt.Sprintf("DELETE FROM ezorm.blogs WHERE %s", where)
+		query = fmt.Sprintf("DELETE FROM blogs WHERE %s", where)
 	}
 	result, err := m.db.Exec(query, args...)
 	if err != nil {

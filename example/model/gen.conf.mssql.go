@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ezbuy/redis-orm/orm"
+	"gopkg.in/ezbuy/redis-orm.v1/orm"
 )
 
 var (
