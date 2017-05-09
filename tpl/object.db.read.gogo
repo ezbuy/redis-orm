@@ -136,6 +136,14 @@ func (m *_{{$obj.Name}}DBMgr) FetchBySQL(q string, args ... interface{}) (result
 }
 
 {{- if ne $obj.DbSource ""}}
+func (m *_{{$obj.Name}}DBMgr) Exist(pk PrimaryKey) (bool, error) {
+	c, err := m.queryCount(pk.SQLFormat(), pk.SQLParams()...)
+	if err != nil {
+		return false, err
+	}
+	return (c != 0), nil
+}
+
 func (m *_{{$obj.Name}}DBMgr) Fetch(pk PrimaryKey) (*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())

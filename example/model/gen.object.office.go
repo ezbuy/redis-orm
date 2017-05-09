@@ -368,6 +368,14 @@ func (m *_OfficeDBMgr) FetchBySQL(q string, args ...interface{}) (results []inte
 	}
 	return
 }
+func (m *_OfficeDBMgr) Exist(pk PrimaryKey) (bool, error) {
+	c, err := m.queryCount(pk.SQLFormat(), pk.SQLParams()...)
+	if err != nil {
+		return false, err
+	}
+	return (c != 0), nil
+}
+
 func (m *_OfficeDBMgr) Fetch(pk PrimaryKey) (*Office, error) {
 	obj := OfficeMgr.NewOffice()
 	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())

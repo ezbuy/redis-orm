@@ -641,6 +641,14 @@ func (m *_UserDBMgr) FetchBySQL(q string, args ...interface{}) (results []interf
 	}
 	return
 }
+func (m *_UserDBMgr) Exist(pk PrimaryKey) (bool, error) {
+	c, err := m.queryCount(pk.SQLFormat(), pk.SQLParams()...)
+	if err != nil {
+		return false, err
+	}
+	return (c != 0), nil
+}
+
 func (m *_UserDBMgr) Fetch(pk PrimaryKey) (*User, error) {
 	obj := UserMgr.NewUser()
 	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())

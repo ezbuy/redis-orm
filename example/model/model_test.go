@@ -137,6 +137,9 @@ var _ = Describe("redis-orm.mysql", func() {
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(obj.HeadUrl).To(Equal(user.HeadUrl))
 
+			exist, err := mgr.Exist(user.GetPrimaryKey())
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(exist).To(Equal(true))
 			//! delete
 			n, err = mgr.Delete(user)
 			log.Println("mysql.tx.crud.delete =>", n, err)
