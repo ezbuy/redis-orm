@@ -442,6 +442,14 @@ func (m *_BlogDBMgr) FetchBySQL(q string, args ...interface{}) (results []interf
 	}
 	return
 }
+func (m *_BlogDBMgr) Exist(pk PrimaryKey) (bool, error) {
+	c, err := m.queryCount(pk.SQLFormat(), pk.SQLParams()...)
+	if err != nil {
+		return false, err
+	}
+	return (c != 0), nil
+}
+
 func (m *_BlogDBMgr) Fetch(pk PrimaryKey) (*Blog, error) {
 	obj := BlogMgr.NewBlog()
 	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
