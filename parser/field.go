@@ -85,7 +85,7 @@ func (f *Field) FieldName() string {
 	if f.Obj.DbContains("mysql") {
 		return fmt.Sprintf("`%s`", Camel2Name(f.Name))
 	}
-	return f.Name
+	return Camel2Name(f.Name)
 }
 
 func (f *Field) IsPrimary() bool {
@@ -318,7 +318,7 @@ func (f *Field) GetTag() string {
 		case "mysql":
 			tags["db"] = false
 		case "mssql":
-			tags["db"] = true
+			tags["db"] = false
 		}
 	}
 
