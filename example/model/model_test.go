@@ -180,9 +180,9 @@ var _ = Describe("redis-orm.mssql", func() {
 			db := MsSQL()
 			Ω(db).ShouldNot(BeNil())
 
-			objs, err := OfficeDBMgr(db).SearchConditions([]string{}, "", 0, 2)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(len(objs)).To(Equal(2))
+			// objs, err := OfficeDBMgr(db).SearchConditions([]string{}, "", 0, 2)
+			// Ω(err).ShouldNot(HaveOccurred())
+			// Ω(len(objs)).To(Equal(2))
 
 			office := OfficeMgr.NewOffice()
 			office.OfficeName = "Test"

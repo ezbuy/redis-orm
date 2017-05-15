@@ -19,15 +19,15 @@ var (
 )
 
 type Office struct {
-	OfficeId             int32     `db:"OfficeId"`
-	OfficeArea           string    `db:"OfficeArea"`
-	OfficeName           string    `db:"OfficeName"`
-	SearchOriginCode     string    `db:"SearchOriginCode"`
-	ProcessingOriginCode string    `db:"ProcessingOriginCode"`
-	CreateBy             string    `db:"CreateBy"`
-	UpdateBy             string    `db:"UpdateBy"`
-	CreateDate           time.Time `db:"CreateDate"`
-	UpdateDate           time.Time `db:"UpdateDate"`
+	OfficeId             int32     `db:"office_id"`
+	OfficeArea           string    `db:"office_area"`
+	OfficeName           string    `db:"office_name"`
+	SearchOriginCode     string    `db:"search_origin_code"`
+	ProcessingOriginCode string    `db:"processing_origin_code"`
+	CreateBy             string    `db:"create_by"`
+	UpdateBy             string    `db:"update_by"`
+	CreateDate           time.Time `db:"create_date"`
+	UpdateDate           time.Time `db:"update_date"`
 }
 
 type _OfficeMgr struct {
@@ -55,29 +55,29 @@ func (obj *Office) GetTableName() string {
 
 func (obj *Office) GetColumns() []string {
 	columns := []string{
-		"OfficeId",
-		"OfficeArea",
-		"OfficeName",
-		"SearchOriginCode",
-		"ProcessingOriginCode",
-		"CreateBy",
-		"UpdateBy",
-		"CreateDate",
-		"UpdateDate",
+		"office_id",
+		"office_area",
+		"office_name",
+		"search_origin_code",
+		"processing_origin_code",
+		"create_by",
+		"update_by",
+		"create_date",
+		"update_date",
 	}
 	return columns
 }
 
 func (obj *Office) GetNoneIncrementColumns() []string {
 	columns := []string{
-		"OfficeArea",
-		"OfficeName",
-		"SearchOriginCode",
-		"ProcessingOriginCode",
-		"CreateBy",
-		"UpdateBy",
-		"CreateDate",
-		"UpdateDate",
+		"office_area",
+		"office_name",
+		"search_origin_code",
+		"processing_origin_code",
+		"create_by",
+		"update_by",
+		"create_date",
+		"update_date",
 	}
 	return columns
 }
@@ -132,7 +132,7 @@ func (u *OfficeIdOfOfficePK) Parse(key string) error {
 
 func (u *OfficeIdOfOfficePK) SQLFormat() string {
 	conditions := []string{
-		"OfficeId = ?",
+		"office_id = ?",
 	}
 	return orm.SQLWhere(conditions)
 }
@@ -145,7 +145,7 @@ func (u *OfficeIdOfOfficePK) SQLParams() []interface{} {
 
 func (u *OfficeIdOfOfficePK) Columns() []string {
 	return []string{
-		"OfficeId",
+		"office_id",
 	}
 }
 
@@ -189,16 +189,16 @@ func (u *OfficeIdOfOfficeRNG) SQLFormat(limit bool) string {
 	conditions := []string{}
 	if u.OfficeIdBegin != u.OfficeIdEnd {
 		if u.OfficeIdBegin != -1 {
-			conditions = append(conditions, fmt.Sprintf("OfficeId %s ?", u.beginOp()))
+			conditions = append(conditions, fmt.Sprintf("office_id %s ?", u.beginOp()))
 		}
 		if u.OfficeIdEnd != -1 {
-			conditions = append(conditions, fmt.Sprintf("OfficeId %s ?", u.endOp()))
+			conditions = append(conditions, fmt.Sprintf("office_id %s ?", u.endOp()))
 		}
 	}
 	if limit {
-		return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("OfficeId", u.revert), orm.MsSQLOffsetLimit(u.offset, u.limit))
+		return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("office_id", u.revert), orm.MsSQLOffsetLimit(u.offset, u.limit))
 	}
-	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("OfficeId", u.revert))
+	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("office_id", u.revert))
 }
 
 func (u *OfficeIdOfOfficeRNG) SQLParams() []interface{} {
@@ -314,7 +314,7 @@ func (m *_OfficeDBMgr) Search(where string, orderby string, limit string, args .
 func (m *_OfficeDBMgr) SearchConditions(conditions []string, orderby string, offset int, limit int, args ...interface{}) ([]*Office, error) {
 	obj := OfficeMgr.NewOffice()
 	if orderby == "" {
-		orderby = orm.SQLOrderBy("OfficeId", false)
+		orderby = orm.SQLOrderBy("office_id", false)
 	}
 	q := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] %s %s %s",
 		strings.Join(obj.GetColumns(), ","),
@@ -395,7 +395,7 @@ func (m *_OfficeDBMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*Office, error) {
 		params = append(params, fmt.Sprint(pk.(*OfficeIdOfOfficePK).OfficeId))
 	}
 	obj := OfficeMgr.NewOffice()
-	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] WHERE OfficeId IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join(params, ","))
+	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] WHERE office_id IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join(params, ","))
 	objs, err := m.FetchBySQL(query)
 	if err != nil {
 		return nil, err
@@ -528,7 +528,7 @@ func (m *_OfficeDBMgr) queryLimit(where string, limit int, args ...interface{}) 
 }
 
 func (m *_OfficeDBMgr) queryCount(where string, args ...interface{}) (int64, error) {
-	query := fmt.Sprintf("SELECT count(OfficeId) FROM [dbo].[testCRUD] %s", where)
+	query := fmt.Sprintf("SELECT count(office_id) FROM [dbo].[testCRUD] %s", where)
 	rows, err := m.db.Query(query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("Office query count error: %v", err)
@@ -616,14 +616,14 @@ func (m *_OfficeDBMgr) Create(obj *Office) (int64, error) {
 
 func (m *_OfficeDBMgr) Update(obj *Office) (int64, error) {
 	columns := []string{
-		"OfficeArea = ?",
-		"OfficeName = ?",
-		"SearchOriginCode = ?",
-		"ProcessingOriginCode = ?",
-		"CreateBy = ?",
-		"UpdateBy = ?",
-		"CreateDate = ?",
-		"UpdateDate = ?",
+		"office_area = ?",
+		"office_name = ?",
+		"search_origin_code = ?",
+		"processing_origin_code = ?",
+		"create_by = ?",
+		"update_by = ?",
+		"create_date = ?",
+		"update_date = ?",
 	}
 
 	pk := obj.GetPrimaryKey()
