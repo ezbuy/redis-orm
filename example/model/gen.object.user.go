@@ -1375,6 +1375,14 @@ func (m *_UserRedisMgr) Update(obj *User) error {
 	return m.Save(obj)
 }
 
+func (m *_UserRedisMgr) CreateWithExpire(obj *User, expire time.Duration) error {
+	return m.SaveWithExpire(obj, expire)
+}
+
+func (m *_UserRedisMgr) UpdateWithExpire(obj *User, expire time.Duration) error {
+	return m.SaveWithExpire(obj, expire)
+}
+
 func (m *_UserRedisMgr) Delete(obj *User) error {
 	pk := obj.GetPrimaryKey()
 	pipe := m.BeginPipeline()
@@ -1443,22 +1451,19 @@ func (m *_UserRedisMgr) Delete(obj *User) error {
 }
 
 func (m *_UserRedisMgr) SaveBatch(objs []*User) error {
-	if len(objs) > 0 {
-		pipe := m.BeginPipeline()
-		for _, obj := range objs {
-			m.addToPipeline(pipe, obj)
-		}
-		if _, err := pipe.Exec(); err != nil {
-			return err
-		}
-	}
-	return nil
+	return m.SaveBatchWithExpire(objs, 0)
 }
 
 func (m *_UserRedisMgr) Save(obj *User) error {
-	if obj != nil {
+	return m.SaveWithExpire(obj, 0)
+}
+
+func (m *_UserRedisMgr) SaveBatchWithExpire(objs []*User, expire time.Duration) error {
+	if len(objs) > 0 {
 		pipe := m.BeginPipeline()
-		m.addToPipeline(pipe, obj)
+		for _, obj := range objs {
+			m.addToPipeline(pipe, obj, expire)
+		}
 		if _, err := pipe.Exec(); err != nil {
 			return err
 		}
@@ -1466,7 +1471,18 @@ func (m *_UserRedisMgr) Save(obj *User) error {
 	return nil
 }
 
-func (m *_UserRedisMgr) addToPipeline(pipe *_UserRedisPipeline, obj *User) error {
+func (m *_UserRedisMgr) SaveWithExpire(obj *User, expire time.Duration) error {
+	if obj != nil {
+		pipe := m.BeginPipeline()
+		m.addToPipeline(pipe, obj, expire)
+		if _, err := pipe.Exec(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (m *_UserRedisMgr) addToPipeline(pipe *_UserRedisPipeline, obj *User, expire time.Duration) error {
 	pk := obj.GetPrimaryKey()
 	//! fields
 	pipe.HSet(keyOfObject(obj, pk.Key()), "Id", fmt.Sprint(obj.Id))
@@ -1542,6 +1558,9 @@ func (m *_UserRedisMgr) addToPipeline(pipe *_UserRedisPipeline, obj *User) error
 	rg_rel_1.Value = pk.Key()
 	if err := rg_pip_1.ZSetAdd(rg_rel_1); err != nil {
 		return err
+	}
+	if expire > 0 {
+		pipe.Expire(keyOfObject(obj, pk.Key()), expire)
 	}
 
 	return nil

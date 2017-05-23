@@ -11,6 +11,14 @@ func (m *_{{$obj.Name}}RedisMgr) Update(obj *{{$obj.Name}}) error {
 	return m.Save(obj)
 }
 
+func (m *_{{$obj.Name}}RedisMgr) CreateWithExpire(obj *{{$obj.Name}}, expire time.Duration) error {
+	return m.SaveWithExpire(obj, expire)
+}
+
+func (m *_{{$obj.Name}}RedisMgr) UpdateWithExpire(obj *{{$obj.Name}}, expire time.Duration) error {
+	return m.SaveWithExpire(obj, expire)
+}
+
 func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
 	pk := obj.GetPrimaryKey()
 	pipe := m.BeginPipeline()
@@ -96,10 +104,19 @@ func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
 
 
 func (m *_{{$obj.Name}}RedisMgr) SaveBatch(objs []*{{$obj.Name}}) error {
+	return m.SaveBatchWithExpire(objs, 0)
+}
+
+func (m *_{{$obj.Name}}RedisMgr) Save(obj *{{$obj.Name}}) error {
+	return m.SaveWithExpire(obj, 0)
+}
+
+
+func (m *_{{$obj.Name}}RedisMgr) SaveBatchWithExpire(objs []*{{$obj.Name}}, expire time.Duration) error {
 	if len(objs) > 0 {
 		pipe := m.BeginPipeline()
 		for _, obj := range objs {
-			m.addToPipeline(pipe, obj)
+			m.addToPipeline(pipe, obj, expire)
 		}
 		if _, err := pipe.Exec(); err != nil {
 			return err
@@ -108,10 +125,10 @@ func (m *_{{$obj.Name}}RedisMgr) SaveBatch(objs []*{{$obj.Name}}) error {
 	return nil
 }
 
-func (m *_{{$obj.Name}}RedisMgr) Save(obj *{{$obj.Name}}) error {
+func (m *_{{$obj.Name}}RedisMgr) SaveWithExpire(obj *{{$obj.Name}}, expire time.Duration) error {
 	if obj != nil {
 		pipe := m.BeginPipeline()
-		m.addToPipeline(pipe, obj)
+		m.addToPipeline(pipe, obj, expire)
 		if _, err := pipe.Exec(); err != nil {
 			return err
 		}
@@ -119,7 +136,7 @@ func (m *_{{$obj.Name}}RedisMgr) Save(obj *{{$obj.Name}}) error {
 	return nil
 }
 
-func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipeline, obj *{{$obj.Name}}) error {
+func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipeline, obj *{{$obj.Name}}, expire time.Duration) error {
 	pk := obj.GetPrimaryKey()
 	//! fields
 	{{- range $i, $field := $obj.Fields}}
@@ -213,6 +230,9 @@ func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipelin
 		return err
 	}
 	{{- end}}
+	if expire > 0 {
+	    pipe.Expire(keyOfObject(obj, pk.Key()), expire)
+	}
 
 	return nil
 }
