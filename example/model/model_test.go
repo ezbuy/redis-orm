@@ -11,6 +11,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"strings"
 )
 
 var _ = Describe("manager", func() {
@@ -585,7 +586,7 @@ var _ = Describe("redis-orm.redis", func() {
 	})
 
 	Describe("crud", func() {
-		var user *User
+		var user, userWithExpire *User
 		It("create", func() {
 			user = UserMgr.NewUser()
 			user.Id = 101
@@ -605,6 +606,30 @@ var _ = Describe("redis-orm.redis", func() {
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(obj.Name).To(Equal(fmt.Sprintf("name%d", 101)))
 		})
+		It("createWithExpire", func() {
+			userWithExpire = UserMgr.NewUser()
+			userWithExpire.Id = 102
+			userWithExpire.Name = fmt.Sprintf("name%d", 102)
+			userWithExpire.Mailbox = fmt.Sprintf("name%d@ezbuy.com", 102)
+			userWithExpire.HeadUrl = fmt.Sprintf("name%d.png", 102)
+			userWithExpire.Password = fmt.Sprintf("pwd%d", 102)
+			userWithExpire.Sex = true
+			userWithExpire.Age = int32(33)
+			userWithExpire.CreatedAt = time.Now()
+			userWithExpire.UpdatedAt = user.CreatedAt
+			userWithExpire.Longitude = 103.755
+			userWithExpire.Latitude = 1.3283
+			Ω(UserRedisMgr(Redis()).CreateWithExpire(userWithExpire, time.Second)).ShouldNot(HaveOccurred())
+
+			obj, err := UserRedisMgr(Redis()).Fetch(userWithExpire.GetPrimaryKey())
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(obj.Name).To(Equal(fmt.Sprintf("name%d", 102)))
+
+			time.Sleep(time.Second)
+			_, err = UserRedisMgr(Redis()).Fetch(userWithExpire.GetPrimaryKey())
+			fmt.Printf("createWithExpire after expire:%v", err)
+			Ω(strings.Contains(err.Error(), "not exist")).Should(Equal(true))
+		})
 		It("update", func() {
 			user.Age = int32(40)
 			Ω(UserRedisMgr(Redis()).Update(user)).ShouldNot(HaveOccurred())
@@ -612,9 +637,44 @@ var _ = Describe("redis-orm.redis", func() {
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(obj.Age).To(Equal(int32(40)))
 		})
+		It("updateWithExpire", func() {
+			userWithExpire = UserMgr.NewUser()
+			userWithExpire.Id = 102
+			userWithExpire.Name = fmt.Sprintf("name%d", 102)
+			userWithExpire.Mailbox = fmt.Sprintf("name%d@ezbuy.com", 102)
+			userWithExpire.HeadUrl = fmt.Sprintf("name%d.png", 102)
+			userWithExpire.Password = fmt.Sprintf("pwd%d", 102)
+			userWithExpire.Sex = true
+			userWithExpire.Age = int32(33)
+			userWithExpire.CreatedAt = time.Now()
+			userWithExpire.UpdatedAt = user.CreatedAt
+			userWithExpire.Longitude = 103.755
+			userWithExpire.Latitude = 1.3283
+			Ω(UserRedisMgr(Redis()).Create(userWithExpire)).ShouldNot(HaveOccurred())
+
+			obj, err := UserRedisMgr(Redis()).Fetch(userWithExpire.GetPrimaryKey())
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(obj.Name).To(Equal(fmt.Sprintf("name%d", 102)))
+
+			userWithExpire.Age = int32(40)
+			Ω(UserRedisMgr(Redis()).UpdateWithExpire(userWithExpire, time.Second)).ShouldNot(HaveOccurred())
+			obj2, err := UserRedisMgr(Redis()).Fetch(userWithExpire.GetPrimaryKey())
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(obj2.Age).To(Equal(int32(40)))
+
+			time.Sleep(time.Second)
+			_, err = UserRedisMgr(Redis()).Fetch(userWithExpire.GetPrimaryKey())
+			fmt.Printf("updateWithExpire after expire:%v", err)
+			Ω(strings.Contains(err.Error(), "not exist")).Should(Equal(true))
+		})
 		It("delete", func() {
 			Ω(UserRedisMgr(Redis()).Delete(user)).ShouldNot(HaveOccurred())
 			_, err := UserRedisMgr(Redis()).Fetch(user.GetPrimaryKey())
+			Ω(err).Should(HaveOccurred())
+		})
+		It("delete2", func() {
+			Ω(UserRedisMgr(Redis()).Delete(userWithExpire)).ShouldNot(HaveOccurred())
+			_, err := UserRedisMgr(Redis()).Fetch(userWithExpire.GetPrimaryKey())
 			Ω(err).Should(HaveOccurred())
 		})
 
