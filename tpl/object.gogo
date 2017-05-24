@@ -11,6 +11,8 @@ import (
 	"gopkg.in/go-playground/validator.v9"
 	{{- if $obj.DbContains "redis"}}
 	redis "gopkg.in/redis.v5"
+
+	"errors"
 	{{- end}}
 )
 var (

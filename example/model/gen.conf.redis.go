@@ -2,6 +2,7 @@ package model
 
 //! conf.redis
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -19,6 +20,8 @@ const (
 	ZSET = "zset"
 	GEO  = "geo"
 	LIST = "list"
+
+	ERROR_SPLIT = "#-#"
 )
 
 type Object interface {
@@ -44,6 +47,16 @@ func RedisSetUp(cf *RedisConfig) {
 
 func Redis() *orm.RedisStore {
 	return _redis_store
+}
+
+// 处理error，把一个error变成error数组
+func SplitError(err error) []error {
+	ss := strings.Split(err.Error(), ERROR_SPLIT)
+	result := make([]error, len(ss))
+	for i, s := range ss {
+		result[i] = errors.New(s)
+	}
+	return result
 }
 
 //! util functions
