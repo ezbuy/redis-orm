@@ -8,6 +8,8 @@ import (
 	redis "gopkg.in/redis.v5"
 	"strings"
 	"time"
+
+	"errors"
 )
 
 var (
@@ -1295,61 +1297,77 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 	if err != nil {
 		return nil, err
 	}
+	errall := []string{}
 	for i := 0; i < len(pks); i++ {
 		if b, err := cmds[2*i].(*redis.BoolCmd).Result(); err == nil {
 			if !b {
-				return nil, fmt.Errorf("User primary key:(%s) not exist", pks[i].Key())
+				errall = append(errall, fmt.Sprintf("User primary key:(%s) not exist", pks[i].Key()))
+				continue
 			}
 		}
 
 		strs, err := cmds[2*i+1].(*redis.SliceCmd).Result()
 		if err != nil {
-			return nil, err
+			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+			continue
 		}
 
 		obj := UserMgr.NewUser()
 		if err := orm.StringScan(strs[0].(string), &obj.Id); err != nil {
-			return nil, err
+			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+			continue
 		}
 		if err := orm.StringScan(strs[1].(string), &obj.Name); err != nil {
-			return nil, err
+			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+			continue
 		}
 		if err := orm.StringScan(strs[2].(string), &obj.Mailbox); err != nil {
-			return nil, err
+			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+			continue
 		}
 		if err := orm.StringScan(strs[3].(string), &obj.Sex); err != nil {
-			return nil, err
+			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+			continue
 		}
 		if err := orm.StringScan(strs[4].(string), &obj.Age); err != nil {
-			return nil, err
+			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+			continue
 		}
 		if err := orm.StringScan(strs[5].(string), &obj.Longitude); err != nil {
-			return nil, err
+			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+			continue
 		}
 		if err := orm.StringScan(strs[6].(string), &obj.Latitude); err != nil {
-			return nil, err
+			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+			continue
 		}
 		if err := orm.StringScan(strs[7].(string), &obj.Description); err != nil {
-			return nil, err
+			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+			continue
 		}
 		if err := orm.StringScan(strs[8].(string), &obj.Password); err != nil {
-			return nil, err
+			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+			continue
 		}
 		if err := orm.StringScan(strs[9].(string), &obj.HeadUrl); err != nil {
-			return nil, err
+			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+			continue
 		}
 		obj.HeadUrl = orm.Decode(obj.HeadUrl)
 		if err := orm.StringScan(strs[10].(string), &obj.Status); err != nil {
-			return nil, err
+			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+			continue
 		}
 		var val11 int64
 		if err := orm.StringScan(strs[11].(string), &val11); err != nil {
-			return nil, err
+			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+			continue
 		}
 		obj.CreatedAt = time.Unix(val11, 0)
 		var val12 int64
 		if err := orm.StringScan(strs[12].(string), &val12); err != nil {
-			return nil, err
+			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+			continue
 		}
 		obj.UpdatedAt = time.Unix(val12, 0)
 		if strs[13].(string) == "nil" {
@@ -1357,12 +1375,16 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 		} else {
 			var val13 int64
 			if err := orm.StringScan(strs[13].(string), &val13); err != nil {
-				return nil, err
+				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+				continue
 			}
 			DeletedAtValue := time.Unix(val13, 0)
 			obj.DeletedAt = &DeletedAtValue
 		}
 		objs = append(objs, obj)
+	}
+	if len(errall) > 0 {
+		return objs, errors.New(strings.Join(errall, ERROR_SPLIT))
 	}
 	return objs, nil
 }
