@@ -116,9 +116,14 @@ func (m *_{{$obj.Name}}RedisMgr) SaveBatchWithExpire(objs []*{{$obj.Name}}, expi
 	if len(objs) > 0 {
 		pipe := m.BeginPipeline()
 		for _, obj := range objs {
-			m.addToPipeline(pipe, obj, expire)
+			err := m.addToPipeline(pipe, obj, expire)
+			if err != nil {
+			    pipe.Close()
+			    return err
+			}
 		}
 		if _, err := pipe.Exec(); err != nil {
+		    pipe.Close()
 			return err
 		}	
 	}	
@@ -128,8 +133,13 @@ func (m *_{{$obj.Name}}RedisMgr) SaveBatchWithExpire(objs []*{{$obj.Name}}, expi
 func (m *_{{$obj.Name}}RedisMgr) SaveWithExpire(obj *{{$obj.Name}}, expire time.Duration) error {
 	if obj != nil {
 		pipe := m.BeginPipeline()
-		m.addToPipeline(pipe, obj, expire)
-		if _, err := pipe.Exec(); err != nil {
+		err := m.addToPipeline(pipe, obj, expire)
+		if err != nil {
+            pipe.Close()
+            return err
+        }
+		if _, err = pipe.Exec(); err != nil {
+		    pipe.Close()
 			return err
 		}
 	}

@@ -1298,6 +1298,8 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 		return nil, err
 	}
 	errall := []string{}
+	sv := ""
+	ok := true
 	for i := 0; i < len(pks); i++ {
 		if b, err := cmds[2*i].(*redis.BoolCmd).Result(); err == nil {
 			if !b {
@@ -1313,59 +1315,124 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 		}
 
 		obj := UserMgr.NewUser()
-		if err := orm.StringScan(strs[0].(string), &obj.Id); err != nil {
+		sv, ok = strs[0].(string)
+		if !ok {
+			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[0]))
+			continue
+		}
+		if err := orm.StringScan(sv, &obj.Id); err != nil {
 			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 			continue
 		}
-		if err := orm.StringScan(strs[1].(string), &obj.Name); err != nil {
+		sv, ok = strs[1].(string)
+		if !ok {
+			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[1]))
+			continue
+		}
+		if err := orm.StringScan(sv, &obj.Name); err != nil {
 			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 			continue
 		}
-		if err := orm.StringScan(strs[2].(string), &obj.Mailbox); err != nil {
+		sv, ok = strs[2].(string)
+		if !ok {
+			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[2]))
+			continue
+		}
+		if err := orm.StringScan(sv, &obj.Mailbox); err != nil {
 			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 			continue
 		}
-		if err := orm.StringScan(strs[3].(string), &obj.Sex); err != nil {
+		sv, ok = strs[3].(string)
+		if !ok {
+			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[3]))
+			continue
+		}
+		if err := orm.StringScan(sv, &obj.Sex); err != nil {
 			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 			continue
 		}
-		if err := orm.StringScan(strs[4].(string), &obj.Age); err != nil {
+		sv, ok = strs[4].(string)
+		if !ok {
+			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[4]))
+			continue
+		}
+		if err := orm.StringScan(sv, &obj.Age); err != nil {
 			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 			continue
 		}
-		if err := orm.StringScan(strs[5].(string), &obj.Longitude); err != nil {
+		sv, ok = strs[5].(string)
+		if !ok {
+			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[5]))
+			continue
+		}
+		if err := orm.StringScan(sv, &obj.Longitude); err != nil {
 			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 			continue
 		}
-		if err := orm.StringScan(strs[6].(string), &obj.Latitude); err != nil {
+		sv, ok = strs[6].(string)
+		if !ok {
+			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[6]))
+			continue
+		}
+		if err := orm.StringScan(sv, &obj.Latitude); err != nil {
 			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 			continue
 		}
-		if err := orm.StringScan(strs[7].(string), &obj.Description); err != nil {
+		sv, ok = strs[7].(string)
+		if !ok {
+			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[7]))
+			continue
+		}
+		if err := orm.StringScan(sv, &obj.Description); err != nil {
 			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 			continue
 		}
-		if err := orm.StringScan(strs[8].(string), &obj.Password); err != nil {
+		sv, ok = strs[8].(string)
+		if !ok {
+			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[8]))
+			continue
+		}
+		if err := orm.StringScan(sv, &obj.Password); err != nil {
 			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 			continue
 		}
-		if err := orm.StringScan(strs[9].(string), &obj.HeadUrl); err != nil {
+		sv, ok = strs[9].(string)
+		if !ok {
+			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[9]))
+			continue
+		}
+		if err := orm.StringScan(sv, &obj.HeadUrl); err != nil {
 			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 			continue
 		}
 		obj.HeadUrl = orm.Decode(obj.HeadUrl)
-		if err := orm.StringScan(strs[10].(string), &obj.Status); err != nil {
+		sv, ok = strs[10].(string)
+		if !ok {
+			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[10]))
+			continue
+		}
+		if err := orm.StringScan(sv, &obj.Status); err != nil {
 			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 			continue
 		}
 		var val11 int64
-		if err := orm.StringScan(strs[11].(string), &val11); err != nil {
+		sv, ok = strs[11].(string)
+		if !ok {
+			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[11]))
+			continue
+		}
+		if err := orm.StringScan(sv, &val11); err != nil {
 			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 			continue
 		}
 		obj.CreatedAt = time.Unix(val11, 0)
 		var val12 int64
-		if err := orm.StringScan(strs[12].(string), &val12); err != nil {
+		sv, ok = strs[12].(string)
+		if !ok {
+			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[12]))
+			continue
+		}
+		if err := orm.StringScan(sv, &val12); err != nil {
 			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 			continue
 		}
@@ -1374,7 +1441,12 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 			obj.DeletedAt = nil
 		} else {
 			var val13 int64
-			if err := orm.StringScan(strs[13].(string), &val13); err != nil {
+			sv, ok = strs[13].(string)
+			if !ok {
+				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[13]))
+				continue
+			}
+			if err := orm.StringScan(sv, &val13); err != nil {
 				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 				continue
 			}
@@ -1484,9 +1556,14 @@ func (m *_UserRedisMgr) SaveBatchWithExpire(objs []*User, expire time.Duration) 
 	if len(objs) > 0 {
 		pipe := m.BeginPipeline()
 		for _, obj := range objs {
-			m.addToPipeline(pipe, obj, expire)
+			err := m.addToPipeline(pipe, obj, expire)
+			if err != nil {
+				pipe.Close()
+				return err
+			}
 		}
 		if _, err := pipe.Exec(); err != nil {
+			pipe.Close()
 			return err
 		}
 	}
@@ -1496,8 +1573,13 @@ func (m *_UserRedisMgr) SaveBatchWithExpire(objs []*User, expire time.Duration) 
 func (m *_UserRedisMgr) SaveWithExpire(obj *User, expire time.Duration) error {
 	if obj != nil {
 		pipe := m.BeginPipeline()
-		m.addToPipeline(pipe, obj, expire)
-		if _, err := pipe.Exec(); err != nil {
+		err := m.addToPipeline(pipe, obj, expire)
+		if err != nil {
+			pipe.Close()
+			return err
+		}
+		if _, err = pipe.Exec(); err != nil {
+			pipe.Close()
 			return err
 		}
 	}

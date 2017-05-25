@@ -199,6 +199,8 @@ func (m *_{{$obj.Name}}RedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*{{$obj
 		return nil, err
 	}
 	errall := []string{}
+	sv := ""
+	ok := true
 	for i := 0; i < len(pks); i++ {
 		if b, err := cmds[2*i].(*redis.BoolCmd).Result(); err == nil {
 			if !b {
@@ -221,7 +223,12 @@ func (m *_{{$obj.Name}}RedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*{{$obj
 						obj.{{$field.Name}} = nil	
 					} else {
 						var val{{$i}} {{$field.GetTransform.TypeOrigin}}
-						if err := orm.StringScan(strs[{{$i}}].(string), &val{{$i}}); err != nil {
+						sv, ok = strs[{{$i}}].(string)
+						if !ok {
+						    errall = append(errall, fmt.Sprintf("convert %v to string error", strs[{{$i}}]))
+						    continue
+						}
+						if err := orm.StringScan(sv, &val{{$i}}); err != nil {
 	                        errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 							continue
 						}
@@ -230,14 +237,24 @@ func (m *_{{$obj.Name}}RedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*{{$obj
 					}				
 				{{- else}}
 					var val{{$i}} {{$field.GetTransform.TypeOrigin}}
-					if err := orm.StringScan(strs[{{$i}}].(string), &val{{$i}}); err != nil {
+					sv, ok = strs[{{$i}}].(string)
+					if !ok {
+					    errall = append(errall, fmt.Sprintf("convert %v to string error", strs[{{$i}}]))
+					    continue
+					}
+					if err := orm.StringScan(sv, &val{{$i}}); err != nil {
 						errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 					    continue
 					}
 					obj.{{$field.Name}} = {{- printf $field.GetTransform.ConvertTo (printf "val%d" $i)}}
 				{{- end}}				
 			{{- else}}
-				if err := orm.StringScan(strs[{{$i}}].(string), &obj.{{$field.Name}}); err != nil {
+			    sv, ok = strs[{{$i}}].(string)
+            	if !ok {
+            	    errall = append(errall, fmt.Sprintf("convert %v to string error", strs[{{$i}}]))
+            	    continue
+            	}
+				if err := orm.StringScan(sv, &obj.{{$field.Name}}); err != nil {
 				    errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 					continue
 				}
