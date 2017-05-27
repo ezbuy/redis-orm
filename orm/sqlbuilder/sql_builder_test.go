@@ -36,7 +36,7 @@ func TestSQLBuilder(t *testing.T) {
 			"([OrderId] IN (11864555,11864554,11864553,11864552,11864551,11864550,11864549,11864548)) AND ([PurchaseType] = N'Ezbuy') AND ([PoPlaceDate] IS NOT NULL) AND ([OrderDate] < N'2017-05-27 11:20:33.000')",
 		},
 		{
-			(&UpdateSet{}).Set("ShipperName", "顺丰快递").Set("TrackingNo", "123223323423").Set("SyncDate", testDate),
+			Set().Add("ShipperName", "顺丰快递").Add("TrackingNo", "123223323423").Add("SyncDate", testDate),
 			"`ShipperName` = '顺丰快递', `TrackingNo` = '123223323423', `SyncDate` = '2017-05-27 11:20:33.000000'",
 			// update OrderTracking set [ShipperName] = N'顺丰快递', [TrackingNo] = N'123223323423', [SyncDate] = N'2017-05-27 11:20:33.000' where OrderTrackingId = 7739010;
 			"[ShipperName] = N'顺丰快递', [TrackingNo] = N'123223323423', [SyncDate] = N'2017-05-27 11:20:33.000'",

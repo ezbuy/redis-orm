@@ -2,23 +2,27 @@ package sqlbuilder
 
 import "github.com/gocraft/dbr"
 
-var _ Builder = &UpdateSet{}
+var _ Builder = &updateSet{}
 
-type updateKV struct {
+type updateSetKV struct {
 	k string
 	v interface{}
 }
 
-type UpdateSet struct {
-	kvs []updateKV
+func Set() *updateSet {
+	return &updateSet{}
 }
 
-func (u *UpdateSet) Set(k string, v interface{}) *UpdateSet {
-	u.kvs = append(u.kvs, updateKV{k: k, v: v})
+type updateSet struct {
+	kvs []updateSetKV
+}
+
+func (u *updateSet) Add(k string, v interface{}) *updateSet {
+	u.kvs = append(u.kvs, updateSetKV{k: k, v: v})
 	return u
 }
 
-func (u *UpdateSet) Build(d dbr.Dialect, buf dbr.Buffer) error {
+func (u *updateSet) Build(d dbr.Dialect, buf dbr.Buffer) error {
 	i := 0
 	for _, kv := range u.kvs {
 		if i > 0 {
