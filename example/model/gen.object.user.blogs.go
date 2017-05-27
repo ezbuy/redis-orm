@@ -23,6 +23,14 @@ type UserBlogs struct {
 	BlogId int32 `db:"blog_id"`
 }
 
+var UserBlogsColumns = struct {
+	UserId string
+	BlogId string
+}{
+	"user_id",
+	"blog_id",
+}
+
 type _UserBlogsMgr struct {
 }
 

@@ -24,11 +24,11 @@ var (
 	_ validator.Validate
 )
 
-{{if not $relation}}	
+{{if not $relation}}
 	{{- if or (eq $obj.Db "mysql") (eq $obj.Db "mssql") }}
 		type {{.Name}} struct {
 			{{- range $field := .Fields}}
-			{{$field.Name}}  {{$field.GetType}} {{$field.GetTag}} 
+			{{$field.Name}}  {{$field.GetType}} {{$field.GetTag}}
 			{{- end}}
 		}
 	{{- end}}
@@ -36,7 +36,7 @@ var (
 	{{if eq $obj.Db "redis"}}
 		type {{.Name}} struct {
 			{{- range $field := .Fields}}
-			{{$field.Name}}  {{$field.GetType}} {{$field.GetTag}} 
+			{{$field.Name}}  {{$field.GetType}} {{$field.GetTag}}
 			{{- end}}
 		}
 	{{end}}
@@ -45,7 +45,7 @@ var (
 		type {{.Name}} struct {
 			ID 	bson.ObjectId `bson:"_id,omitempty" json:"id"`
 			{{- range $field := .Fields}}
-			{{$field.Name}}  {{$field.GetType}} {{$field.GetTag}} 
+			{{$field.Name}}  {{$field.GetType}} {{$field.GetTag}}
 			{{- end}}
 		}
 	{{end}}
@@ -53,10 +53,20 @@ var (
 	{{if eq $obj.Db "elastic"}}
 		type {{.Name}} struct {
 			{{- range $field := .Fields}}
-			{{$field.Name}}  {{$field.GetType}} {{$field.GetTag}} 
+			{{$field.Name}}  {{$field.GetType}} {{$field.GetTag}}
 			{{- end}}
 		}
 	{{end}}
+
+	var {{$obj.Name}}Columns = struct{
+		{{- range $field := .Fields}}
+		{{$field.Name}}  string
+		{{- end}}
+	}{
+		{{- range $field := .Fields}}
+		"{{$field.ColumnName}}",
+		{{- end}}
+	}
 
 	type _{{$obj.Name}}Mgr struct {
 	}
@@ -101,7 +111,7 @@ var (
 
 	{{- if $obj.DbContains "elastic"}}
 	{{template "object.elastic" $obj}}
-	{{- end}}	
+	{{- end}}
 {{end}}
 
 

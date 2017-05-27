@@ -30,6 +30,28 @@ type Office struct {
 	UpdateDate           time.Time `db:"update_date"`
 }
 
+var OfficeColumns = struct {
+	OfficeId             string
+	OfficeArea           string
+	OfficeName           string
+	SearchOriginCode     string
+	ProcessingOriginCode string
+	CreateBy             string
+	UpdateBy             string
+	CreateDate           string
+	UpdateDate           string
+}{
+	"office_id",
+	"office_area",
+	"office_name",
+	"search_origin_code",
+	"processing_origin_code",
+	"create_by",
+	"update_by",
+	"create_date",
+	"update_date",
+}
+
 type _OfficeMgr struct {
 }
 

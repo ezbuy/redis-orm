@@ -29,6 +29,26 @@ type Blog struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
+var BlogColumns = struct {
+	Id        string
+	UserId    string
+	Title     string
+	Content   string
+	Status    string
+	Readed    string
+	CreatedAt string
+	UpdatedAt string
+}{
+	"id",
+	"user_id",
+	"title",
+	"content",
+	"status",
+	"readed",
+	"created_at",
+	"updated_at",
+}
+
 type _BlogMgr struct {
 }
 

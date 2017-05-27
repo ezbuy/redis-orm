@@ -38,6 +38,38 @@ type User struct {
 	DeletedAt   *time.Time `db:"deleted_at" json:"deleted_at"`
 }
 
+var UserColumns = struct {
+	Id          string
+	Name        string
+	Mailbox     string
+	Sex         string
+	Age         string
+	Longitude   string
+	Latitude    string
+	Description string
+	Password    string
+	HeadUrl     string
+	Status      string
+	CreatedAt   string
+	UpdatedAt   string
+	DeletedAt   string
+}{
+	"id",
+	"name",
+	"mailbox",
+	"sex",
+	"age",
+	"longitude",
+	"latitude",
+	"description",
+	"password",
+	"head_url",
+	"status",
+	"created_at",
+	"updated_at",
+	"deleted_at",
+}
+
 type _UserMgr struct {
 }
 
