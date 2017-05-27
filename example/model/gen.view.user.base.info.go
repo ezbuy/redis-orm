@@ -26,6 +26,20 @@ type UserBaseInfo struct {
 	Sex      bool   `db:"sex"`
 }
 
+var UserBaseInfoColumns = struct {
+	Id       string
+	Name     string
+	Mailbox  string
+	Password string
+	Sex      string
+}{
+	"id",
+	"name",
+	"mailbox",
+	"password",
+	"sex",
+}
+
 type _UserBaseInfoMgr struct {
 }
 

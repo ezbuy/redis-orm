@@ -88,6 +88,10 @@ func (f *Field) FieldName() string {
 	return Camel2Name(f.Name)
 }
 
+func (f *Field) ColumnName() string {
+	return Camel2Name(f.Name)
+}
+
 func (f *Field) IsPrimary() bool {
 	return f.Flags.Contains("primary")
 }
