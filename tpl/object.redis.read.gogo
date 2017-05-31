@@ -42,7 +42,8 @@ func (m *_{{$obj.Name}}RedisMgr) Find(index Index) (int64, []PrimaryKey, error) 
 		for _, str := range strs {
 			pk := {{$obj.Name}}Mgr.NewPrimaryKey()
 			if err := pk.Parse(str); err != nil {
-				return total, nil , err
+				total--
+				continue
 			}
 			results = append(results, pk)	
 		}
@@ -74,7 +75,8 @@ func (m *_{{$obj.Name}}RedisMgr) Range(scope Range) (int64, []PrimaryKey, error)
 		for _, str := range strs {
 			pk := {{$obj.Name}}Mgr.NewPrimaryKey()
 			if err := pk.Parse(str); err != nil {
-				return total, nil , err
+				total--
+				continue
 			}
 			results = append(results, pk)
 		}
@@ -108,7 +110,8 @@ func (m *_{{$obj.Name}}RedisMgr) RangeRevert(scope Range) (int64, []PrimaryKey, 
 		for _, str := range strs {
 			pk := {{$obj.Name}}Mgr.NewPrimaryKey()
 			if err := pk.Parse(str); err != nil {
-				return total, nil , err
+				total--
+				continue
 			}
 			results = append(results, pk)
 		}
