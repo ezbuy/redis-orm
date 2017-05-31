@@ -1127,7 +1127,8 @@ func (m *_UserRedisMgr) Find(index Index) (int64, []PrimaryKey, error) {
 		for _, str := range strs {
 			pk := UserMgr.NewPrimaryKey()
 			if err := pk.Parse(str); err != nil {
-				return total, nil, err
+				total--
+				continue
 			}
 			results = append(results, pk)
 		}
@@ -1159,7 +1160,8 @@ func (m *_UserRedisMgr) Range(scope Range) (int64, []PrimaryKey, error) {
 		for _, str := range strs {
 			pk := UserMgr.NewPrimaryKey()
 			if err := pk.Parse(str); err != nil {
-				return total, nil, err
+				total--
+				continue
 			}
 			results = append(results, pk)
 		}
@@ -1193,7 +1195,8 @@ func (m *_UserRedisMgr) RangeRevert(scope Range) (int64, []PrimaryKey, error) {
 		for _, str := range strs {
 			pk := UserMgr.NewPrimaryKey()
 			if err := pk.Parse(str); err != nil {
-				return total, nil, err
+				total--
+				continue
 			}
 			results = append(results, pk)
 		}
