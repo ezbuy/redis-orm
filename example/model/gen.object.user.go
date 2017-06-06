@@ -2,14 +2,14 @@ package model
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
-	"gopkg.in/ezbuy/redis-orm.v1/orm"
-	"gopkg.in/go-playground/validator.v9"
-	redis "gopkg.in/redis.v5"
 	"strings"
 	"time"
 
-	"errors"
+	"gopkg.in/ezbuy/redis-orm.v1/orm"
+	"gopkg.in/go-playground/validator.v9"
+	redis "gopkg.in/redis.v5"
 )
 
 var (

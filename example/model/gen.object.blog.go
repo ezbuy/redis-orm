@@ -4,13 +4,12 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"gopkg.in/ezbuy/redis-orm.v1/orm"
 	"gopkg.in/go-playground/validator.v9"
 	elastic "gopkg.in/olivere/elastic.v2"
-
-	"sync"
 )
 
 var (

@@ -7,17 +7,20 @@ import (
 	"time"
 	"strings"
 	"database/sql"
-	"gopkg.in/ezbuy/redis-orm.v1/orm"
-	"gopkg.in/go-playground/validator.v9"
+	{{- if $obj.DbContains "elastic"}}
+	"sync"
+	{{- end}}
 	{{- if $obj.DbContains "redis"}}
-	redis "gopkg.in/redis.v5"
-
 	"errors"
 	{{- end}}
+
+	"gopkg.in/ezbuy/redis-orm.v1/orm"
+	"gopkg.in/go-playground/validator.v9"
 	{{- if $obj.DbContains "elastic"}}
 	elastic "gopkg.in/olivere/elastic.v2"
-
-	"sync"
+	{{- end}}
+	{{- if $obj.DbContains "redis"}}
+	redis "gopkg.in/redis.v5"
 	{{- end}}
 )
 var (
