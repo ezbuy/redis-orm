@@ -1,4 +1,53 @@
 {{define "object.elastic"}}
 {{$obj := .}}
 //! orm.elastic
+var {{$obj.Name}}ElasticFields = struct{
+	{{- range $field := .Fields}}
+	{{- if $field.ESIndex.ShouldIndex}}
+	{{$field.Name}}  string
+	{{- end}}
+	{{- end}}
+}{
+	{{- range $field := .Fields}}
+	{{- if $field.ESIndex.ShouldIndex}}
+	"{{$field.ColumnName}}",
+	{{- end}}
+	{{- end}}
+}
+
+var {{$obj.Name}}ElasticMgr = &_{{$obj.Name}}ElasticMgr{}
+
+type _{{$obj.Name}}ElasticMgr struct {
+	ensureMapping sync.Once
+}
+
+func (m *_{{$obj.Name}}ElasticMgr) Mapping() map[string]interface{} {
+	return map[string]interface{}{
+		"properties": map[string]interface{}{
+			{{- range $field := $obj.Fields}}
+			{{- if $field.ESIndex.ShouldIndex}}
+			"{{ $field.ColumnName }}": map[string]interface{}{
+				{{- $settings := $field.ESIndex.TplMappingSettings }}
+				{{- range $setting := $settings }}
+				{{ $setting.Field }}: {{ $setting.Value }},
+				{{- end }}
+			},
+			{{- end}}
+			{{- end}}
+		},
+	}
+}
+
+func (m *_{{$obj.Name}}ElasticMgr) IndexService() (*elastic.IndexService, error) {
+	var err error
+	m.ensureMapping.Do(func() {
+		_, err = m.PutMappingService().BodyJson(m.Mapping()).Do()
+	})
+
+	return ElasticClient().IndexService().Type("{{ $obj.Name }}"), err
+}
+
+func (m *_{{$obj.Name}}ElasticMgr) PutMappingService() *elastic.PutMappingService {
+	return ElasticClient().PutMappingService().Type("{{ $obj.Name }}")
+}
 {{end}}

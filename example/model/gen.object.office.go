@@ -3,10 +3,11 @@ package model
 import (
 	"database/sql"
 	"fmt"
-	"gopkg.in/ezbuy/redis-orm.v1/orm"
-	"gopkg.in/go-playground/validator.v9"
 	"strings"
 	"time"
+
+	"gopkg.in/ezbuy/redis-orm.v1/orm"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 var (
