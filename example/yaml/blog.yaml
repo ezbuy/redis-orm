@@ -1,16 +1,19 @@
 Blog:
-  dbs: [mysql]
+  dbs: [mysql, elastic]
   dbname: ezorm
   dbtable: blogs
   fields:
     - Id: int32
     - UserId: int32
     - Title: string
+      es_do_index: true
     - Content: string
+      es_analyzer: standard
     - Status: int32
       flags: [index]
     - Readed: int32
     - CreatedAt: timestamp
+      es_do_index: true
     - UpdatedAt: timestamp
   primary: [Id, UserId]
   importSQL: "SELECT `id`,`user_id`,`title`,`content`,`status`,`readed`, `created_at`, `updated_at` FROM blogs"

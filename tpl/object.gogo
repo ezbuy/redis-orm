@@ -14,6 +14,11 @@ import (
 
 	"errors"
 	{{- end}}
+	{{- if $obj.DbContains "elastic"}}
+	elastic "gopkg.in/olivere/elastic.v2"
+
+	"sync"
+	{{- end}}
 )
 var (
 	_ sql.DB
@@ -25,39 +30,15 @@ var (
 )
 
 {{if not $relation}}
-	{{- if or (eq $obj.Db "mysql") (eq $obj.Db "mssql") }}
-		type {{.Name}} struct {
-			{{- range $field := .Fields}}
-			{{$field.Name}}  {{$field.GetType}} {{$field.GetTag}}
-			{{- end}}
-		}
-	{{- end}}
-
-	{{if eq $obj.Db "redis"}}
-		type {{.Name}} struct {
-			{{- range $field := .Fields}}
-			{{$field.Name}}  {{$field.GetType}} {{$field.GetTag}}
-			{{- end}}
-		}
-	{{end}}
-
-	{{if eq $obj.Db "mongo"}}
-		type {{.Name}} struct {
-			ID 	bson.ObjectId `bson:"_id,omitempty" json:"id"`
-			{{- range $field := .Fields}}
-			{{$field.Name}}  {{$field.GetType}} {{$field.GetTag}}
-			{{- end}}
-		}
-	{{end}}
-
-	{{if eq $obj.Db "elastic"}}
-		type {{.Name}} struct {
-			{{- range $field := .Fields}}
-			{{$field.Name}}  {{$field.GetType}} {{$field.GetTag}}
-			{{- end}}
-		}
-	{{end}}
-
+	type {{.Name}} struct {
+		{{- if $obj.DbContains "mongo"}}
+		ID 	bson.ObjectId `bson:"_id,omitempty" json:"id"`
+		{{- end}}
+		{{- range $field := .Fields}}
+		{{$field.Name}}  {{$field.GetType}} {{$field.GetTag}}
+		{{- end}}
+	}
+	{{- if or ($obj.DbContains "mysql") ($obj.DbContains "mssql") }}
 	var {{$obj.Name}}Columns = struct{
 		{{- range $field := .Fields}}
 		{{$field.Name}}  string
@@ -67,6 +48,7 @@ var (
 		"{{$field.ColumnName}}",
 		{{- end}}
 	}
+	{{- end}}
 
 	type _{{$obj.Name}}Mgr struct {
 	}

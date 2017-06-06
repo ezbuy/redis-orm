@@ -1,4 +1,4 @@
-{{define "conf.elastic"}}package {{.GoPackage}}
+package model
 
 import (
 	"net/http"
@@ -84,5 +84,3 @@ func (e *ESClient) IndexService() *elastic.IndexService {
 func (e *ESClient) PutMappingService() *elastic.PutMappingService {
 	return e.Client.PutMapping().Index(e.IndexName)
 }
-
-{{end}}

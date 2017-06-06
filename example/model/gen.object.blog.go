@@ -3,10 +3,14 @@ package model
 import (
 	"database/sql"
 	"fmt"
-	"gopkg.in/ezbuy/redis-orm.v1/orm"
-	"gopkg.in/go-playground/validator.v9"
 	"strings"
 	"time"
+
+	"gopkg.in/ezbuy/redis-orm.v1/orm"
+	"gopkg.in/go-playground/validator.v9"
+	elastic "gopkg.in/olivere/elastic.v2"
+
+	"sync"
 )
 
 var (
@@ -19,14 +23,14 @@ var (
 )
 
 type Blog struct {
-	Id        int32     `db:"id"`
-	UserId    int32     `db:"user_id"`
-	Title     string    `db:"title"`
-	Content   string    `db:"content"`
-	Status    int32     `db:"status"`
-	Readed    int32     `db:"readed"`
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
+	Id        int32     `db:"id" json:"id"`
+	UserId    int32     `db:"user_id" json:"user_id"`
+	Title     string    `db:"title" json:"title"`
+	Content   string    `db:"content" json:"content"`
+	Status    int32     `db:"status" json:"status"`
+	Readed    int32     `db:"readed" json:"readed"`
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 }
 
 var BlogColumns = struct {
@@ -760,4 +764,53 @@ func (m *_BlogDBMgr) DeleteBySQL(where string, args ...interface{}) (int64, erro
 		return 0, err
 	}
 	return result.RowsAffected()
+}
+
+//! orm.elastic
+var BlogElasticFields = struct {
+	Title     string
+	Content   string
+	CreatedAt string
+}{
+	"title",
+	"content",
+	"created_at",
+}
+
+var BlogElasticMgr = &_BlogElasticMgr{}
+
+type _BlogElasticMgr struct {
+	ensureMapping sync.Once
+}
+
+func (m *_BlogElasticMgr) Mapping() map[string]interface{} {
+	return map[string]interface{}{
+		"properties": map[string]interface{}{
+			"title": map[string]interface{}{
+				"type":  "string",
+				"index": "not_analyzed",
+			},
+			"content": map[string]interface{}{
+				"type":     "string",
+				"index":    "analyzed",
+				"analyzer": "standard",
+			},
+			"created_at": map[string]interface{}{
+				"type": "date",
+			},
+		},
+	}
+}
+
+func (m *_BlogElasticMgr) IndexService() (*elastic.IndexService, error) {
+	var err error
+	m.ensureMapping.Do(func() {
+		_, err = m.PutMappingService().BodyJson(m.Mapping()).Do()
+	})
+
+	return ElasticClient().IndexService().Type("Blog"), err
+}
+
+func (m *_BlogElasticMgr) PutMappingService() *elastic.PutMappingService {
+	return ElasticClient().PutMappingService().Type("Blog")
 }

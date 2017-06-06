@@ -36,6 +36,7 @@ type Field struct {
 	Comment   string
 	Validator string
 	Obj       *MetaObject
+	ESIndex   ESIndex
 }
 
 func NewField() *Field {
@@ -318,7 +319,7 @@ func (f *Field) GetTag() string {
 		case "redis":
 			tags["json"] = false
 		case "elastic":
-			tags["json"] = true
+			tags["json"] = false
 		case "mysql":
 			tags["db"] = false
 		case "mssql":
@@ -362,6 +363,7 @@ func (f *Field) Read(data map[interface{}]interface{}) error {
 			if err := f.SetType(v.(string)); err != nil {
 				return err
 			}
+
 			continue
 		}
 
@@ -384,10 +386,30 @@ func (f *Field) Read(data map[interface{}]interface{}) error {
 			for _, flag := range v.([]interface{}) {
 				f.Flags.Add(flag.(string))
 			}
+
+		case "es_do_index":
+			f.ESIndex.DoIndex = v.(bool)
+
+		case "es_do_analyze":
+			f.ESIndex.DoAnalyze = v.(bool)
+
+		case "es_analyzer":
+			f.ESIndex.Analyzer = v.(string)
+
+		case "es_date_format":
+			f.ESIndex.DateFormat = v.(string)
+
 		default:
 			return errors.New("invalid field name: " + key)
 		}
 	}
+
+	if f.Obj.DbContains("elastic") && f.ESIndex.ShouldIndex() {
+		if err := f.ESIndex.SetType(f.Type); err != nil {
+			return err
+		}
+	}
+
 	//! single field primary adjust for redis ops
 	if f.IsUnique() {
 		index := NewIndex(f.Obj)
