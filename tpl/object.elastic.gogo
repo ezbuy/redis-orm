@@ -44,10 +44,10 @@ func (m *_{{$obj.Name}}ElasticMgr) IndexService() (*elastic.IndexService, error)
 		_, err = m.PutMappingService().BodyJson(m.Mapping()).Do()
 	})
 
-	return ElasticClient().IndexService().Type("{{ $obj.Name }}"), err
+	return ElasticClient().IndexService("{{ $obj.DbName }}").Type("{{ $obj.ElasticIndexTypeName }}"), err
 }
 
 func (m *_{{$obj.Name}}ElasticMgr) PutMappingService() *elastic.PutMappingService {
-	return ElasticClient().PutMappingService().Type("{{ $obj.Name }}")
+	return ElasticClient().PutMappingService("{{ $obj.DbName}} ").Type("{{ $obj.ElasticIndexTypeName }}")
 }
 {{end}}

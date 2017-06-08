@@ -77,12 +77,20 @@ type ESClient struct {
 	IndexName string
 }
 
-func (e *ESClient) IndexService() *elastic.IndexService {
-	return e.Client.Index().Index(e.IndexName)
+func (e *ESClient) IndexService(index string) *elastic.IndexService {
+	if index == "" {
+		index = e.IndexName
+	}
+
+	return e.Client.Index().Index(index)
 }
 
-func (e *ESClient) PutMappingService() *elastic.PutMappingService {
-	return e.Client.PutMapping().Index(e.IndexName)
+func (e *ESClient) PutMappingService(index string) *elastic.PutMappingService {
+	if index == "" {
+		index = e.IndexName
+	}
+
+	return e.Client.PutMapping().Index(index)
 }
 
 {{end}}
