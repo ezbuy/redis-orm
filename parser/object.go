@@ -33,6 +33,8 @@ type MetaObject struct {
 	Relation *Relation
 	//! importSQL
 	ImportSQL string
+	//! elastic
+	ElasticIndexAll bool
 }
 
 func NewMetaObject(packageName string) *MetaObject {
@@ -219,6 +221,9 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 				return fmt.Errorf("object (%s) %s", o.Name, err.Error())
 			}
 			o.Relation = relation
+
+		case "es_index_all":
+			o.ElasticIndexAll = val.(bool)
 		}
 	}
 
@@ -269,4 +274,12 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 		}
 	}
 	return nil
+}
+
+func (m *MetaObject) ElasticIndexTypeName() string {
+	if m.DbTable != "" {
+		return m.DbTable
+	}
+
+	return Camel2Name(m.Name)
 }

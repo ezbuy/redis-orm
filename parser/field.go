@@ -286,6 +286,18 @@ var transformMap = map[string]Transform{
 		"string", "orm.TimeParseLocalTime(%v)",
 		"time.Time", "orm.TimeToLocalTime(%v)",
 	},
+	"elastic_timestamp": { // TIMESTAMP (string, UTC)
+		"string", `orm.TimeParse(%v)`,
+		"time.Time", `orm.TimeFormat(%v)`,
+	},
+	"elastic_timeint": { // INT(11)
+		"int64", "time.Unix(%v, 0)",
+		"time.Time", "%v.Unix()",
+	},
+	"elastic_datetime": { // DATETIME (string, localtime)
+		"string", "orm.TimeParseLocalTime(%v)",
+		"time.Time", "orm.TimeToLocalTime(%v)",
+	},
 }
 
 func (f *Field) IsNeedTransform() bool {
@@ -352,6 +364,8 @@ func (f *Field) GetTag() string {
 
 func (f *Field) Read(data map[interface{}]interface{}) error {
 	foundName := false
+	f.ESIndex.DoIndex = f.Obj.ElasticIndexAll
+
 	for k, v := range data {
 		key := k.(string)
 

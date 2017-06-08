@@ -1,0 +1,20 @@
+IndexedBlog:
+  dbs: [elastic]
+  dbname: ezsearch
+  dbtable: indexed_blog
+  es_index_all: true
+  fields:
+    - Id: int32
+      es_do_index: false
+    - UserId: int32
+    - Hash: string
+    - Title: string
+      es_do_analyze: true
+    - Content: string
+      es_analyzer: standard
+    - Readed: int32
+    - CreatedAt: timestamp
+      es_date_format: "yyyy-MM-dd HH:mm:ss"
+    - UpdatedAt: timestamp
+      es_date_format: "yyyy-MM-dd HH:mm:ss"
+  primary: [Id]
