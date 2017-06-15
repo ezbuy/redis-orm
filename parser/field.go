@@ -30,6 +30,7 @@ type Field struct {
 	Name      string
 	Type      string
 	sqlType   string
+	sqlColumn string
 	Size      int
 	Flags     set.Set
 	Attrs     map[string]string
@@ -83,6 +84,12 @@ func (f *Field) SetType(t string) error {
 }
 
 func (f *Field) FieldName() string {
+	if f.sqlColumn != "" {
+		if f.Obj.DbContains("mysql") {
+			return fmt.Sprintf("`%s`", f.sqlColumn)
+		}
+		return f.sqlColumn
+	}
 	if f.Obj.DbContains("mysql") {
 		return fmt.Sprintf("`%s`", Camel2Name(f.Name))
 	}
@@ -386,6 +393,8 @@ func (f *Field) Read(data map[interface{}]interface{}) error {
 			f.Size = v.(int)
 		case "sqltype":
 			f.sqlType = v.(string)
+		case "sqlcolumn":
+			f.sqlColumn = v.(string)
 		case "comment":
 			f.Comment = v.(string)
 		case "validator":
