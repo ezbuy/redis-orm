@@ -84,19 +84,16 @@ func (f *Field) SetType(t string) error {
 }
 
 func (f *Field) FieldName() string {
-	if f.sqlColumn != "" {
-		if f.Obj.DbContains("mysql") {
-			return fmt.Sprintf("`%s`", f.sqlColumn)
-		}
-		return f.sqlColumn
-	}
 	if f.Obj.DbContains("mysql") {
-		return fmt.Sprintf("`%s`", Camel2Name(f.Name))
+		return fmt.Sprintf("`%s`", f.ColumnName())
 	}
-	return Camel2Name(f.Name)
+	return f.ColumnName()
 }
 
 func (f *Field) ColumnName() string {
+	if f.sqlColumn != "" {
+		return f.sqlColumn
+	}
 	return Camel2Name(f.Name)
 }
 
