@@ -9,7 +9,33 @@ import (
 	"time"
 
 	"encoding/base64"
+	"reflect"
 )
+
+func indirect(a interface{}) interface{} {
+	if a == nil {
+		return nil
+	}
+	if t := reflect.TypeOf(a); t.Kind() != reflect.Ptr {
+		// Avoid creating a reflect.Value if it's not a pointer.
+		return a
+	}
+	v := reflect.ValueOf(a)
+	for v.Kind() == reflect.Ptr && !v.IsNil() {
+		v = v.Elem()
+	}
+	return v.Interface()
+}
+
+func toTimeE(i interface{}) (time.Time, error) {
+	i = indirect(i)
+	switch s := i.(type) {
+	case time.Time:
+		return s, nil
+	default:
+		return time.Time{}, fmt.Errorf("Unable to Cast %#v to Time\n", i)
+	}
+}
 
 func MsSQLTimeParse(s string) time.Time {
 	t, err := time.Parse(time.RFC3339Nano, s)
@@ -19,8 +45,12 @@ func MsSQLTimeParse(s string) time.Time {
 	return t.Local()
 }
 
-func MsSQLTimeFormat(t time.Time) string {
-	return t.UTC().Format("2006-01-02 15:04:05")
+func MsSQLTimeFormat(t interface{}) string {
+	tm, err := toTimeE(t)
+	if err != nil {
+		panic(err)
+	}
+	return tm.UTC().Format("2006-01-02 15:04:05")
 }
 
 func TimeToLocalTime(c time.Time) string {
