@@ -358,12 +358,14 @@ func (m *_UserBlogsDBMgr) FetchBySQL(q string, args ...interface{}) (results []i
 		var result UserBlogs
 		err = rows.Scan(&(result.UserId), &(result.BlogId))
 		if err != nil {
+			m.db.SetError(err)
 			return nil, err
 		}
 
 		results = append(results, &result)
 	}
 	if err = rows.Err(); err != nil {
+		m.db.SetError(err)
 		return nil, fmt.Errorf("UserBlogs fetch result error: %v", err)
 	}
 	return
@@ -510,12 +512,14 @@ func (m *_UserBlogsDBMgr) queryLimit(where string, limit int, args ...interface{
 		result := UserBlogsMgr.NewPrimaryKey()
 		err = rows.Scan(&(result.UserId), &(result.BlogId))
 		if err != nil {
+			m.db.SetError(err)
 			return nil, err
 		}
 
 		results = append(results, result)
 	}
 	if err := rows.Err(); err != nil {
+		m.db.SetError(err)
 		return nil, fmt.Errorf("UserBlogs query limit result error: %v", err)
 	}
 	return
@@ -532,6 +536,7 @@ func (m *_UserBlogsDBMgr) queryCount(where string, args ...interface{}) (int64, 
 	var count int64
 	for rows.Next() {
 		if err = rows.Scan(&count); err != nil {
+			m.db.SetError(err)
 			return 0, err
 		}
 		break

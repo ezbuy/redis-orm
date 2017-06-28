@@ -378,6 +378,7 @@ func (m *_OfficeDBMgr) FetchBySQL(q string, args ...interface{}) (results []inte
 		var result Office
 		err = rows.Scan(&(result.OfficeId), &(result.OfficeArea), &(result.OfficeName), &(result.SearchOriginCode), &(result.ProcessingOriginCode), &(result.CreateBy), &(result.UpdateBy), &CreateDate, &UpdateDate)
 		if err != nil {
+			m.db.SetError(err)
 			return nil, err
 		}
 
@@ -387,6 +388,7 @@ func (m *_OfficeDBMgr) FetchBySQL(q string, args ...interface{}) (results []inte
 		results = append(results, &result)
 	}
 	if err = rows.Err(); err != nil {
+		m.db.SetError(err)
 		return nil, fmt.Errorf("Office fetch result error: %v", err)
 	}
 	return
@@ -539,12 +541,14 @@ func (m *_OfficeDBMgr) queryLimit(where string, limit int, args ...interface{}) 
 		result := OfficeMgr.NewPrimaryKey()
 		err = rows.Scan(&(result.OfficeId))
 		if err != nil {
+			m.db.SetError(err)
 			return nil, err
 		}
 
 		results = append(results, result)
 	}
 	if err := rows.Err(); err != nil {
+		m.db.SetError(err)
 		return nil, fmt.Errorf("Office query limit result error: %v", err)
 	}
 	return
@@ -561,6 +565,7 @@ func (m *_OfficeDBMgr) queryCount(where string, args ...interface{}) (int64, err
 	var count int64
 	for rows.Next() {
 		if err = rows.Scan(&count); err != nil {
+			m.db.SetError(err)
 			return 0, err
 		}
 		break

@@ -456,12 +456,14 @@ func (m *_UserBaseInfoDBMgr) FetchBySQL(q string, args ...interface{}) (results 
 		var result UserBaseInfo
 		err = rows.Scan(&(result.Id), &(result.Name), &(result.Mailbox), &(result.Password), &(result.Sex))
 		if err != nil {
+			m.db.SetError(err)
 			return nil, err
 		}
 
 		results = append(results, &result)
 	}
 	if err = rows.Err(); err != nil {
+		m.db.SetError(err)
 		return nil, fmt.Errorf("UserBaseInfo fetch result error: %v", err)
 	}
 	return
@@ -614,12 +616,14 @@ func (m *_UserBaseInfoDBMgr) queryLimit(where string, limit int, args ...interfa
 		result := UserBaseInfoMgr.NewPrimaryKey()
 		err = rows.Scan(&(result.Id))
 		if err != nil {
+			m.db.SetError(err)
 			return nil, err
 		}
 
 		results = append(results, result)
 	}
 	if err := rows.Err(); err != nil {
+		m.db.SetError(err)
 		return nil, fmt.Errorf("UserBaseInfo query limit result error: %v", err)
 	}
 	return
@@ -636,6 +640,7 @@ func (m *_UserBaseInfoDBMgr) queryCount(where string, args ...interface{}) (int6
 	var count int64
 	for rows.Next() {
 		if err = rows.Scan(&count); err != nil {
+			m.db.SetError(err)
 			return 0, err
 		}
 		break

@@ -452,6 +452,7 @@ func (m *_BlogDBMgr) FetchBySQL(q string, args ...interface{}) (results []interf
 		var result Blog
 		err = rows.Scan(&(result.Id), &(result.UserId), &(result.Title), &(result.Content), &(result.Status), &(result.Readed), &CreatedAt, &UpdatedAt)
 		if err != nil {
+			m.db.SetError(err)
 			return nil, err
 		}
 
@@ -461,6 +462,7 @@ func (m *_BlogDBMgr) FetchBySQL(q string, args ...interface{}) (results []interf
 		results = append(results, &result)
 	}
 	if err = rows.Err(); err != nil {
+		m.db.SetError(err)
 		return nil, fmt.Errorf("Blog fetch result error: %v", err)
 	}
 	return
@@ -607,12 +609,14 @@ func (m *_BlogDBMgr) queryLimit(where string, limit int, args ...interface{}) (r
 		result := BlogMgr.NewPrimaryKey()
 		err = rows.Scan(&(result.Id), &(result.UserId))
 		if err != nil {
+			m.db.SetError(err)
 			return nil, err
 		}
 
 		results = append(results, result)
 	}
 	if err := rows.Err(); err != nil {
+		m.db.SetError(err)
 		return nil, fmt.Errorf("Blog query limit result error: %v", err)
 	}
 	return
@@ -629,6 +633,7 @@ func (m *_BlogDBMgr) queryCount(where string, args ...interface{}) (int64, error
 	var count int64
 	for rows.Next() {
 		if err = rows.Scan(&count); err != nil {
+			m.db.SetError(err)
 			return 0, err
 		}
 		break

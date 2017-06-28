@@ -95,6 +95,7 @@ func (m *_{{$obj.Name}}DBMgr) FetchBySQL(q string, args ... interface{}) (result
 		{{- end -}}
 		)
 		if err != nil {
+			m.db.SetError(err)
 			return nil, err
 		}
 
@@ -130,6 +131,7 @@ func (m *_{{$obj.Name}}DBMgr) FetchBySQL(q string, args ... interface{}) (result
 		results = append(results, &result)
 	}
 	if err = rows.Err() ;err != nil {
+		m.db.SetError(err)
 		return nil, fmt.Errorf("{{$obj.Name}} fetch result error: %v", err)
 	}
 	return
@@ -311,6 +313,7 @@ func (m *_{{$obj.Name}}DBMgr) queryLimit(where string, limit int, args ...interf
 		{{- end -}}
 		)
 		if err != nil {
+			m.db.SetError(err)
 			return nil, err
 		}
 
@@ -346,6 +349,7 @@ func (m *_{{$obj.Name}}DBMgr) queryLimit(where string, limit int, args ...interf
 		results = append(results, result)
 	}
 	if err := rows.Err() ;err != nil {
+		m.db.SetError(err)
 		return nil, fmt.Errorf("{{$obj.Name}} query limit result error: %v", err)
 	}
 	return
@@ -362,6 +366,7 @@ func (m *_{{$obj.Name}}DBMgr) queryCount(where string, args ...interface{}) (int
 	var count int64
 	for rows.Next() {
 		if err = rows.Scan(&count); err != nil {
+			m.db.SetError(err)
 			return 0, err
 		}
 		break

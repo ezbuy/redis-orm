@@ -650,6 +650,7 @@ func (m *_UserDBMgr) FetchBySQL(q string, args ...interface{}) (results []interf
 		var result User
 		err = rows.Scan(&(result.Id), &(result.Name), &(result.Mailbox), &(result.Sex), &(result.Age), &(result.Longitude), &(result.Latitude), &Description, &(result.Password), &HeadUrl, &(result.Status), &CreatedAt, &UpdatedAt, &DeletedAt)
 		if err != nil {
+			m.db.SetError(err)
 			return nil, err
 		}
 
@@ -671,6 +672,7 @@ func (m *_UserDBMgr) FetchBySQL(q string, args ...interface{}) (results []interf
 		results = append(results, &result)
 	}
 	if err = rows.Err(); err != nil {
+		m.db.SetError(err)
 		return nil, fmt.Errorf("User fetch result error: %v", err)
 	}
 	return
@@ -823,12 +825,14 @@ func (m *_UserDBMgr) queryLimit(where string, limit int, args ...interface{}) (r
 		result := UserMgr.NewPrimaryKey()
 		err = rows.Scan(&(result.Id))
 		if err != nil {
+			m.db.SetError(err)
 			return nil, err
 		}
 
 		results = append(results, result)
 	}
 	if err := rows.Err(); err != nil {
+		m.db.SetError(err)
 		return nil, fmt.Errorf("User query limit result error: %v", err)
 	}
 	return
@@ -845,6 +849,7 @@ func (m *_UserDBMgr) queryCount(where string, args ...interface{}) (int64, error
 	var count int64
 	for rows.Next() {
 		if err = rows.Scan(&count); err != nil {
+			m.db.SetError(err)
 			return 0, err
 		}
 		break
