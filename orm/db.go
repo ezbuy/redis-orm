@@ -15,6 +15,7 @@ import (
 type DB interface {
 	Query(sql string, args ...interface{}) (*sql.Rows, error)
 	Exec(sql string, args ...interface{}) (sql.Result, error)
+	SetError(err error)
 }
 
 type DBStore struct {
@@ -86,6 +87,8 @@ func (store *DBStore) Exec(sql string, args ...interface{}) (sql.Result, error) 
 	return store.DB.Exec(sql, args...)
 }
 
+func (store *DBStore) SetError(err error) {}
+
 func (store *DBStore) Close() error {
 	if err := store.DB.Close(); err != nil {
 		return err
@@ -156,4 +159,8 @@ func (tx *DBTx) Exec(sql string, args ...interface{}) (sql.Result, error) {
 	result, err := tx.tx.Exec(sql, args...)
 	tx.err = err
 	return result, tx.err
+}
+
+func (tx *DBTx) SetError(err error) {
+	tx.err = err
 }
