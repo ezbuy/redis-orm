@@ -47,6 +47,33 @@ func NewDBStore(driver, host string, port int, database, username, password stri
 	return &DBStore{db, false, time.Duration(0)}, nil
 }
 
+func NewDBStoreCharset(driver, host string, port int, database, username, password, charset string) (*DBStore, error) {
+	var dsn string
+	switch strings.ToLower(driver) {
+	case "mysql":
+		if charset == "" {
+			charset = "utf8"
+		}
+		dsn = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&autocommit=true&parseTime=True",
+			username,
+			password,
+			host,
+			port,
+			database,
+			charset)
+	case "mssql":
+		dsn = fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d;database=%s",
+			host, username, password, port, database)
+	default:
+		return nil, fmt.Errorf("unsupport db driver: %s", driver)
+	}
+	db, err := sql.Open(driver, dsn)
+	if err != nil {
+		return nil, err
+	}
+	return &DBStore{db, false, time.Duration(0)}, nil
+}
+
 func (store *DBStore) Debug(b bool) {
 	store.debug = b
 }
