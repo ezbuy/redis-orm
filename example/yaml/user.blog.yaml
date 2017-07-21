@@ -7,4 +7,4 @@ UserBlogs:
       flags: [primary]
     - BlogId: int32
       flags: [primary]
-  
+

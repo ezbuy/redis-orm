@@ -2,6 +2,7 @@ User:
   dbs: [redis, mysql]
   dbname: ezorm
   dbtable: users
+  comment: 用户表
   fields:
     - Id: int32
       flags: [primary, autoinc]
@@ -50,7 +51,7 @@ UserLocation:
     storetype: geo
     valuetype: int32
     modeltype: User
-  importSQL: "SELECT 'all',`longitude`,`latitude`,`id` FROM users"  
+  importSQL: "SELECT 'all',`longitude`,`latitude`,`id` FROM users"
 
 SexUserLocation:
   dbs: [redis, mysql]
@@ -58,7 +59,7 @@ SexUserLocation:
     storetype: geo
     valuetype: int32
     modeltype: User
-  importSQL: "SELECT `sex`,`longitude`,`latitude`,`id` FROM users"  
+  importSQL: "SELECT `sex`,`longitude`,`latitude`,`id` FROM users"
 
 UserId:
   dbs: [redis, mysql]
