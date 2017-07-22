@@ -1,25 +1,24 @@
 {{- define "script.mysql"}}{{- $obj := . -}}
 {{- if ne $obj.DbTable ""}}
-CREATE TABLE IF NOT EXISTS `{{$obj.DbTable}}` (
+CREATE TABLE `{{$obj.DbTable}}` (
 	{{- range $i, $field := $obj.Fields}}
-	{{$field.SQLColumn "mysql"}}, 
+	{{$field.SQLColumn "mysql"}},
 	{{- end}}
 	{{$obj.PrimaryKey.SQLColumn "mysql"}}
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-{{range $i, $unique := $obj.Uniques}}
-{{- if not $unique.HasPrimaryKey}}
-CREATE UNIQUE INDEX `{{$unique.Name | camel2name}}` ON `{{$obj.DbTable}}`(
-	{{- range $i, $f := $unique.Fields -}}		
-		{{- if eq (add $i 1) (len $unique.Fields) -}}
-			`{{- $f.Name | camel2name -}}`
-		{{- else -}}
-			`{{- $f.Name | camel2name -}}`,
+	{{- range $i, $unique := $obj.Uniques}}
+	{{- if not $unique.HasPrimaryKey}},
+	UNIQUE KEY `uniq_{{$unique.Name | camel2name}}` (
+		{{- range $i, $f := $unique.Fields -}}
+			{{- if eq (add $i 1) (len $unique.Fields) -}}
+				`{{- $f.Name | camel2name -}}`
+			{{- else -}}
+				`{{- $f.Name | camel2name -}}`,
+			{{- end -}}
 		{{- end -}}
-	{{- end -}}
-);
-{{- end}}
-{{- end}}
+	)
+	{{- end}}
+	{{- end}}
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT '{{$obj.Comment}}';
 
 {{- range $i, $index := $obj.Indexes}}
 {{- if not $index.HasPrimaryKey}}

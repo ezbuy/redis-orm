@@ -14,8 +14,9 @@ type MetaObject struct {
 	Name string
 	Tag  string
 	//! dbs
-	Db  string
-	Dbs []string
+	Db      string
+	Dbs     []string
+	comment string
 	//! database
 	DbName  string
 	DbTable string
@@ -169,6 +170,9 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 			o.DbTable = val.(string)
 		case "dbview":
 			o.DbView = val.(string)
+		case "comment":
+			o.comment = val.(string)
+
 		case "importSQL":
 			o.ImportSQL = val.(string)
 		case "fields":
@@ -282,4 +286,12 @@ func (m *MetaObject) ElasticIndexTypeName() string {
 	}
 
 	return Camel2Name(m.Name)
+}
+
+func (m *MetaObject) Comment() string {
+	if m.comment != "" {
+		return m.comment
+	}
+
+	return m.DbTable
 }
