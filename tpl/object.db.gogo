@@ -1,7 +1,11 @@
 {{define "object.db"}}
 {{$obj := .}}
-{{- template "object.db.read" . -}}
-{{- if ne $obj.DbTable "" -}}
-{{- template "object.db.write" . -}}
+{{- if ne $obj.DbSource "" -}}
+    {{- template "object.db.read" . -}}
+    {{- if ne $obj.DbTable "" -}}
+    {{- template "object.db.write" . -}}
+    {{- end -}}
+{{- else -}}
+    {{- template "object.db.query" . -}}
 {{- end -}}
 {{end}}

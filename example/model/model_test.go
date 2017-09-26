@@ -9,9 +9,10 @@ import (
 
 	"log"
 
+	"strings"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"strings"
 )
 
 var _ = Describe("manager", func() {
@@ -470,6 +471,12 @@ var _ = Describe("redis-orm.mysql", func() {
 			cnt, err := UserDBMgr(MySQL()).SearchCount("where age < 50 and sex = 1")
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(cnt).To(Equal(int64(25)))
+		})
+
+		It("query", func() {
+			us, err := UserInfoDBMgr(MySQL()).QueryBySQL("SELECT `id`,`name`,`mailbox`, `password`, `sex` FROM users")
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(len(us)).To(Equal(100))
 		})
 
 		Measure("mysql.bench", func(b Benchmarker) {

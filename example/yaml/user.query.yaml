@@ -1,0 +1,12 @@
+UserInfo:
+  dbs: [mysql]
+  dbname: ezorm
+  fields:
+    - Id: int32
+      flags: [primary]
+    - Name: string
+      flags: [index]
+      size: 20
+    - Mailbox: string
+    - Password: string
+    - Sex: bool

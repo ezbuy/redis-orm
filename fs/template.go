@@ -23,11 +23,16 @@ func generate_templates(obj *parser.MetaObject) []string {
 	} else {
 		if obj.DbView != "" {
 			tpls = append(tpls, "view")
-		} else {
-			if obj.DbTable != "" {
-				tpls = append(tpls, "object")
-			}
 		}
+
+		if obj.DbTable != "" {
+			tpls = append(tpls, "object")
+		}
+
+		if obj.DbSource() == "" {
+			tpls = append(tpls, "query")
+		}
+
 	}
 	return tpls
 }
@@ -102,6 +107,7 @@ func init() {
 		"tpl/object.db.gogo",
 		"tpl/object.db.read.gogo",
 		"tpl/object.db.write.gogo",
+		"tpl/object.db.query.gogo",
 		"tpl/object.elastic.gogo",
 		"tpl/object.functions.gogo",
 		"tpl/object.gogo",
@@ -117,6 +123,7 @@ func init() {
 		"tpl/object.redis.write.gogo",
 		"tpl/object.relation.gogo",
 		"tpl/object.unqiue.gogo",
+		"tpl/query.gogo",
 		"tpl/relation.db.read.gogo",
 		"tpl/relation.functions.gogo",
 		"tpl/relation.geo.gogo",
