@@ -468,6 +468,18 @@ var _ = Describe("redis-orm.mysql", func() {
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(len(us)).To(Equal(25))
 
+			conditions := []string{}
+			in := orm.NewFieldIN("age")
+			in.Add(1)
+			in.Add(3)
+			in.Add(5)
+			in.Add(7)
+			in.Add(9)
+			conditions = append(conditions, in.SQLFormat())
+			ins, err := UserDBMgr(MySQL()).SearchConditions(conditions, "", 0, -1, in.SQLParams()...)
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(len(ins)).To(Equal(5))
+
 			cnt, err := UserDBMgr(MySQL()).SearchCount("where age < 50 and sex = 1")
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(cnt).To(Equal(int64(25)))
