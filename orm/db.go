@@ -28,7 +28,7 @@ func NewDBStore(driver, host string, port int, database, username, password stri
 	var dsn string
 	switch strings.ToLower(driver) {
 	case "mysql":
-		dsn = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&autocommit=true&parseTime=True",
+		dsn = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&autocommit=true&parseTime=True",
 			username,
 			password,
 			host,
