@@ -76,11 +76,17 @@ func GenerateCode() {
 
 GeneratePoint:
 	for _, metaObj := range metaObjs {
-		fs.ExecuteMetaObjectCodeTemplate(outputDir, metaObj)
+		err = fs.ExecuteMetaObjectCodeTemplate(outputDir, metaObj)
+		if err != nil {
+			panic(err.Error())
+		}
 	}
 
 	for conf := range confTpls {
-		fs.ExecuteConfigTemplate(outputDir, conf, packageName)
+		err = fs.ExecuteConfigTemplate(outputDir, conf, packageName)
+		if err != nil {
+			panic(err.Error())
+		}
 	}
 
 }
