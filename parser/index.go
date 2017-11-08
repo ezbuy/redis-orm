@@ -37,6 +37,22 @@ func (idx *Index) HasPrimaryKey() bool {
 	return false
 }
 
+func (idx *Index) GetFuncParam() string {
+	params := make([]string, len(idx.Fields))
+	for i, f := range idx.Fields {
+		params[i] = f.Name + " " + f.GetType()
+	}
+	return strings.Join(params, ", ")
+}
+
+func (idx *Index) GetFuncName() string {
+	params := make([]string, len(idx.Fields))
+	for i, f := range idx.Fields {
+		params[i] = f.Name
+	}
+	return strings.Join(params, "")
+}
+
 func (idx *Index) LastField() *Field {
 	return idx.Fields[len(idx.Fields)-1]
 }
