@@ -14,7 +14,7 @@ import (
 	"errors"
 	{{- end}}
 
-	"gopkg.in/ezbuy/redis-orm.v1/orm"
+	"github.com/ezbuy/redis-orm/orm"
 	"gopkg.in/go-playground/validator.v9"
 	{{- if $obj.DbContains "elastic"}}
 	elastic "gopkg.in/olivere/elastic.v2"
