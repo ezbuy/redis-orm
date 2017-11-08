@@ -39,16 +39,16 @@ func (m *_{{$obj.Name}}DBMgr) SearchConditions(conditions []string, orderby stri
 		orderby = orm.SQLOrderBy("{{$primaryField.FieldName}}", false)
 	}
 	{{- end}}
-	q := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s %s %s", 
-			strings.Join(obj.GetColumns(), ","), 
-			orm.SQLWhere(conditions), 
+	q := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s %s %s",
+			strings.Join(obj.GetColumns(), ","),
+			orm.SQLWhere(conditions),
 			orderby,
 			{{- if $obj.DbContains "mssql"}}
 			orm.MsSQLOffsetLimit(offset, limit))
 			{{- else}}
 			orm.SQLOffsetLimit(offset, limit))
 			{{- end}}
-			
+
 	objs, err := m.FetchBySQL(q, args...)
 	if err != nil {
 		return nil, err
@@ -60,16 +60,16 @@ func (m *_{{$obj.Name}}DBMgr) SearchConditions(conditions []string, orderby stri
 	return results, nil
 }
 
-func (m *_{{$obj.Name}}DBMgr) SearchCount(where string, args ...interface{}) (int64, error){ 
+func (m *_{{$obj.Name}}DBMgr) SearchCount(where string, args ...interface{}) (int64, error){
 	return m.queryCount(where, args...)
 }
 
-func (m *_{{$obj.Name}}DBMgr) SearchConditionsCount(conditions []string, args ...interface{}) (int64, error){ 
+func (m *_{{$obj.Name}}DBMgr) SearchConditionsCount(conditions []string, args ...interface{}) (int64, error){
 	return m.queryCount(orm.SQLWhere(conditions), args...)
 }
 
 func (m *_{{$obj.Name}}DBMgr) FetchBySQL(q string, args ... interface{}) (results []interface{}, err error) {
-	rows, err := m.db.Query(q, args...)	
+	rows, err := m.db.Query(q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("{{$obj.Name}} fetch error: %v", err)
 	}
@@ -106,15 +106,15 @@ func (m *_{{$obj.Name}}DBMgr) FetchBySQL(q string, args ... interface{}) (result
 						{{- with $v := (printf "%sValue" $field.Name)}}
 						{{$field.Name}}Value := {{$field.Name}}.{{$field.NullSQLTypeValue}}
 						{{$field.Name}}Point := {{- printf $field.GetTransform.ConvertTo $v}}
-						result.{{$field.Name}} = &{{$field.Name}}Point	
+						result.{{$field.Name}} = &{{$field.Name}}Point
 						{{- end}}
 					} else {
 						result.{{$field.Name}} = nil
-					}					
+					}
 				{{- else -}}
 				result.{{$field.Name}} = {{- printf $field.GetTransform.ConvertTo $field.Name}}
 				{{- end -}}
-			{{- else }}				
+			{{- else }}
 				{{- if $field.IsNullable -}}
 					result.{{$field.Name}} =
 					{{- if $field.NullSQLTypeNeedCast -}}
@@ -324,15 +324,15 @@ func (m *_{{$obj.Name}}DBMgr) queryLimit(where string, limit int, args ...interf
 						{{- with $v := (printf "%sValue" $field.Name)}}
 						{{$field.Name}}Value := {{$field.Name}}.{{$field.NullSQLTypeValue}}
 						{{$field.Name}}Point := {{- printf $field.GetTransform.ConvertTo $v}}
-						result.{{$field.Name}} = &{{$field.Name}}Point	
+						result.{{$field.Name}} = &{{$field.Name}}Point
 						{{- end}}
 					} else {
 						result.{{$field.Name}} = nil
-					}					
+					}
 				{{- else -}}
 				result.{{$field.Name}} = {{- printf $field.GetTransform.ConvertTo $field.Name}}
 				{{- end -}}
-			{{- else }}				
+			{{- else }}
 				{{- if $field.IsNullable -}}
 					result.{{$field.Name}} =
 					{{- if $field.NullSQLTypeNeedCast -}}

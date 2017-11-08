@@ -1,7 +1,7 @@
 {{define "object.redis"}}
 {{$obj := .}}
 
-{{template "object.redis.manager" $obj}}	
+{{template "object.redis.manager" $obj}}
 {{template "object.redis.pipeline" $obj}}
 {{if or (ne $obj.DbSource "") (ne $obj.ImportSQL "")}}
 {{template "object.redis.sync" $obj}}
@@ -26,5 +26,5 @@
 {{$relation := ($rg.GetRelation "zset" "string" $obj.Name)}}
 {{template "object.relation" $relation}}
 {{- end}}
-	
+
 {{end}}

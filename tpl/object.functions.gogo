@@ -11,7 +11,7 @@ func (obj *{{.Name}}) GetClassName() string {
 }
 
 func (obj *{{.Name}}) GetTableName() string {
-	return "{{.DbTable}}"	
+	return "{{.DbTable}}"
 }
 
 func (obj *{{.Name}}) GetColumns() []string {

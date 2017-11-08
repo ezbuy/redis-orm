@@ -18,7 +18,7 @@ func (u *{{$index.Name}}) Key() string {
 			orm.Encode(fmt.Sprint(u.{{$field.Name}})),
 			{{- else}}
 			fmt.Sprint(u.{{$field.Name}}),
-			{{- end}}		
+			{{- end}}
 		{{- end}}
 	}
 	return fmt.Sprintf("%s", strings.Join(strs, ":"))
@@ -50,7 +50,7 @@ func (u *{{$index.Name}}) SQLParams() []interface{} {
 
 func (u *{{$index.Name}}) SQLLimit() int {
 	if u.limit > 0 {
-		return u.limit	
+		return u.limit
 	}
 	return -1
 }

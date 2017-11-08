@@ -32,7 +32,7 @@ func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
 			orm.Encode(fmt.Sprint({{$field.GetTransformValue "obj."}})),
 			{{- else}}
 			fmt.Sprint({{$field.GetTransformValue "obj."}}),
-			{{- end}}	
+			{{- end}}
 		{{- end}}
 	}
 	uk_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline)
@@ -125,8 +125,8 @@ func (m *_{{$obj.Name}}RedisMgr) SaveBatchWithExpire(objs []*{{$obj.Name}}, expi
 		if _, err := pipe.Exec(); err != nil {
 		    pipe.Close()
 			return err
-		}	
-	}	
+		}
+	}
 	return nil
 }
 
@@ -135,11 +135,11 @@ func (m *_{{$obj.Name}}RedisMgr) SaveWithExpire(obj *{{$obj.Name}}, expire time.
 		pipe := m.BeginPipeline()
 		err := m.addToPipeline(pipe, obj, expire)
 		if err != nil {
-            pipe.Close()
-            return err
-        }
+			pipe.Close()
+			return err
+		}
 		if _, err = pipe.Exec(); err != nil {
-		    pipe.Close()
+			pipe.Close()
 			return err
 		}
 	}
@@ -166,7 +166,7 @@ func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipelin
 			{{- else}}
 			pipe.HSet(keyOfObject(obj, pk.Key()), "{{$field.Name}}", fmt.Sprint({{$field.GetTransformValue "obj."}}))
 			{{- end}}
-		{{- end}}	
+		{{- end}}
 	{{- end}}
 
 	//! uniques

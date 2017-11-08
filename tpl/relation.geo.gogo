@@ -2,7 +2,7 @@
 {{$relation := .}}
 {{$primaryField := $relation.PrimaryField}}
 //! redis relation pair
-func (m *_{{$relation.Name}}RedisMgr) LocationAdd(relation *{{$relation.Name}}) error {	
+func (m *_{{$relation.Name}}RedisMgr) LocationAdd(relation *{{$relation.Name}}) error {
 	return m.GeoAdd(geoOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), &redis.GeoLocation{
 		Longitude: relation.Longitude,
 		Latitude:  relation.Latitude,
