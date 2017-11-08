@@ -475,8 +475,27 @@ func (m *_BlogDBMgr) Exist(pk PrimaryKey) (bool, error) {
 	return (c != 0), nil
 }
 
+// Deprecated: Use FetchByPrimaryKey instead.
 func (m *_BlogDBMgr) Fetch(pk PrimaryKey) (*Blog, error) {
 	obj := BlogMgr.NewBlog()
+	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0].(*Blog), nil
+	}
+	return nil, fmt.Errorf("Blog fetch record not found")
+}
+
+func (m *_BlogDBMgr) FetchByPrimaryKey(Id int32, UserId int32) (*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	pk := &IdUserIdOfBlogPK{
+		Id:     Id,
+		UserId: UserId,
+	}
+
 	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
 	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
 	if err != nil {

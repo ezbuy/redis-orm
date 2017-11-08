@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ezbuy/redis-orm/orm"
+	"gopkg.in/go-playground/validator.v9"
 	elastic "gopkg.in/olivere/elastic.v2"
 )
 

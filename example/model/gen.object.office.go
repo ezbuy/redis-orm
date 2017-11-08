@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ezbuy/redis-orm/orm"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 var (
@@ -400,8 +401,26 @@ func (m *_OfficeDBMgr) Exist(pk PrimaryKey) (bool, error) {
 	return (c != 0), nil
 }
 
+// Deprecated: Use FetchByPrimaryKey instead.
 func (m *_OfficeDBMgr) Fetch(pk PrimaryKey) (*Office, error) {
 	obj := OfficeMgr.NewOffice()
+	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0].(*Office), nil
+	}
+	return nil, fmt.Errorf("Office fetch record not found")
+}
+
+func (m *_OfficeDBMgr) FetchByPrimaryKey(OfficeId int32) (*Office, error) {
+	obj := OfficeMgr.NewOffice()
+	pk := &OfficeIdOfOfficePK{
+		OfficeId: OfficeId,
+	}
+
 	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
 	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ezbuy/redis-orm/orm"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 var (
@@ -377,8 +378,27 @@ func (m *_UserBlogsDBMgr) Exist(pk PrimaryKey) (bool, error) {
 	return (c != 0), nil
 }
 
+// Deprecated: Use FetchByPrimaryKey instead.
 func (m *_UserBlogsDBMgr) Fetch(pk PrimaryKey) (*UserBlogs, error) {
 	obj := UserBlogsMgr.NewUserBlogs()
+	query := fmt.Sprintf("SELECT %s FROM user_blogs %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0].(*UserBlogs), nil
+	}
+	return nil, fmt.Errorf("UserBlogs fetch record not found")
+}
+
+func (m *_UserBlogsDBMgr) FetchByPrimaryKey(UserId int32, BlogId int32) (*UserBlogs, error) {
+	obj := UserBlogsMgr.NewUserBlogs()
+	pk := &UserIdBlogIdOfUserBlogsPK{
+		UserId: UserId,
+		BlogId: BlogId,
+	}
+
 	query := fmt.Sprintf("SELECT %s FROM user_blogs %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
 	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
 	if err != nil {

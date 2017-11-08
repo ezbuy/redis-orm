@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ezbuy/redis-orm/orm"
+	"gopkg.in/go-playground/validator.v9"
 	redis "gopkg.in/redis.v5"
 )
 
@@ -684,8 +685,26 @@ func (m *_UserDBMgr) Exist(pk PrimaryKey) (bool, error) {
 	return (c != 0), nil
 }
 
+// Deprecated: Use FetchByPrimaryKey instead.
 func (m *_UserDBMgr) Fetch(pk PrimaryKey) (*User, error) {
 	obj := UserMgr.NewUser()
+	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0].(*User), nil
+	}
+	return nil, fmt.Errorf("User fetch record not found")
+}
+
+func (m *_UserDBMgr) FetchByPrimaryKey(Id int32) (*User, error) {
+	obj := UserMgr.NewUser()
+	pk := &IdOfUserPK{
+		Id: Id,
+	}
+
 	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
 	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
 	if err != nil {
