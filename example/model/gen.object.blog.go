@@ -194,6 +194,25 @@ type StatusOfBlogIDX struct {
 	limit  int
 }
 
+func (m *_BlogDBMgr) FindByStatus(Status int32, limit int, offset int) (*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	idx := &StatusOfBlogIDX{
+		Status: Status,
+		limit:  limit,
+		offset: offset,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, idx.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0].(*Blog), nil
+	}
+	return nil, fmt.Errorf("Blog fetch record not found")
+}
+
 func (u *StatusOfBlogIDX) Key() string {
 	strs := []string{
 		"Status",

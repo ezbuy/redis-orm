@@ -222,6 +222,24 @@ type MailboxPasswordOfUserUK struct {
 	Password string
 }
 
+func (m *_UserDBMgr) FetchByMailboxPassword(Mailbox string, Password string) (*User, error) {
+	obj := UserMgr.NewUser()
+	uniq := &MailboxPasswordOfUserUK{
+		Mailbox:  Mailbox,
+		Password: Password,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), uniq.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, uniq.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0].(*User), nil
+	}
+	return nil, fmt.Errorf("User fetch record not found")
+}
+
 func (u *MailboxPasswordOfUserUK) Key() string {
 	strs := []string{
 		"Mailbox",
@@ -267,6 +285,25 @@ type SexOfUserIDX struct {
 	Sex    bool
 	offset int
 	limit  int
+}
+
+func (m *_UserDBMgr) FindBySex(Sex bool, limit int, offset int) (*User, error) {
+	obj := UserMgr.NewUser()
+	idx := &SexOfUserIDX{
+		Sex:    Sex,
+		limit:  limit,
+		offset: offset,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, idx.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0].(*User), nil
+	}
+	return nil, fmt.Errorf("User fetch record not found")
 }
 
 func (u *SexOfUserIDX) Key() string {
