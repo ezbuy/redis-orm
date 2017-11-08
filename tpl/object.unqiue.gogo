@@ -23,7 +23,7 @@ func (m *_{{$obj.Name}}DBMgr) FetchBy{{$unique.GetFuncName}}({{$unique.GetFuncPa
 		return nil, err
 	}
 	if len(objs) > 0 {
-		return objs[0].(*{{$obj.Name}}), nil
+		return objs[0], nil
 	}
 	return nil, fmt.Errorf("{{$obj.Name}} fetch record not found")
 }

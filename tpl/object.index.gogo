@@ -11,7 +11,7 @@ type {{$index.Name}} struct{
 	limit int
 }
 
-func (m *_{{$obj.Name}}DBMgr) FindBy{{$index.GetFuncName}}({{$index.GetFuncParam}}, limit int, offset int) (*{{$obj.Name}}, error) {
+func (m *_{{$obj.Name}}DBMgr) FindBy{{$index.GetFuncName}}({{$index.GetFuncParam}}, limit int, offset int) ([]*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	idx := &{{$index.Name}}{
 		{{- range $j, $field := $index.Fields}}
@@ -22,14 +22,7 @@ func (m *_{{$obj.Name}}DBMgr) FindBy{{$index.GetFuncName}}({{$index.GetFuncParam
 	}
 
 	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
-	objs, err := m.FetchBySQL(query, idx.SQLParams()...)
-	if err != nil {
-		return nil, err
-	}
-	if len(objs) > 0 {
-		return objs[0].(*{{$obj.Name}}), nil
-	}
-	return nil, fmt.Errorf("{{$obj.Name}} fetch record not found")
+	return m.FetchBySQL(query, idx.SQLParams()...)
 }
 
 func (u *{{$index.Name}}) Key() string {

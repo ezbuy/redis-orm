@@ -21,15 +21,7 @@ func (m *_{{$obj.Name}}DBMgr) Search(where string, orderby string, limit string,
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	conditions := []string{where, orderby, limit}
 	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
-	objs, err := m.FetchBySQL(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]*{{$obj.Name}}, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*{{$obj.Name}}))
-	}
-	return results, nil
+	return m.FetchBySQL(query, args...)
 }
 
 func (m *_{{$obj.Name}}DBMgr) SearchConditions(conditions []string, orderby string, offset int, limit int, args ...interface{}) ([]*{{$obj.Name}}, error) {
@@ -49,15 +41,7 @@ func (m *_{{$obj.Name}}DBMgr) SearchConditions(conditions []string, orderby stri
 			orm.SQLOffsetLimit(offset, limit))
 			{{- end}}
 
-	objs, err := m.FetchBySQL(q, args...)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]*{{$obj.Name}}, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*{{$obj.Name}}))
-	}
-	return results, nil
+	return m.FetchBySQL(q, args...)
 }
 
 func (m *_{{$obj.Name}}DBMgr) SearchCount(where string, args ...interface{}) (int64, error){
@@ -68,7 +52,7 @@ func (m *_{{$obj.Name}}DBMgr) SearchConditionsCount(conditions []string, args ..
 	return m.queryCount(orm.SQLWhere(conditions), args...)
 }
 
-func (m *_{{$obj.Name}}DBMgr) FetchBySQL(q string, args ... interface{}) (results []interface{}, err error) {
+func (m *_{{$obj.Name}}DBMgr) FetchBySQL(q string, args ... interface{}) (results []*{{$obj.Name}}, err error) {
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("{{$obj.Name}} fetch error: %v", err)
@@ -155,7 +139,7 @@ func (m *_{{$obj.Name}}DBMgr) Fetch(pk PrimaryKey) (*{{$obj.Name}}, error) {
 		return nil, err
 	}
 	if len(objs) > 0 {
-		return objs[0].(*{{$obj.Name}}), nil
+		return objs[0], nil
 	}
 	return nil, fmt.Errorf("{{$obj.Name}} fetch record not found")
 }
@@ -174,40 +158,26 @@ func (m *_{{$obj.Name}}DBMgr) FetchByPrimaryKey({{$primary.GetFuncParam}}) (*{{$
 		return nil, err
 	}
 	if len(objs) > 0 {
-		return objs[0].(*{{$obj.Name}}), nil
+		return objs[0], nil
 	}
 	return nil, fmt.Errorf("{{$obj.Name}} fetch record not found")
 }
 
-func (m *_{{$obj.Name}}DBMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*{{$obj.Name}}, error) {
 {{- if $primary.IsSingleField}}
-	params := make([]string, 0, len(pks))
+func (m *_{{$obj.Name}}DBMgr) FetchByPrimaryKeys(pks []{{$primaryField.GetType}}) ([]*{{$obj.Name}}, error) {
+	if len(pks) == 0 {
+		return nil, nil
+	}
+	params := make([]interface{}, 0, len(pks))
 	for _, pk := range pks {
-		params = append(params, fmt.Sprint(pk.(*{{$primary.Name}}).{{$primary.FirstField.Name}}))
+		params = append(params, pk)
 	}
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
-	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} WHERE {{$primaryField.FieldName}} IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join(params, ","))
-	objs, err := m.FetchBySQL(query)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]*{{$obj.Name}}, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*{{$obj.Name}}))
-	}
-	return results, nil
-{{- else}}
-	results := make([]*{{$obj.Name}}, 0, len(pks))
-	for _, pk := range pks {
-		obj, err := m.Fetch(pk)
-		if err != nil {
-			return nil, err
-		}
-		results = append(results, obj)
-	}
-	return results, nil
-{{- end}}
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} WHERE {{$primaryField.FieldName}} IN (?%s)", strings.Join(obj.GetColumns(), ","),
+		strings.Repeat(",?", len(pks) -1))
+	return m.FetchBySQL(query, params...)
 }
+{{- end}}
 
 func (m *_{{$obj.Name}}DBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	objs, err := m.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
@@ -229,7 +199,7 @@ func (m *_{{$obj.Name}}DBMgr) FindOneFetch(unique Unique) (*{{$obj.Name}}, error
 		return nil, err
 	}
 	if len(objs) > 0 {
-		return objs[0].(*{{$obj.Name}}), nil
+		return objs[0], nil
 	}
 	return nil, fmt.Errorf("none record")
 }
@@ -252,13 +222,9 @@ func (m *_{{$obj.Name}}DBMgr) FindFetch(index Index) (int64, []*{{$obj.Name}}, e
 
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
-	objs, err := m.FetchBySQL(query, index.SQLParams()...)
+	results, err := m.FetchBySQL(query, index.SQLParams()...)
 	if err != nil {
 		return total, nil, err
-	}
-	results := make([]*{{$obj.Name}}, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*{{$obj.Name}}))
 	}
 	return total, results, nil
 }
@@ -279,13 +245,9 @@ func (m *_{{$obj.Name}}DBMgr) RangeFetch(scope Range) (int64, []*{{$obj.Name}}, 
 	}
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
-	objs, err := m.FetchBySQL(query, scope.SQLParams()...)
+	results, err := m.FetchBySQL(query, scope.SQLParams()...)
 	if err != nil {
 		return total, nil, err
-	}
-	results := make([]*{{$obj.Name}}, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*{{$obj.Name}}))
 	}
 	return total, results, nil
 }
