@@ -3,6 +3,7 @@
 {{$obj := .Obj}}
 {{$primary := $obj.PrimaryKey}}
 {{$primaryField := $primary.FirstField }}
+{{$firstField := $index.FirstField }}
 type {{$index.Name}} struct{
 	{{- range $j, $field := $index.Fields}}
 	{{$field.Name}} {{$field.GetType}}
@@ -24,6 +25,24 @@ func (m *_{{$obj.Name}}DBMgr) FindBy{{$index.GetFuncName}}({{$index.GetFuncParam
 	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
 	return m.FetchBySQL(query, idx.SQLParams()...)
 }
+
+{{- if $index.IsSingleField}}
+func (m *_{{$obj.Name}}DBMgr) FindBy{{$firstField.Name}}Group(items []{{$firstField.Type}}) ([]*{{$obj.Name}}, error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	if len(items) == 0 {
+		return nil, nil
+	}
+
+	params := make([]interface{}, 0, len(items))
+	for _, item := range items {
+		params = append(params, item)
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} where {{$firstField.FieldName}} in (?", strings.Join(obj.GetColumns(), ",")) +
+		strings.Repeat(",?", len(items) - 1) + ")"
+	return m.FetchBySQL(query, params...)
+}
+{{- end}}
 
 func (u *{{$index.Name}}) Key() string {
 	strs := []string{

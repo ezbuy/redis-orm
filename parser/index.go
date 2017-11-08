@@ -28,6 +28,13 @@ func NewIndex(obj *MetaObject) *Index {
 	return &Index{Obj: obj}
 }
 
+func (idx *Index) IsSingleField() bool {
+	if len(idx.Fields) == 1 {
+		return true
+	}
+	return false
+}
+
 func (idx *Index) HasPrimaryKey() bool {
 	for _, f := range idx.Fields {
 		if f.IsPrimary() {
@@ -51,6 +58,10 @@ func (idx *Index) GetFuncName() string {
 		params[i] = f.Name
 	}
 	return strings.Join(params, "")
+}
+
+func (idx *Index) FirstField() *Field {
+	return idx.Fields[0]
 }
 
 func (idx *Index) LastField() *Field {
