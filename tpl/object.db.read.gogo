@@ -159,6 +159,25 @@ func (m *_{{$obj.Name}}DBMgr) Fetch(pk PrimaryKey) (*{{$obj.Name}}, error) {
 	return nil, fmt.Errorf("{{$obj.Name}} fetch record not found")
 }
 
+func (m *_{{$obj.Name}}DBMgr) FetchByPrimaryKey({{$primary.GetFuncParam}}) (*{{$obj.Name}}, error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	pk := &{{$primary.Name}}{
+	{{- range $j, $field := $primary.Fields}}
+	{{$field.Name}}: {{$field.Name}},
+	{{- end}}
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0].(*{{$obj.Name}}), nil
+	}
+	return nil, fmt.Errorf("{{$obj.Name}} fetch record not found")
+}
+
 func (m *_{{$obj.Name}}DBMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*{{$obj.Name}}, error) {
 {{- if $primary.IsSingleField}}
 	params := make([]string, 0, len(pks))
