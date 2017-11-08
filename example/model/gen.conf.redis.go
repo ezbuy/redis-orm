@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"gopkg.in/ezbuy/redis-orm.v1/orm"
+	"github.com/ezbuy/redis-orm/orm"
 )
 
 var (

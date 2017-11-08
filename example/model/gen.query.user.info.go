@@ -3,9 +3,10 @@ package model
 import (
 	"database/sql"
 	"fmt"
-	"gopkg.in/ezbuy/redis-orm.v1/orm"
 	"strings"
 	"time"
+
+	"github.com/ezbuy/redis-orm/orm"
 )
 
 var (

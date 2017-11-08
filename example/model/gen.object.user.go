@@ -7,8 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/ezbuy/redis-orm.v1/orm"
-	"gopkg.in/go-playground/validator.v9"
+	"github.com/ezbuy/redis-orm/orm"
 	redis "gopkg.in/redis.v5"
 )
 
