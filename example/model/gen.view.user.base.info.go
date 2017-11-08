@@ -573,6 +573,7 @@ func (m *_UserBaseInfoDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	return nil, fmt.Errorf("UserBaseInfo find record not found")
 }
 
+// Deprecated: Use FetchByXXXUnique instead.
 func (m *_UserBaseInfoDBMgr) FindOneFetch(unique Unique) (*UserBaseInfo, error) {
 	obj := UserBaseInfoMgr.NewUserBaseInfo()
 	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
@@ -586,6 +587,7 @@ func (m *_UserBaseInfoDBMgr) FindOneFetch(unique Unique) (*UserBaseInfo, error) 
 	return nil, fmt.Errorf("none record")
 }
 
+// Deprecated: Use FindByXXXUnique instead.
 func (m *_UserBaseInfoDBMgr) Find(index Index) (int64, []PrimaryKey, error) {
 	total, err := m.queryCount(index.SQLFormat(false), index.SQLParams()...)
 	if err != nil {

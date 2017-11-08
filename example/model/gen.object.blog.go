@@ -549,6 +549,7 @@ func (m *_BlogDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	return nil, fmt.Errorf("Blog find record not found")
 }
 
+// Deprecated: Use FetchByXXXUnique instead.
 func (m *_BlogDBMgr) FindOneFetch(unique Unique) (*Blog, error) {
 	obj := BlogMgr.NewBlog()
 	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
@@ -562,6 +563,7 @@ func (m *_BlogDBMgr) FindOneFetch(unique Unique) (*Blog, error) {
 	return nil, fmt.Errorf("none record")
 }
 
+// Deprecated: Use FindByXXXUnique instead.
 func (m *_BlogDBMgr) Find(index Index) (int64, []PrimaryKey, error) {
 	total, err := m.queryCount(index.SQLFormat(false), index.SQLParams()...)
 	if err != nil {

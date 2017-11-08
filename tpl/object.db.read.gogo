@@ -220,6 +220,7 @@ func (m *_{{$obj.Name}}DBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	return nil, fmt.Errorf("{{$obj.Name}} find record not found")
 }
 
+// Deprecated: Use FetchByXXXUnique instead.
 func (m *_{{$obj.Name}}DBMgr) FindOneFetch(unique Unique) (*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
@@ -233,6 +234,7 @@ func (m *_{{$obj.Name}}DBMgr) FindOneFetch(unique Unique) (*{{$obj.Name}}, error
 	return nil, fmt.Errorf("none record")
 }
 
+// Deprecated: Use FindByXXXUnique instead.
 func (m *_{{$obj.Name}}DBMgr) Find(index Index) (int64, []PrimaryKey, error) {
 	total, err := m.queryCount(index.SQLFormat(false), index.SQLParams()...)
 	if err != nil {

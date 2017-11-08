@@ -461,6 +461,7 @@ func (m *_OfficeDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	return nil, fmt.Errorf("Office find record not found")
 }
 
+// Deprecated: Use FetchByXXXUnique instead.
 func (m *_OfficeDBMgr) FindOneFetch(unique Unique) (*Office, error) {
 	obj := OfficeMgr.NewOffice()
 	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
@@ -474,6 +475,7 @@ func (m *_OfficeDBMgr) FindOneFetch(unique Unique) (*Office, error) {
 	return nil, fmt.Errorf("none record")
 }
 
+// Deprecated: Use FindByXXXUnique instead.
 func (m *_OfficeDBMgr) Find(index Index) (int64, []PrimaryKey, error) {
 	total, err := m.queryCount(index.SQLFormat(false), index.SQLParams()...)
 	if err != nil {
