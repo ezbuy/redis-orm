@@ -81,3 +81,11 @@ func (idx *Index) GetRelation(storetype, valuetype, modeltype string) *Relation 
 	idx.relation.build()
 	return idx.relation
 }
+
+func (idx *Index) GetFuncParamIn() string {
+	return Fields(idx.Fields).GetFuncParamIn()
+}
+
+func (idx *Index) FindByName(prefix string) string {
+	return prefix + Fields(idx.Fields).Join()
+}

@@ -500,6 +500,13 @@ func (m *_BlogDBMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*Blog, error) {
 	return results, nil
 }
 
+func (m *_BlogDBMgr) FindByPrimaryKeyOfIdUserId(Id int32, UserId int32) (*Blog, error) {
+	return m.Fetch(&IdUserIdOfBlogPK{
+		Id:     Id,
+		UserId: UserId,
+	})
+}
+
 func (m *_BlogDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	objs, err := m.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
@@ -550,6 +557,12 @@ func (m *_BlogDBMgr) FindFetch(index Index) (int64, []*Blog, error) {
 		results = append(results, obj.(*Blog))
 	}
 	return total, results, nil
+}
+
+func (m *_BlogDBMgr) FindByIndexOfStatus(Status int32) (int64, []*Blog, error) {
+	return m.FindFetch(&StatusOfBlogIDX{
+		Status: Status,
+	})
 }
 
 func (m *_BlogDBMgr) Range(scope Range) (int64, []PrimaryKey, error) {

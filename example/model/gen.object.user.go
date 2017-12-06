@@ -716,6 +716,12 @@ func (m *_UserDBMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 	return results, nil
 }
 
+func (m *_UserDBMgr) FindByPrimaryKeyOfId(Id int32) (*User, error) {
+	return m.Fetch(&IdOfUserPK{
+		Id: Id,
+	})
+}
+
 func (m *_UserDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	objs, err := m.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
@@ -766,6 +772,12 @@ func (m *_UserDBMgr) FindFetch(index Index) (int64, []*User, error) {
 		results = append(results, obj.(*User))
 	}
 	return total, results, nil
+}
+
+func (m *_UserDBMgr) FindByIndexOfSex(Sex bool) (int64, []*User, error) {
+	return m.FindFetch(&SexOfUserIDX{
+		Sex: Sex,
+	})
 }
 
 func (m *_UserDBMgr) Range(scope Range) (int64, []PrimaryKey, error) {
