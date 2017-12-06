@@ -561,3 +561,21 @@ func (f *Field) SQLDefault(driver string) string {
 	}
 	return ""
 }
+
+type Fields []*Field
+
+func (fs Fields) Join() string {
+	names := make([]string, 0, len(fs))
+	for _, f := range fs {
+		names = append(names, f.Name)
+	}
+	return strings.Join(names, "")
+}
+
+func (fs Fields) GetFuncParamIn() string {
+	var params []string
+	for _, f := range fs {
+		params = append(params, f.Name+" "+f.GetType())
+	}
+	return strings.Join(params, ", ")
+}

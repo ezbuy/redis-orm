@@ -72,3 +72,11 @@ func (pk *PrimaryKey) SQLColumn(driver string) string {
 	}
 	return ""
 }
+
+func (pk *PrimaryKey) GetFuncParamIn() string {
+	return Fields(pk.Fields).GetFuncParamIn()
+}
+
+func (pk *PrimaryKey) FindByName(prefix string) string {
+	return prefix + Fields(pk.Fields).Join()
+}
