@@ -2,6 +2,7 @@
 {{$obj := .}}
 {{$primary := $obj.PrimaryKey}}
 {{$primaryField := $primary.FirstField }}
+{{$indexes := $obj.Indexes}}
 type _{{$obj.Name}}DBMgr struct {
 	db orm.DB
 }
@@ -189,6 +190,14 @@ func (m *_{{$obj.Name}}DBMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*{{$obj.Na
 {{- end}}
 }
 
+func (m *_{{$obj.Name}}DBMgr) FindBy{{$primary.FindByName "PrimaryKeyOf"}}({{$primary.GetFuncParamIn}}) (*{{$obj.Name}}, error) {
+	return m.Fetch(&{{$primary.Name}}{
+		{{- range $j, $field := $primary.Fields}}
+		{{$field.Name}} : {{$field.Name}},
+		{{- end}}
+	})
+}
+
 func (m *_{{$obj.Name}}DBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	objs, err := m.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
@@ -240,6 +249,18 @@ func (m *_{{$obj.Name}}DBMgr) FindFetch(index Index) (int64, []*{{$obj.Name}}, e
 	}
 	return total, results, nil
 }
+
+{{- range $index:=$indexes}}
+
+func (m *_{{$obj.Name}}DBMgr) FindBy{{$index.FindByName "IndexOf"}}({{$index.GetFuncParamIn}}) (int64, []*{{$obj.Name}}, error) {
+	return m.FindFetch(&{{$index.Name}}{
+		{{- range $j, $field := $index.Fields}}
+		{{$field.Name}} : {{$field.Name}},
+		{{- end}}
+	})
+}
+
+{{- end}}
 
 func (m *_{{$obj.Name}}DBMgr) Range(scope Range) (int64, []PrimaryKey, error) {
 	total, err := m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
