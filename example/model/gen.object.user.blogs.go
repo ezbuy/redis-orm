@@ -403,6 +403,13 @@ func (m *_UserBlogsDBMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*UserBlogs, er
 	return results, nil
 }
 
+func (m *_UserBlogsDBMgr) FindByPrimaryKeyOfUserIdBlogId(UserId int32, BlogId int32) (*UserBlogs, error) {
+	return m.Fetch(&UserIdBlogIdOfUserBlogsPK{
+		UserId: UserId,
+		BlogId: BlogId,
+	})
+}
+
 func (m *_UserBlogsDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	objs, err := m.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {

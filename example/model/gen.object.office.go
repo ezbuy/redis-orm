@@ -432,6 +432,12 @@ func (m *_OfficeDBMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*Office, error) {
 	return results, nil
 }
 
+func (m *_OfficeDBMgr) FindByPrimaryKeyOfOfficeId(OfficeId int32) (*Office, error) {
+	return m.Fetch(&OfficeIdOfOfficePK{
+		OfficeId: OfficeId,
+	})
+}
+
 func (m *_OfficeDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	objs, err := m.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {

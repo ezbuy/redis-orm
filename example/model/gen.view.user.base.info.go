@@ -507,6 +507,12 @@ func (m *_UserBaseInfoDBMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*UserBaseIn
 	return results, nil
 }
 
+func (m *_UserBaseInfoDBMgr) FindByPrimaryKeyOfId(Id int32) (*UserBaseInfo, error) {
+	return m.Fetch(&IdOfUserBaseInfoPK{
+		Id: Id,
+	})
+}
+
 func (m *_UserBaseInfoDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	objs, err := m.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
@@ -557,6 +563,12 @@ func (m *_UserBaseInfoDBMgr) FindFetch(index Index) (int64, []*UserBaseInfo, err
 		results = append(results, obj.(*UserBaseInfo))
 	}
 	return total, results, nil
+}
+
+func (m *_UserBaseInfoDBMgr) FindByIndexOfName(Name string) (int64, []*UserBaseInfo, error) {
+	return m.FindFetch(&NameOfUserBaseInfoIDX{
+		Name: Name,
+	})
 }
 
 func (m *_UserBaseInfoDBMgr) Range(scope Range) (int64, []PrimaryKey, error) {
