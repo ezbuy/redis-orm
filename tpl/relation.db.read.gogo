@@ -15,7 +15,7 @@ func {{$obj.Name}}DBMgr(db orm.DB) *_{{$obj.Name}}DBMgr {
 }
 
 func (m *_{{$obj.Name}}DBMgr) FetchBySQL(q string, args ... interface{}) (results []interface{}, err error) {
-	rows, err := m.db.Query(q, args...)	
+	rows, err := m.db.Query(q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("{{$obj.Name}} fetch error: %v", err)
 	}
@@ -51,15 +51,15 @@ func (m *_{{$obj.Name}}DBMgr) FetchBySQL(q string, args ... interface{}) (result
 						{{- with $v := (printf "%sValue" $field.Name)}}
 						{{$field.Name}}Value := {{$field.Name}}.{{$field.NullSQLTypeValue}}
 						{{$field.Name}}Point := {{- printf $field.GetTransform.ConvertTo $v}}
-						result.{{$field.Name}} = &{{$field.Name}}Point	
+						result.{{$field.Name}} = &{{$field.Name}}Point
 						{{- end}}
 					} else {
 						result.{{$field.Name}} = nil
-					}					
+					}
 				{{- else -}}
 				result.{{$field.Name}} = {{- printf $field.GetTransform.ConvertTo $field.Name}}
 				{{- end -}}
-			{{- else }}				
+			{{- else }}
 				{{- if $field.IsNullable -}}
 					result.{{$field.Name}} =
 					{{- if $field.NullSQLTypeNeedCast -}}

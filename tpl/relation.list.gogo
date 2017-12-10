@@ -102,5 +102,4 @@ func (m *_{{$relation.Name}}RedisMgr) Clear() error {
 	return nil
 }
 
-
 {{end}}

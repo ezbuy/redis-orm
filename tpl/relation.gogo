@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 	"strings"
-	"gopkg.in/ezbuy/redis-orm.v1/orm"
+	"github.com/ezbuy/redis-orm/orm"
 	redis "gopkg.in/redis.v5"
 )
 var (
@@ -19,7 +19,7 @@ var (
 //! relation
 type {{$relation.Name}} struct {
 	{{- range $i, $field := $relation.Fields}}
-	{{$field.Name}}  {{$field.GetType}} {{$field.GetTag}} 
+	{{$field.Name}}  {{$field.GetType}} {{$field.GetTag}}
 	{{- end}}
 }
 

@@ -168,58 +168,6 @@ var _ = Describe("redis-orm.mysql", func() {
 	})
 })
 
-var _ = Describe("redis-orm.mssql", func() {
-	Describe("CRUD", func() {
-		It("create", func() {
-			MsSQLSetup(&MsSQLConfig{
-				Host:     "192.168.199.66",
-				Port:     1433,
-				UserName: "manager",
-				Password: "65ezbuy@nicemanager",
-				Database: "Pro_test",
-			})
-
-			db := MsSQL()
-			Ω(db).ShouldNot(BeNil())
-
-			// objs, err := OfficeDBMgr(db).SearchConditions([]string{}, "", 0, 2)
-			// Ω(err).ShouldNot(HaveOccurred())
-			// Ω(len(objs)).To(Equal(2))
-
-			office := OfficeMgr.NewOffice()
-			office.OfficeName = "Test"
-			office.OfficeArea = "SH"
-			office.SearchOriginCode = "xxx"
-			office.ProcessingOriginCode = "yyy"
-			office.CreateBy = "Jay"
-			office.CreateDate = time.Now()
-			office.UpdateDate = office.CreateDate
-
-			tx, err := db.BeginTx()
-			Ω(err).ShouldNot(HaveOccurred())
-			defer tx.Close()
-
-			n, err := OfficeDBMgr(tx).Create(office)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(n).To(Equal(int64(1)))
-
-			log.Println("mssql created office:", office)
-			office.OfficeName = "UpdateTest"
-			office.UpdateBy = "ljp"
-			office.UpdateDate = time.Now()
-			n, err = OfficeDBMgr(tx).Update(office)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(n).To(Equal(int64(1)))
-
-			n, err = OfficeDBMgr(tx).Delete(office)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(n).To(Equal(int64(1)))
-
-		})
-
-	})
-})
-
 var _ = Describe("redis-orm.mysql", func() {
 	BeforeEach(func() {
 		MySQLSetup(&MySQLConfig{

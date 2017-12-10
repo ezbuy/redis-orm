@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/ezbuy/redis-orm.v1/orm"
+	"github.com/ezbuy/redis-orm/orm"
 	"gopkg.in/go-playground/validator.v9"
 	redis "gopkg.in/redis.v5"
 )
@@ -222,6 +222,24 @@ type MailboxPasswordOfUserUK struct {
 	Password string
 }
 
+func (m *_UserDBMgr) FetchByMailboxPassword(Mailbox string, Password string) (*User, error) {
+	obj := UserMgr.NewUser()
+	uniq := &MailboxPasswordOfUserUK{
+		Mailbox:  Mailbox,
+		Password: Password,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), uniq.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, uniq.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0].(*User), nil
+	}
+	return nil, fmt.Errorf("User fetch record not found")
+}
+
 func (u *MailboxPasswordOfUserUK) Key() string {
 	strs := []string{
 		"Mailbox",
@@ -267,6 +285,25 @@ type SexOfUserIDX struct {
 	Sex    bool
 	offset int
 	limit  int
+}
+
+func (m *_UserDBMgr) FindBySex(Sex bool, limit int, offset int) (*User, error) {
+	obj := UserMgr.NewUser()
+	idx := &SexOfUserIDX{
+		Sex:    Sex,
+		limit:  limit,
+		offset: offset,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, idx.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0].(*User), nil
+	}
+	return nil, fmt.Errorf("User fetch record not found")
 }
 
 func (u *SexOfUserIDX) Key() string {
@@ -685,8 +722,26 @@ func (m *_UserDBMgr) Exist(pk PrimaryKey) (bool, error) {
 	return (c != 0), nil
 }
 
+// Deprecated: Use FetchByPrimaryKey instead.
 func (m *_UserDBMgr) Fetch(pk PrimaryKey) (*User, error) {
 	obj := UserMgr.NewUser()
+	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0].(*User), nil
+	}
+	return nil, fmt.Errorf("User fetch record not found")
+}
+
+func (m *_UserDBMgr) FetchByPrimaryKey(Id int32) (*User, error) {
+	obj := UserMgr.NewUser()
+	pk := &IdOfUserPK{
+		Id: Id,
+	}
+
 	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
 	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
 	if err != nil {
@@ -727,6 +782,7 @@ func (m *_UserDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	return nil, fmt.Errorf("User find record not found")
 }
 
+// Deprecated: Use FetchByXXXUnique instead.
 func (m *_UserDBMgr) FindOneFetch(unique Unique) (*User, error) {
 	obj := UserMgr.NewUser()
 	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
@@ -740,6 +796,7 @@ func (m *_UserDBMgr) FindOneFetch(unique Unique) (*User, error) {
 	return nil, fmt.Errorf("none record")
 }
 
+// Deprecated: Use FindByXXXUnique instead.
 func (m *_UserDBMgr) Find(index Index) (int64, []PrimaryKey, error) {
 	total, err := m.queryCount(index.SQLFormat(false), index.SQLParams()...)
 	if err != nil {

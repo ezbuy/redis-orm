@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"gopkg.in/ezbuy/redis-orm.v1/orm"
+	"github.com/ezbuy/redis-orm/orm"
 	"gopkg.in/go-playground/validator.v9"
 	elastic "gopkg.in/olivere/elastic.v2"
 )
@@ -192,6 +192,25 @@ type StatusOfBlogIDX struct {
 	Status int32
 	offset int
 	limit  int
+}
+
+func (m *_BlogDBMgr) FindByStatus(Status int32, limit int, offset int) (*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	idx := &StatusOfBlogIDX{
+		Status: Status,
+		limit:  limit,
+		offset: offset,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, idx.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0].(*Blog), nil
+	}
+	return nil, fmt.Errorf("Blog fetch record not found")
 }
 
 func (u *StatusOfBlogIDX) Key() string {
@@ -475,8 +494,27 @@ func (m *_BlogDBMgr) Exist(pk PrimaryKey) (bool, error) {
 	return (c != 0), nil
 }
 
+// Deprecated: Use FetchByPrimaryKey instead.
 func (m *_BlogDBMgr) Fetch(pk PrimaryKey) (*Blog, error) {
 	obj := BlogMgr.NewBlog()
+	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0].(*Blog), nil
+	}
+	return nil, fmt.Errorf("Blog fetch record not found")
+}
+
+func (m *_BlogDBMgr) FetchByPrimaryKey(Id int32, UserId int32) (*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	pk := &IdUserIdOfBlogPK{
+		Id:     Id,
+		UserId: UserId,
+	}
+
 	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
 	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
 	if err != nil {
@@ -511,6 +549,7 @@ func (m *_BlogDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	return nil, fmt.Errorf("Blog find record not found")
 }
 
+// Deprecated: Use FetchByXXXUnique instead.
 func (m *_BlogDBMgr) FindOneFetch(unique Unique) (*Blog, error) {
 	obj := BlogMgr.NewBlog()
 	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
@@ -524,6 +563,7 @@ func (m *_BlogDBMgr) FindOneFetch(unique Unique) (*Blog, error) {
 	return nil, fmt.Errorf("none record")
 }
 
+// Deprecated: Use FindByXXXUnique instead.
 func (m *_BlogDBMgr) Find(index Index) (int64, []PrimaryKey, error) {
 	total, err := m.queryCount(index.SQLFormat(false), index.SQLParams()...)
 	if err != nil {

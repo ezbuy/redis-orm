@@ -2,7 +2,7 @@ package model
 
 import (
 	"fmt"
-	"gopkg.in/ezbuy/redis-orm.v1/orm"
+	"github.com/ezbuy/redis-orm/orm"
 	redis "gopkg.in/redis.v5"
 	"strings"
 	"time"

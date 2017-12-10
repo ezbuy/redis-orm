@@ -1,6 +1,6 @@
 package model
 
-import "gopkg.in/ezbuy/redis-orm.v1/orm"
+import "github.com/ezbuy/redis-orm/orm"
 
 type SQL interface {
 	SQLFormat(limit bool) string

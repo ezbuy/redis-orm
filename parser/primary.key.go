@@ -23,6 +23,14 @@ func (pk *PrimaryKey) IsSingleField() bool {
 	return false
 }
 
+func (pk *PrimaryKey) GetFuncParam() string {
+	params := make([]string, len(pk.Fields))
+	for i, f := range pk.Fields {
+		params[i] = f.Name + " " + f.GetType()
+	}
+	return strings.Join(params, ", ")
+}
+
 func (pk *PrimaryKey) FirstField() *Field {
 	if len(pk.Fields) > 0 {
 		return pk.Fields[0]

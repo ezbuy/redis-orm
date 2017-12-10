@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/ezbuy/redis-orm.v1/orm"
+	"github.com/ezbuy/redis-orm/orm"
 	"gopkg.in/go-playground/validator.v9"
 )
 
@@ -401,8 +401,26 @@ func (m *_OfficeDBMgr) Exist(pk PrimaryKey) (bool, error) {
 	return (c != 0), nil
 }
 
+// Deprecated: Use FetchByPrimaryKey instead.
 func (m *_OfficeDBMgr) Fetch(pk PrimaryKey) (*Office, error) {
 	obj := OfficeMgr.NewOffice()
+	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0].(*Office), nil
+	}
+	return nil, fmt.Errorf("Office fetch record not found")
+}
+
+func (m *_OfficeDBMgr) FetchByPrimaryKey(OfficeId int32) (*Office, error) {
+	obj := OfficeMgr.NewOffice()
+	pk := &OfficeIdOfOfficePK{
+		OfficeId: OfficeId,
+	}
+
 	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
 	objs, err := m.FetchBySQL(query, pk.SQLParams()...)
 	if err != nil {
@@ -443,6 +461,7 @@ func (m *_OfficeDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	return nil, fmt.Errorf("Office find record not found")
 }
 
+// Deprecated: Use FetchByXXXUnique instead.
 func (m *_OfficeDBMgr) FindOneFetch(unique Unique) (*Office, error) {
 	obj := OfficeMgr.NewOffice()
 	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] %s", strings.Join(obj.GetColumns(), ","), unique.SQLFormat(true))
@@ -456,6 +475,7 @@ func (m *_OfficeDBMgr) FindOneFetch(unique Unique) (*Office, error) {
 	return nil, fmt.Errorf("none record")
 }
 
+// Deprecated: Use FindByXXXUnique instead.
 func (m *_OfficeDBMgr) Find(index Index) (int64, []PrimaryKey, error) {
 	total, err := m.queryCount(index.SQLFormat(false), index.SQLParams()...)
 	if err != nil {
