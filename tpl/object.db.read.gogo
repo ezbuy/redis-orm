@@ -1,5 +1,7 @@
 {{define "object.db.read"}}
 {{$obj := .}}
+{{$indexes := $obj.Indexes}}
+{{$uniques := $obj.Uniques}}
 {{$primary := $obj.PrimaryKey}}
 {{$primaryField := $primary.FirstField }}
 type _{{$obj.Name}}DBMgr struct {
@@ -144,12 +146,11 @@ func (m *_{{$obj.Name}}DBMgr) Fetch(pk PrimaryKey) (*{{$obj.Name}}, error) {
 	return nil, fmt.Errorf("{{$obj.Name}} fetch record not found")
 }
 
+// primary key
 func (m *_{{$obj.Name}}DBMgr) FetchByPrimaryKey({{$primary.GetFuncParam}}) (*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	pk := &{{$primary.Name}}{
-	{{- range $j, $field := $primary.Fields}}
-	{{$field.Name}}: {{$field.Name}},
-	{{- end}}
+	{{$primary.GetConstructor}}
 	}
 
 	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
@@ -164,18 +165,73 @@ func (m *_{{$obj.Name}}DBMgr) FetchByPrimaryKey({{$primary.GetFuncParam}}) (*{{$
 }
 
 {{- if $primary.IsSingleField}}
-func (m *_{{$obj.Name}}DBMgr) FetchByPrimaryKeys(pks []{{$primaryField.GetType}}) ([]*{{$obj.Name}}, error) {
-	if len(pks) == 0 {
+func (m *_{{$obj.Name}}DBMgr) FetchByPrimaryKeys({{$primaryField.GetNames}} []{{$primaryField.GetType}}) ([]*{{$obj.Name}}, error) {
+	size := len({{$primaryField.GetNames}})
+	if size == 0 {
 		return nil, nil
 	}
-	params := make([]interface{}, 0, len(pks))
-	for _, pk := range pks {
+	params := make([]interface{}, 0, size)
+	for _, pk := range {{$primaryField.GetNames}} {
 		params = append(params, pk)
 	}
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} WHERE {{$primaryField.FieldName}} IN (?%s)", strings.Join(obj.GetColumns(), ","),
-		strings.Repeat(",?", len(pks) -1))
+		strings.Repeat(",?", size -1))
 	return m.FetchBySQL(query, params...)
+}
+{{- end}}
+
+// indexes
+{{- range $index:=$indexes}}
+
+func (m *_{{$obj.Name}}DBMgr) FindBy{{$index.GetFuncName}}({{$index.GetFuncParam}}, limit int, offset int) ([]*{{$obj.Name}}, error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	idx := &{{$index.Name}}{
+		{{$index.GetConstructor}}limit:   limit,
+		offset:  offset,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
+	return m.FetchBySQL(query, idx.SQLParams()...)
+}
+
+{{- if $index.IsSingleField}}
+
+func (m *_{{$obj.Name}}DBMgr) FindBy{{$index.FirstField.Name}}Group(items []{{$index.FirstField.Type}}) ([]*{{$obj.Name}}, error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	if len(items) == 0 {
+		return nil, nil
+	}
+	params := make([]interface{}, 0, len(items))
+	for _, item := range items {
+		params = append(params, item)
+	}
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} where {{$index.FirstField.FieldName}} in (?", strings.Join(obj.GetColumns(), ",")) +
+		strings.Repeat(",?", len(items) - 1) + ")"
+	return m.FetchBySQL(query, params...)
+}
+
+{{- end}}
+{{- end}}
+
+// uniques
+{{- range $unique:=$uniques}}
+
+func (m *_{{$obj.Name}}DBMgr) FindBy{{$unique.GetFuncName}}({{$unique.GetFuncParam}}) (*{{$obj.Name}}, error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	uniq := &{{$unique.Name}}{
+	{{$unique.GetConstructor}}
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), uniq.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, uniq.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0], nil
+	}
+	return nil, fmt.Errorf("{{$obj.Name}} fetch record not found")
 }
 {{- end}}
 

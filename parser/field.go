@@ -193,6 +193,10 @@ func (f *Field) GetType() string {
 	return st
 }
 
+func (f *Field) GetNames() string {
+	return CamelName(f.Name) + "s"
+}
+
 func (f *Field) IsNullablePrimitive() bool {
 	return f.IsNullable() && nullablePrimitiveSet[f.GetType()]
 }
@@ -560,4 +564,23 @@ func (f *Field) SQLDefault(driver string) string {
 		return ""
 	}
 	return ""
+}
+
+type Fields []*Field
+
+func (fs Fields) GetFuncParam() string {
+	var params []string
+	for _, f := range fs {
+		params = append(params, CamelName(f.Name)+" "+f.GetType())
+	}
+	return strings.Join(params, ", ")
+}
+
+func (fs Fields) GetConstructor() string {
+	params := make([]string, 0, len(fs)+1)
+	for _, f := range fs {
+		params = append(params, f.Name+" : "+CamelName(f.Name))
+	}
+	params = append(params, "")
+	return strings.Join(params, ",\n")
 }

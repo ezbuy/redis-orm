@@ -45,11 +45,7 @@ func (idx *Index) HasPrimaryKey() bool {
 }
 
 func (idx *Index) GetFuncParam() string {
-	params := make([]string, len(idx.Fields))
-	for i, f := range idx.Fields {
-		params[i] = f.Name + " " + f.GetType()
-	}
-	return strings.Join(params, ", ")
+	return Fields(idx.Fields).GetFuncParam()
 }
 
 func (idx *Index) GetFuncName() string {
@@ -107,4 +103,8 @@ func (idx *Index) GetRelation(storetype, valuetype, modeltype string) *Relation 
 	idx.relation.ModelType = modeltype
 	idx.relation.build()
 	return idx.relation
+}
+
+func (idx *Index) GetConstructor() string {
+	return Fields(idx.Fields).GetConstructor()
 }
