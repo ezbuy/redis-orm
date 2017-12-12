@@ -24,11 +24,7 @@ func (pk *PrimaryKey) IsSingleField() bool {
 }
 
 func (pk *PrimaryKey) GetFuncParam() string {
-	params := make([]string, len(pk.Fields))
-	for i, f := range pk.Fields {
-		params[i] = f.Name + " " + f.GetType()
-	}
-	return strings.Join(params, ", ")
+	return Fields(pk.Fields).GetFuncParam()
 }
 
 func (pk *PrimaryKey) FirstField() *Field {
@@ -79,4 +75,8 @@ func (pk *PrimaryKey) SQLColumn(driver string) string {
 		return fmt.Sprintf("PRIMARY KEY(%s)", strings.Join(columns, ","))
 	}
 	return ""
+}
+
+func (pk *PrimaryKey) GetConstructor() string {
+	return Fields(pk.Fields).GetConstructor()
 }

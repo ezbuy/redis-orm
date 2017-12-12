@@ -65,6 +65,18 @@ func Camel2Name(s string) string {
 	return nameBuf.String()
 }
 
+func CamelName(argName string) string {
+	size := len(argName)
+	if size <= 0 {
+		return "nilArgs"
+	}
+	fl := argName[0]
+	if fl >= 65 && fl <= 90 {
+		return string([]byte{byte(fl + byte(32))}) + string(argName[1:])
+	}
+	return argName
+}
+
 func ToIds(bufName, typeName, name string) string {
 	switch typeName {
 	case "int":

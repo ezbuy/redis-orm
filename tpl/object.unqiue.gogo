@@ -9,25 +9,6 @@ type {{$unique.Name}} struct{
 	{{- end}}
 }
 
-func (m *_{{$obj.Name}}DBMgr) FetchBy{{$unique.GetFuncName}}({{$unique.GetFuncParam}}) (*{{$obj.Name}}, error) {
-	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
-	uniq := &{{$unique.Name}}{
-	{{- range $j, $field := $unique.Fields}}
-	{{$field.Name}}: {{$field.Name}},
-	{{- end}}
-	}
-
-	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), uniq.SQLFormat(true))
-	objs, err := m.FetchBySQL(query, uniq.SQLParams()...)
-	if err != nil {
-		return nil, err
-	}
-	if len(objs) > 0 {
-		return objs[0], nil
-	}
-	return nil, fmt.Errorf("{{$obj.Name}} fetch record not found")
-}
-
 func (u *{{$unique.Name}}) Key() string {
 	strs := []string{
 		{{- range $j, $field := $unique.Fields}}
