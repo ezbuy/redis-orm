@@ -165,6 +165,7 @@ func (m *_{{$obj.Name}}DBMgr) FetchByPrimaryKey({{$primary.GetFuncParam}}) (*{{$
 }
 
 {{- if $primary.IsSingleField}}
+
 func (m *_{{$obj.Name}}DBMgr) FetchByPrimaryKeys({{$primaryField.GetNames}} []{{$primaryField.GetType}}) ([]*{{$obj.Name}}, error) {
 	size := len({{$primaryField.GetNames}})
 	if size == 0 {
@@ -217,7 +218,7 @@ func (m *_{{$obj.Name}}DBMgr) FindBy{{$index.FirstField.Name}}Group(items []{{$i
 // uniques
 {{- range $unique:=$uniques}}
 
-func (m *_{{$obj.Name}}DBMgr) FindBy{{$unique.GetFuncName}}({{$unique.GetFuncParam}}) (*{{$obj.Name}}, error) {
+func (m *_{{$obj.Name}}DBMgr) FetchBy{{$unique.GetFuncName}}({{$unique.GetFuncParam}}) (*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	uniq := &{{$unique.Name}}{
 	{{$unique.GetConstructor}}
