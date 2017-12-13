@@ -613,11 +613,14 @@ func (m *_UserBlogsDBMgr) Save(obj *UserBlogs) (int64, error) {
 }
 
 func (m *_UserBlogsDBMgr) Delete(obj *UserBlogs) (int64, error) {
-	pk := obj.GetPrimaryKey()
-	return m.DeleteByPrimaryKey(pk)
+	return m.DeleteByPrimaryKey(obj.UserId, obj.BlogId)
 }
 
-func (m *_UserBlogsDBMgr) DeleteByPrimaryKey(pk PrimaryKey) (int64, error) {
+func (m *_UserBlogsDBMgr) DeleteByPrimaryKey(userId int32, blogId int32) (int64, error) {
+	pk := &UserIdBlogIdOfUserBlogsPK{
+		UserId: userId,
+		BlogId: blogId,
+	}
 	q := fmt.Sprintf("DELETE FROM user_blogs %s", pk.SQLFormat())
 	result, err := m.db.Exec(q, pk.SQLParams()...)
 	if err != nil {

@@ -1054,11 +1054,13 @@ func (m *_UserDBMgr) Save(obj *User) (int64, error) {
 }
 
 func (m *_UserDBMgr) Delete(obj *User) (int64, error) {
-	pk := obj.GetPrimaryKey()
-	return m.DeleteByPrimaryKey(pk)
+	return m.DeleteByPrimaryKey(obj.Id)
 }
 
-func (m *_UserDBMgr) DeleteByPrimaryKey(pk PrimaryKey) (int64, error) {
+func (m *_UserDBMgr) DeleteByPrimaryKey(id int32) (int64, error) {
+	pk := &IdOfUserPK{
+		Id: id,
+	}
 	q := fmt.Sprintf("DELETE FROM users %s", pk.SQLFormat())
 	result, err := m.db.Exec(q, pk.SQLParams()...)
 	if err != nil {

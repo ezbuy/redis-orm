@@ -684,11 +684,13 @@ func (m *_OfficeDBMgr) Save(obj *Office) (int64, error) {
 }
 
 func (m *_OfficeDBMgr) Delete(obj *Office) (int64, error) {
-	pk := obj.GetPrimaryKey()
-	return m.DeleteByPrimaryKey(pk)
+	return m.DeleteByPrimaryKey(obj.OfficeId)
 }
 
-func (m *_OfficeDBMgr) DeleteByPrimaryKey(pk PrimaryKey) (int64, error) {
+func (m *_OfficeDBMgr) DeleteByPrimaryKey(officeId int32) (int64, error) {
+	pk := &OfficeIdOfOfficePK{
+		OfficeId: officeId,
+	}
 	q := fmt.Sprintf("DELETE FROM [dbo].[testCRUD] %s", pk.SQLFormat())
 	result, err := m.db.Exec(q, pk.SQLParams()...)
 	if err != nil {
