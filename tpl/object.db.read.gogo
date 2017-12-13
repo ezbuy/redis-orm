@@ -196,6 +196,16 @@ func (m *_{{$obj.Name}}DBMgr) FindBy{{$index.GetFuncName}}({{$index.GetFuncParam
 	return m.FetchBySQL(query, idx.SQLParams()...)
 }
 
+func (m *_{{$obj.Name}}DBMgr) FindAllBy{{$index.GetFuncName}}({{$index.GetFuncParam}}) ([]*{{$obj.Name}}, error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	idx := &{{$index.Name}}{
+		{{$index.GetConstructor}}
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
+	return m.FetchBySQL(query, idx.SQLParams()...)
+}
+
 {{- if $index.IsSingleField}}
 
 func (m *_{{$obj.Name}}DBMgr) FindBy{{$index.FirstField.Name}}Group(items []{{$index.FirstField.Type}}) ([]*{{$obj.Name}}, error) {
