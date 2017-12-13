@@ -188,29 +188,138 @@ func (u *IdUserIdOfBlogPK) Columns() []string {
 
 //! indexes
 
-type StatusOfBlogIDX struct {
-	Status int32
+type UserIdTitleOfBlogIDX struct {
+	UserId int32
+	Title  string
 	offset int
 	limit  int
 }
 
-func (m *_BlogDBMgr) FindByStatus(Status int32, limit int, offset int) (*Blog, error) {
-	obj := BlogMgr.NewBlog()
-	idx := &StatusOfBlogIDX{
-		Status: Status,
-		limit:  limit,
-		offset: offset,
+func (u *UserIdTitleOfBlogIDX) Key() string {
+	strs := []string{
+		"UserId",
+		fmt.Sprint(u.UserId),
+		"Title",
+		fmt.Sprint(u.Title),
 	}
+	return fmt.Sprintf("%s", strings.Join(strs, ":"))
+}
 
-	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
-	objs, err := m.FetchBySQL(query, idx.SQLParams()...)
-	if err != nil {
-		return nil, err
+func (u *UserIdTitleOfBlogIDX) SQLFormat(limit bool) string {
+	conditions := []string{
+		"`user_id` = ?",
+		"`title` = ?",
 	}
-	if len(objs) > 0 {
-		return objs[0].(*Blog), nil
+	if limit {
+		return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOffsetLimit(u.offset, u.limit))
 	}
-	return nil, fmt.Errorf("Blog fetch record not found")
+	return orm.SQLWhere(conditions)
+}
+
+func (u *UserIdTitleOfBlogIDX) SQLParams() []interface{} {
+	return []interface{}{
+		u.UserId,
+		u.Title,
+	}
+}
+
+func (u *UserIdTitleOfBlogIDX) SQLLimit() int {
+	if u.limit > 0 {
+		return u.limit
+	}
+	return -1
+}
+
+func (u *UserIdTitleOfBlogIDX) Limit(n int) {
+	u.limit = n
+}
+
+func (u *UserIdTitleOfBlogIDX) Offset(n int) {
+	u.offset = n
+}
+
+func (u *UserIdTitleOfBlogIDX) PositionOffsetLimit(len int) (int, int) {
+	if u.limit <= 0 {
+		return 0, len
+	}
+	if u.offset+u.limit > len {
+		return u.offset, len
+	}
+	return u.offset, u.limit
+}
+
+func (u *UserIdTitleOfBlogIDX) IDXRelation(store *orm.RedisStore) IndexRelation {
+	return nil
+}
+
+type UserIdCreatedAtOfBlogIDX struct {
+	UserId    int32
+	CreatedAt time.Time
+	offset    int
+	limit     int
+}
+
+func (u *UserIdCreatedAtOfBlogIDX) Key() string {
+	strs := []string{
+		"UserId",
+		fmt.Sprint(u.UserId),
+		"CreatedAt",
+		fmt.Sprint(u.CreatedAt),
+	}
+	return fmt.Sprintf("%s", strings.Join(strs, ":"))
+}
+
+func (u *UserIdCreatedAtOfBlogIDX) SQLFormat(limit bool) string {
+	conditions := []string{
+		"`user_id` = ?",
+		"`created_at` = ?",
+	}
+	if limit {
+		return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOffsetLimit(u.offset, u.limit))
+	}
+	return orm.SQLWhere(conditions)
+}
+
+func (u *UserIdCreatedAtOfBlogIDX) SQLParams() []interface{} {
+	return []interface{}{
+		u.UserId,
+		u.CreatedAt,
+	}
+}
+
+func (u *UserIdCreatedAtOfBlogIDX) SQLLimit() int {
+	if u.limit > 0 {
+		return u.limit
+	}
+	return -1
+}
+
+func (u *UserIdCreatedAtOfBlogIDX) Limit(n int) {
+	u.limit = n
+}
+
+func (u *UserIdCreatedAtOfBlogIDX) Offset(n int) {
+	u.offset = n
+}
+
+func (u *UserIdCreatedAtOfBlogIDX) PositionOffsetLimit(len int) (int, int) {
+	if u.limit <= 0 {
+		return 0, len
+	}
+	if u.offset+u.limit > len {
+		return u.offset, len
+	}
+	return u.offset, u.limit
+}
+
+func (u *UserIdCreatedAtOfBlogIDX) IDXRelation(store *orm.RedisStore) IndexRelation {
+	return nil
+}
+
+type StatusOfBlogIDX struct {
+	Status int32
+	offset int
+	limit  int
 }
 
 func (u *StatusOfBlogIDX) Key() string {
@@ -419,15 +528,7 @@ func (m *_BlogDBMgr) Search(where string, orderby string, limit string, args ...
 	obj := BlogMgr.NewBlog()
 	conditions := []string{where, orderby, limit}
 	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
-	objs, err := m.FetchBySQL(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]*Blog, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*Blog))
-	}
-	return results, nil
+	return m.FetchBySQL(query, args...)
 }
 
 func (m *_BlogDBMgr) SearchConditions(conditions []string, orderby string, offset int, limit int, args ...interface{}) ([]*Blog, error) {
@@ -438,15 +539,7 @@ func (m *_BlogDBMgr) SearchConditions(conditions []string, orderby string, offse
 		orderby,
 		orm.SQLOffsetLimit(offset, limit))
 
-	objs, err := m.FetchBySQL(q, args...)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]*Blog, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*Blog))
-	}
-	return results, nil
+	return m.FetchBySQL(q, args...)
 }
 
 func (m *_BlogDBMgr) SearchCount(where string, args ...interface{}) (int64, error) {
@@ -457,7 +550,7 @@ func (m *_BlogDBMgr) SearchConditionsCount(conditions []string, args ...interfac
 	return m.queryCount(orm.SQLWhere(conditions), args...)
 }
 
-func (m *_BlogDBMgr) FetchBySQL(q string, args ...interface{}) (results []interface{}, err error) {
+func (m *_BlogDBMgr) FetchBySQL(q string, args ...interface{}) (results []*Blog, err error) {
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("Blog fetch error: %v", err)
@@ -503,16 +596,17 @@ func (m *_BlogDBMgr) Fetch(pk PrimaryKey) (*Blog, error) {
 		return nil, err
 	}
 	if len(objs) > 0 {
-		return objs[0].(*Blog), nil
+		return objs[0], nil
 	}
 	return nil, fmt.Errorf("Blog fetch record not found")
 }
 
-func (m *_BlogDBMgr) FetchByPrimaryKey(Id int32, UserId int32) (*Blog, error) {
+// primary key
+func (m *_BlogDBMgr) FetchByPrimaryKey(id int32, userId int32) (*Blog, error) {
 	obj := BlogMgr.NewBlog()
 	pk := &IdUserIdOfBlogPK{
-		Id:     Id,
-		UserId: UserId,
+		Id:     id,
+		UserId: userId,
 	}
 
 	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
@@ -521,22 +615,98 @@ func (m *_BlogDBMgr) FetchByPrimaryKey(Id int32, UserId int32) (*Blog, error) {
 		return nil, err
 	}
 	if len(objs) > 0 {
-		return objs[0].(*Blog), nil
+		return objs[0], nil
 	}
 	return nil, fmt.Errorf("Blog fetch record not found")
 }
 
-func (m *_BlogDBMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*Blog, error) {
-	results := make([]*Blog, 0, len(pks))
-	for _, pk := range pks {
-		obj, err := m.Fetch(pk)
-		if err != nil {
-			return nil, err
-		}
-		results = append(results, obj)
+// indexes
+
+func (m *_BlogDBMgr) FindByUserIdTitle(userId int32, title string, limit int, offset int) ([]*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	idx := &UserIdTitleOfBlogIDX{
+		UserId: userId,
+		Title:  title,
+		limit:  limit,
+		offset: offset,
 	}
-	return results, nil
+
+	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
+	return m.FetchBySQL(query, idx.SQLParams()...)
 }
+
+func (m *_BlogDBMgr) FindAllByUserIdTitle(userId int32, title string) ([]*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	idx := &UserIdTitleOfBlogIDX{
+		UserId: userId,
+		Title:  title,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
+	return m.FetchBySQL(query, idx.SQLParams()...)
+}
+
+func (m *_BlogDBMgr) FindByUserIdCreatedAt(userId int32, createdAt time.Time, limit int, offset int) ([]*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	idx := &UserIdCreatedAtOfBlogIDX{
+		UserId:    userId,
+		CreatedAt: createdAt,
+		limit:     limit,
+		offset:    offset,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
+	return m.FetchBySQL(query, idx.SQLParams()...)
+}
+
+func (m *_BlogDBMgr) FindAllByUserIdCreatedAt(userId int32, createdAt time.Time) ([]*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	idx := &UserIdCreatedAtOfBlogIDX{
+		UserId:    userId,
+		CreatedAt: createdAt,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
+	return m.FetchBySQL(query, idx.SQLParams()...)
+}
+
+func (m *_BlogDBMgr) FindByStatus(status int32, limit int, offset int) ([]*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	idx := &StatusOfBlogIDX{
+		Status: status,
+		limit:  limit,
+		offset: offset,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
+	return m.FetchBySQL(query, idx.SQLParams()...)
+}
+
+func (m *_BlogDBMgr) FindAllByStatus(status int32) ([]*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	idx := &StatusOfBlogIDX{
+		Status: status,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
+	return m.FetchBySQL(query, idx.SQLParams()...)
+}
+
+func (m *_BlogDBMgr) FindByStatusGroup(items []int32) ([]*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	if len(items) == 0 {
+		return nil, nil
+	}
+	params := make([]interface{}, 0, len(items))
+	for _, item := range items {
+		params = append(params, item)
+	}
+	query := fmt.Sprintf("SELECT %s FROM blogs where `status` in (?", strings.Join(obj.GetColumns(), ",")) +
+		strings.Repeat(",?", len(items)-1) + ")"
+	return m.FetchBySQL(query, params...)
+}
+
+// uniques
 
 func (m *_BlogDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	objs, err := m.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
@@ -558,7 +728,7 @@ func (m *_BlogDBMgr) FindOneFetch(unique Unique) (*Blog, error) {
 		return nil, err
 	}
 	if len(objs) > 0 {
-		return objs[0].(*Blog), nil
+		return objs[0], nil
 	}
 	return nil, fmt.Errorf("none record")
 }
@@ -581,13 +751,9 @@ func (m *_BlogDBMgr) FindFetch(index Index) (int64, []*Blog, error) {
 
 	obj := BlogMgr.NewBlog()
 	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
-	objs, err := m.FetchBySQL(query, index.SQLParams()...)
+	results, err := m.FetchBySQL(query, index.SQLParams()...)
 	if err != nil {
 		return total, nil, err
-	}
-	results := make([]*Blog, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*Blog))
 	}
 	return total, results, nil
 }
@@ -608,13 +774,9 @@ func (m *_BlogDBMgr) RangeFetch(scope Range) (int64, []*Blog, error) {
 	}
 	obj := BlogMgr.NewBlog()
 	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
-	objs, err := m.FetchBySQL(query, scope.SQLParams()...)
+	results, err := m.FetchBySQL(query, scope.SQLParams()...)
 	if err != nil {
 		return total, nil, err
-	}
-	results := make([]*Blog, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*Blog))
 	}
 	return total, results, nil
 }
