@@ -576,6 +576,14 @@ func (fs Fields) GetFuncParam() string {
 	return strings.Join(params, ", ")
 }
 
+func (fs Fields) GetObjectParam() string {
+	var params []string
+	for _, f := range fs {
+		params = append(params, "obj."+f.Name)
+	}
+	return strings.Join(params, ", ")
+}
+
 func (fs Fields) GetConstructor() string {
 	params := make([]string, 0, len(fs)+1)
 	for _, f := range fs {

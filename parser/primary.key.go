@@ -80,3 +80,7 @@ func (pk *PrimaryKey) SQLColumn(driver string) string {
 func (pk *PrimaryKey) GetConstructor() string {
 	return Fields(pk.Fields).GetConstructor()
 }
+
+func (pk *PrimaryKey) GetObjectParam() string {
+	return Fields(pk.Fields).GetObjectParam()
+}
