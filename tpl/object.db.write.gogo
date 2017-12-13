@@ -136,11 +136,13 @@ func (m *_{{$obj.Name}}DBMgr) Save(obj *{{$obj.Name}}) (int64, error) {
 }
 
 func (m *_{{$obj.Name}}DBMgr) Delete(obj *{{$obj.Name}}) (int64, error) {
-	pk := obj.GetPrimaryKey()
-	return m.DeleteByPrimaryKey(pk)
+	return m.DeleteByPrimaryKey({{$primary.GetObjectParam}})
 }
 
-func (m *_{{$obj.Name}}DBMgr) DeleteByPrimaryKey(pk PrimaryKey) (int64, error) {
+func (m *_{{$obj.Name}}DBMgr) DeleteByPrimaryKey({{$primary.GetFuncParam}}) (int64, error) {
+	pk:= &{{$primary.Name}}{
+	{{$primary.GetConstructor}}
+	}
 	q := fmt.Sprintf("DELETE FROM {{$obj.FromDB}} %s", pk.SQLFormat())
 	result, err := m.db.Exec(q , pk.SQLParams()...)
 	if err != nil {

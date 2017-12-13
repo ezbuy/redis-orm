@@ -309,15 +309,7 @@ func (m *_UserBlogsDBMgr) Search(where string, orderby string, limit string, arg
 	obj := UserBlogsMgr.NewUserBlogs()
 	conditions := []string{where, orderby, limit}
 	query := fmt.Sprintf("SELECT %s FROM user_blogs %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
-	objs, err := m.FetchBySQL(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]*UserBlogs, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*UserBlogs))
-	}
-	return results, nil
+	return m.FetchBySQL(query, args...)
 }
 
 func (m *_UserBlogsDBMgr) SearchConditions(conditions []string, orderby string, offset int, limit int, args ...interface{}) ([]*UserBlogs, error) {
@@ -328,15 +320,7 @@ func (m *_UserBlogsDBMgr) SearchConditions(conditions []string, orderby string, 
 		orderby,
 		orm.SQLOffsetLimit(offset, limit))
 
-	objs, err := m.FetchBySQL(q, args...)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]*UserBlogs, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*UserBlogs))
-	}
-	return results, nil
+	return m.FetchBySQL(q, args...)
 }
 
 func (m *_UserBlogsDBMgr) SearchCount(where string, args ...interface{}) (int64, error) {
@@ -347,7 +331,7 @@ func (m *_UserBlogsDBMgr) SearchConditionsCount(conditions []string, args ...int
 	return m.queryCount(orm.SQLWhere(conditions), args...)
 }
 
-func (m *_UserBlogsDBMgr) FetchBySQL(q string, args ...interface{}) (results []interface{}, err error) {
+func (m *_UserBlogsDBMgr) FetchBySQL(q string, args ...interface{}) (results []*UserBlogs, err error) {
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("UserBlogs fetch error: %v", err)
@@ -387,16 +371,17 @@ func (m *_UserBlogsDBMgr) Fetch(pk PrimaryKey) (*UserBlogs, error) {
 		return nil, err
 	}
 	if len(objs) > 0 {
-		return objs[0].(*UserBlogs), nil
+		return objs[0], nil
 	}
 	return nil, fmt.Errorf("UserBlogs fetch record not found")
 }
 
-func (m *_UserBlogsDBMgr) FetchByPrimaryKey(UserId int32, BlogId int32) (*UserBlogs, error) {
+// primary key
+func (m *_UserBlogsDBMgr) FetchByPrimaryKey(userId int32, blogId int32) (*UserBlogs, error) {
 	obj := UserBlogsMgr.NewUserBlogs()
 	pk := &UserIdBlogIdOfUserBlogsPK{
-		UserId: UserId,
-		BlogId: BlogId,
+		UserId: userId,
+		BlogId: blogId,
 	}
 
 	query := fmt.Sprintf("SELECT %s FROM user_blogs %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
@@ -405,22 +390,14 @@ func (m *_UserBlogsDBMgr) FetchByPrimaryKey(UserId int32, BlogId int32) (*UserBl
 		return nil, err
 	}
 	if len(objs) > 0 {
-		return objs[0].(*UserBlogs), nil
+		return objs[0], nil
 	}
 	return nil, fmt.Errorf("UserBlogs fetch record not found")
 }
 
-func (m *_UserBlogsDBMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*UserBlogs, error) {
-	results := make([]*UserBlogs, 0, len(pks))
-	for _, pk := range pks {
-		obj, err := m.Fetch(pk)
-		if err != nil {
-			return nil, err
-		}
-		results = append(results, obj)
-	}
-	return results, nil
-}
+// indexes
+
+// uniques
 
 func (m *_UserBlogsDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	objs, err := m.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
@@ -442,7 +419,7 @@ func (m *_UserBlogsDBMgr) FindOneFetch(unique Unique) (*UserBlogs, error) {
 		return nil, err
 	}
 	if len(objs) > 0 {
-		return objs[0].(*UserBlogs), nil
+		return objs[0], nil
 	}
 	return nil, fmt.Errorf("none record")
 }
@@ -465,13 +442,9 @@ func (m *_UserBlogsDBMgr) FindFetch(index Index) (int64, []*UserBlogs, error) {
 
 	obj := UserBlogsMgr.NewUserBlogs()
 	query := fmt.Sprintf("SELECT %s FROM user_blogs %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
-	objs, err := m.FetchBySQL(query, index.SQLParams()...)
+	results, err := m.FetchBySQL(query, index.SQLParams()...)
 	if err != nil {
 		return total, nil, err
-	}
-	results := make([]*UserBlogs, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*UserBlogs))
 	}
 	return total, results, nil
 }
@@ -492,13 +465,9 @@ func (m *_UserBlogsDBMgr) RangeFetch(scope Range) (int64, []*UserBlogs, error) {
 	}
 	obj := UserBlogsMgr.NewUserBlogs()
 	query := fmt.Sprintf("SELECT %s FROM user_blogs %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
-	objs, err := m.FetchBySQL(query, scope.SQLParams()...)
+	results, err := m.FetchBySQL(query, scope.SQLParams()...)
 	if err != nil {
 		return total, nil, err
-	}
-	results := make([]*UserBlogs, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*UserBlogs))
 	}
 	return total, results, nil
 }
@@ -644,11 +613,14 @@ func (m *_UserBlogsDBMgr) Save(obj *UserBlogs) (int64, error) {
 }
 
 func (m *_UserBlogsDBMgr) Delete(obj *UserBlogs) (int64, error) {
-	pk := obj.GetPrimaryKey()
-	return m.DeleteByPrimaryKey(pk)
+	return m.DeleteByPrimaryKey(obj.UserId, obj.BlogId)
 }
 
-func (m *_UserBlogsDBMgr) DeleteByPrimaryKey(pk PrimaryKey) (int64, error) {
+func (m *_UserBlogsDBMgr) DeleteByPrimaryKey(userId int32, blogId int32) (int64, error) {
+	pk := &UserIdBlogIdOfUserBlogsPK{
+		UserId: userId,
+		BlogId: blogId,
+	}
 	q := fmt.Sprintf("DELETE FROM user_blogs %s", pk.SQLFormat())
 	result, err := m.db.Exec(q, pk.SQLParams()...)
 	if err != nil {

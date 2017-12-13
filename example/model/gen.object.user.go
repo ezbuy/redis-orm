@@ -222,24 +222,6 @@ type MailboxPasswordOfUserUK struct {
 	Password string
 }
 
-func (m *_UserDBMgr) FetchByMailboxPassword(Mailbox string, Password string) (*User, error) {
-	obj := UserMgr.NewUser()
-	uniq := &MailboxPasswordOfUserUK{
-		Mailbox:  Mailbox,
-		Password: Password,
-	}
-
-	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), uniq.SQLFormat(true))
-	objs, err := m.FetchBySQL(query, uniq.SQLParams()...)
-	if err != nil {
-		return nil, err
-	}
-	if len(objs) > 0 {
-		return objs[0].(*User), nil
-	}
-	return nil, fmt.Errorf("User fetch record not found")
-}
-
 func (u *MailboxPasswordOfUserUK) Key() string {
 	strs := []string{
 		"Mailbox",
@@ -285,25 +267,6 @@ type SexOfUserIDX struct {
 	Sex    bool
 	offset int
 	limit  int
-}
-
-func (m *_UserDBMgr) FindBySex(Sex bool, limit int, offset int) (*User, error) {
-	obj := UserMgr.NewUser()
-	idx := &SexOfUserIDX{
-		Sex:    Sex,
-		limit:  limit,
-		offset: offset,
-	}
-
-	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
-	objs, err := m.FetchBySQL(query, idx.SQLParams()...)
-	if err != nil {
-		return nil, err
-	}
-	if len(objs) > 0 {
-		return objs[0].(*User), nil
-	}
-	return nil, fmt.Errorf("User fetch record not found")
 }
 
 func (u *SexOfUserIDX) Key() string {
@@ -632,15 +595,7 @@ func (m *_UserDBMgr) Search(where string, orderby string, limit string, args ...
 	obj := UserMgr.NewUser()
 	conditions := []string{where, orderby, limit}
 	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
-	objs, err := m.FetchBySQL(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]*User, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*User))
-	}
-	return results, nil
+	return m.FetchBySQL(query, args...)
 }
 
 func (m *_UserDBMgr) SearchConditions(conditions []string, orderby string, offset int, limit int, args ...interface{}) ([]*User, error) {
@@ -651,15 +606,7 @@ func (m *_UserDBMgr) SearchConditions(conditions []string, orderby string, offse
 		orderby,
 		orm.SQLOffsetLimit(offset, limit))
 
-	objs, err := m.FetchBySQL(q, args...)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]*User, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*User))
-	}
-	return results, nil
+	return m.FetchBySQL(q, args...)
 }
 
 func (m *_UserDBMgr) SearchCount(where string, args ...interface{}) (int64, error) {
@@ -670,7 +617,7 @@ func (m *_UserDBMgr) SearchConditionsCount(conditions []string, args ...interfac
 	return m.queryCount(orm.SQLWhere(conditions), args...)
 }
 
-func (m *_UserDBMgr) FetchBySQL(q string, args ...interface{}) (results []interface{}, err error) {
+func (m *_UserDBMgr) FetchBySQL(q string, args ...interface{}) (results []*User, err error) {
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("User fetch error: %v", err)
@@ -731,15 +678,16 @@ func (m *_UserDBMgr) Fetch(pk PrimaryKey) (*User, error) {
 		return nil, err
 	}
 	if len(objs) > 0 {
-		return objs[0].(*User), nil
+		return objs[0], nil
 	}
 	return nil, fmt.Errorf("User fetch record not found")
 }
 
-func (m *_UserDBMgr) FetchByPrimaryKey(Id int32) (*User, error) {
+// primary key
+func (m *_UserDBMgr) FetchByPrimaryKey(id int32) (*User, error) {
 	obj := UserMgr.NewUser()
 	pk := &IdOfUserPK{
-		Id: Id,
+		Id: id,
 	}
 
 	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
@@ -748,27 +696,82 @@ func (m *_UserDBMgr) FetchByPrimaryKey(Id int32) (*User, error) {
 		return nil, err
 	}
 	if len(objs) > 0 {
-		return objs[0].(*User), nil
+		return objs[0], nil
 	}
 	return nil, fmt.Errorf("User fetch record not found")
 }
 
-func (m *_UserDBMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
-	params := make([]string, 0, len(pks))
-	for _, pk := range pks {
-		params = append(params, fmt.Sprint(pk.(*IdOfUserPK).Id))
+func (m *_UserDBMgr) FetchByPrimaryKeys(ids []int32) ([]*User, error) {
+	size := len(ids)
+	if size == 0 {
+		return nil, nil
+	}
+	params := make([]interface{}, 0, size)
+	for _, pk := range ids {
+		params = append(params, pk)
 	}
 	obj := UserMgr.NewUser()
-	query := fmt.Sprintf("SELECT %s FROM users WHERE `id` IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join(params, ","))
-	objs, err := m.FetchBySQL(query)
+	query := fmt.Sprintf("SELECT %s FROM users WHERE `id` IN (?%s)", strings.Join(obj.GetColumns(), ","),
+		strings.Repeat(",?", size-1))
+	return m.FetchBySQL(query, params...)
+}
+
+// indexes
+
+func (m *_UserDBMgr) FindBySex(sex bool, limit int, offset int) ([]*User, error) {
+	obj := UserMgr.NewUser()
+	idx := &SexOfUserIDX{
+		Sex:    sex,
+		limit:  limit,
+		offset: offset,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
+	return m.FetchBySQL(query, idx.SQLParams()...)
+}
+
+func (m *_UserDBMgr) FindAllBySex(sex bool) ([]*User, error) {
+	obj := UserMgr.NewUser()
+	idx := &SexOfUserIDX{
+		Sex: sex,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
+	return m.FetchBySQL(query, idx.SQLParams()...)
+}
+
+func (m *_UserDBMgr) FindBySexGroup(items []bool) ([]*User, error) {
+	obj := UserMgr.NewUser()
+	if len(items) == 0 {
+		return nil, nil
+	}
+	params := make([]interface{}, 0, len(items))
+	for _, item := range items {
+		params = append(params, item)
+	}
+	query := fmt.Sprintf("SELECT %s FROM users where `sex` in (?", strings.Join(obj.GetColumns(), ",")) +
+		strings.Repeat(",?", len(items)-1) + ")"
+	return m.FetchBySQL(query, params...)
+}
+
+// uniques
+
+func (m *_UserDBMgr) FetchByMailboxPassword(mailbox string, password string) (*User, error) {
+	obj := UserMgr.NewUser()
+	uniq := &MailboxPasswordOfUserUK{
+		Mailbox:  mailbox,
+		Password: password,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), uniq.SQLFormat(true))
+	objs, err := m.FetchBySQL(query, uniq.SQLParams()...)
 	if err != nil {
 		return nil, err
 	}
-	results := make([]*User, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*User))
+	if len(objs) > 0 {
+		return objs[0], nil
 	}
-	return results, nil
+	return nil, fmt.Errorf("User fetch record not found")
 }
 
 func (m *_UserDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
@@ -791,7 +794,7 @@ func (m *_UserDBMgr) FindOneFetch(unique Unique) (*User, error) {
 		return nil, err
 	}
 	if len(objs) > 0 {
-		return objs[0].(*User), nil
+		return objs[0], nil
 	}
 	return nil, fmt.Errorf("none record")
 }
@@ -814,13 +817,9 @@ func (m *_UserDBMgr) FindFetch(index Index) (int64, []*User, error) {
 
 	obj := UserMgr.NewUser()
 	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
-	objs, err := m.FetchBySQL(query, index.SQLParams()...)
+	results, err := m.FetchBySQL(query, index.SQLParams()...)
 	if err != nil {
 		return total, nil, err
-	}
-	results := make([]*User, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*User))
 	}
 	return total, results, nil
 }
@@ -841,13 +840,9 @@ func (m *_UserDBMgr) RangeFetch(scope Range) (int64, []*User, error) {
 	}
 	obj := UserMgr.NewUser()
 	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
-	objs, err := m.FetchBySQL(query, scope.SQLParams()...)
+	results, err := m.FetchBySQL(query, scope.SQLParams()...)
 	if err != nil {
 		return total, nil, err
-	}
-	results := make([]*User, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*User))
 	}
 	return total, results, nil
 }
@@ -1059,11 +1054,13 @@ func (m *_UserDBMgr) Save(obj *User) (int64, error) {
 }
 
 func (m *_UserDBMgr) Delete(obj *User) (int64, error) {
-	pk := obj.GetPrimaryKey()
-	return m.DeleteByPrimaryKey(pk)
+	return m.DeleteByPrimaryKey(obj.Id)
 }
 
-func (m *_UserDBMgr) DeleteByPrimaryKey(pk PrimaryKey) (int64, error) {
+func (m *_UserDBMgr) DeleteByPrimaryKey(id int32) (int64, error) {
+	pk := &IdOfUserPK{
+		Id: id,
+	}
 	q := fmt.Sprintf("DELETE FROM users %s", pk.SQLFormat())
 	result, err := m.db.Exec(q, pk.SQLParams()...)
 	if err != nil {

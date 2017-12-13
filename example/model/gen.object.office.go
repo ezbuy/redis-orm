@@ -323,15 +323,7 @@ func (m *_OfficeDBMgr) Search(where string, orderby string, limit string, args .
 	obj := OfficeMgr.NewOffice()
 	conditions := []string{where, orderby, limit}
 	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
-	objs, err := m.FetchBySQL(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]*Office, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*Office))
-	}
-	return results, nil
+	return m.FetchBySQL(query, args...)
 }
 
 func (m *_OfficeDBMgr) SearchConditions(conditions []string, orderby string, offset int, limit int, args ...interface{}) ([]*Office, error) {
@@ -345,15 +337,7 @@ func (m *_OfficeDBMgr) SearchConditions(conditions []string, orderby string, off
 		orderby,
 		orm.MsSQLOffsetLimit(offset, limit))
 
-	objs, err := m.FetchBySQL(q, args...)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]*Office, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*Office))
-	}
-	return results, nil
+	return m.FetchBySQL(q, args...)
 }
 
 func (m *_OfficeDBMgr) SearchCount(where string, args ...interface{}) (int64, error) {
@@ -364,7 +348,7 @@ func (m *_OfficeDBMgr) SearchConditionsCount(conditions []string, args ...interf
 	return m.queryCount(orm.SQLWhere(conditions), args...)
 }
 
-func (m *_OfficeDBMgr) FetchBySQL(q string, args ...interface{}) (results []interface{}, err error) {
+func (m *_OfficeDBMgr) FetchBySQL(q string, args ...interface{}) (results []*Office, err error) {
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("Office fetch error: %v", err)
@@ -410,15 +394,16 @@ func (m *_OfficeDBMgr) Fetch(pk PrimaryKey) (*Office, error) {
 		return nil, err
 	}
 	if len(objs) > 0 {
-		return objs[0].(*Office), nil
+		return objs[0], nil
 	}
 	return nil, fmt.Errorf("Office fetch record not found")
 }
 
-func (m *_OfficeDBMgr) FetchByPrimaryKey(OfficeId int32) (*Office, error) {
+// primary key
+func (m *_OfficeDBMgr) FetchByPrimaryKey(officeId int32) (*Office, error) {
 	obj := OfficeMgr.NewOffice()
 	pk := &OfficeIdOfOfficePK{
-		OfficeId: OfficeId,
+		OfficeId: officeId,
 	}
 
 	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
@@ -427,28 +412,29 @@ func (m *_OfficeDBMgr) FetchByPrimaryKey(OfficeId int32) (*Office, error) {
 		return nil, err
 	}
 	if len(objs) > 0 {
-		return objs[0].(*Office), nil
+		return objs[0], nil
 	}
 	return nil, fmt.Errorf("Office fetch record not found")
 }
 
-func (m *_OfficeDBMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*Office, error) {
-	params := make([]string, 0, len(pks))
-	for _, pk := range pks {
-		params = append(params, fmt.Sprint(pk.(*OfficeIdOfOfficePK).OfficeId))
+func (m *_OfficeDBMgr) FetchByPrimaryKeys(officeIds []int32) ([]*Office, error) {
+	size := len(officeIds)
+	if size == 0 {
+		return nil, nil
+	}
+	params := make([]interface{}, 0, size)
+	for _, pk := range officeIds {
+		params = append(params, pk)
 	}
 	obj := OfficeMgr.NewOffice()
-	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] WHERE office_id IN (%s)", strings.Join(obj.GetColumns(), ","), strings.Join(params, ","))
-	objs, err := m.FetchBySQL(query)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]*Office, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*Office))
-	}
-	return results, nil
+	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] WHERE office_id IN (?%s)", strings.Join(obj.GetColumns(), ","),
+		strings.Repeat(",?", size-1))
+	return m.FetchBySQL(query, params...)
 }
+
+// indexes
+
+// uniques
 
 func (m *_OfficeDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	objs, err := m.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
@@ -470,7 +456,7 @@ func (m *_OfficeDBMgr) FindOneFetch(unique Unique) (*Office, error) {
 		return nil, err
 	}
 	if len(objs) > 0 {
-		return objs[0].(*Office), nil
+		return objs[0], nil
 	}
 	return nil, fmt.Errorf("none record")
 }
@@ -493,13 +479,9 @@ func (m *_OfficeDBMgr) FindFetch(index Index) (int64, []*Office, error) {
 
 	obj := OfficeMgr.NewOffice()
 	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
-	objs, err := m.FetchBySQL(query, index.SQLParams()...)
+	results, err := m.FetchBySQL(query, index.SQLParams()...)
 	if err != nil {
 		return total, nil, err
-	}
-	results := make([]*Office, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*Office))
 	}
 	return total, results, nil
 }
@@ -520,13 +502,9 @@ func (m *_OfficeDBMgr) RangeFetch(scope Range) (int64, []*Office, error) {
 	}
 	obj := OfficeMgr.NewOffice()
 	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
-	objs, err := m.FetchBySQL(query, scope.SQLParams()...)
+	results, err := m.FetchBySQL(query, scope.SQLParams()...)
 	if err != nil {
 		return total, nil, err
-	}
-	results := make([]*Office, 0, len(objs))
-	for _, obj := range objs {
-		results = append(results, obj.(*Office))
 	}
 	return total, results, nil
 }
@@ -706,11 +684,13 @@ func (m *_OfficeDBMgr) Save(obj *Office) (int64, error) {
 }
 
 func (m *_OfficeDBMgr) Delete(obj *Office) (int64, error) {
-	pk := obj.GetPrimaryKey()
-	return m.DeleteByPrimaryKey(pk)
+	return m.DeleteByPrimaryKey(obj.OfficeId)
 }
 
-func (m *_OfficeDBMgr) DeleteByPrimaryKey(pk PrimaryKey) (int64, error) {
+func (m *_OfficeDBMgr) DeleteByPrimaryKey(officeId int32) (int64, error) {
+	pk := &OfficeIdOfOfficePK{
+		OfficeId: officeId,
+	}
 	q := fmt.Sprintf("DELETE FROM [dbo].[testCRUD] %s", pk.SQLFormat())
 	result, err := m.db.Exec(q, pk.SQLParams()...)
 	if err != nil {
