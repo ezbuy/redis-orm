@@ -183,6 +183,10 @@ func parseFloat(b []byte, bitSize int) (float64, error) {
 	return strconv.ParseFloat(string(b), bitSize)
 }
 
+func parseBool(b []byte) (bool, error) {
+	return strconv.ParseBool(string(b))
+}
+
 func StringScan(str string, v interface{}) error {
 	b := []byte(str)
 	switch v := v.(type) {
@@ -274,6 +278,13 @@ func StringScan(str string, v interface{}) error {
 		return err
 	case *bool:
 		*v = len(b) == 1 && b[0] == '1'
+		if !*v {
+			var err error
+			*v, err = parseBool(b)
+			if err != nil {
+				return err
+			}
+		}
 		return nil
 	case encoding.BinaryUnmarshaler:
 		return v.UnmarshalBinary(b)
