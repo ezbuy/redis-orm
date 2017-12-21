@@ -1,6 +1,6 @@
 {{define "object.redis.sync"}}
 {{$obj := .}}
-func (m *_{{$obj.Name}}RedisMgr) Load(db DBFetcher) error {
+func (m *_{{$obj.Name}}RedisMgr) Load(db *_{{$obj.Name}}DBMgr) error {
 	if err := m.Clear(); err != nil {
 		return err
 	}
@@ -15,27 +15,22 @@ func (m *_{{$obj.Name}}RedisMgr) Load(db DBFetcher) error {
 	{{end}}
 }
 
-func (m *_{{$obj.Name}}RedisMgr) AddBySQL(db DBFetcher, sql string, args ...interface{}) error {
+func (m *_{{$obj.Name}}RedisMgr) AddBySQL(db *_{{$obj.Name}}DBMgr, sql string, args ...interface{}) error {
 	objs, err := db.FetchBySQL(sql, args...)
 	if err != nil {
 		return err
 	}
 
-	redisObjs := make([]*{{$obj.Name}}, len(objs))
-	for i, obj := range objs {
-		redisObjs[i] = obj.(*{{$obj.Name}})
-	}
-
-	return m.SaveBatch(redisObjs)
+	return m.SaveBatch(objs)
 }
-func (m *_{{$obj.Name}}RedisMgr) DelBySQL(db DBFetcher, sql string, args ...interface{}) error {
+func (m *_{{$obj.Name}}RedisMgr) DelBySQL(db *_{{$obj.Name}}DBMgr, sql string, args ...interface{}) error {
 	objs, err := db.FetchBySQL(sql, args...)
 	if err != nil {
 		return err
 	}
 
 	for _, obj := range objs {
-		if err := m.Delete(obj.(*{{$obj.Name}})); err != nil {
+		if err := m.Delete(obj); err != nil {
 			return err
 		}
 	}
