@@ -3,7 +3,7 @@
 
 {{template "object.redis.manager" $obj}}
 {{template "object.redis.pipeline" $obj}}
-{{if or (ne $obj.DbSource "") (ne $obj.ImportSQL "")}}
+{{if $obj.CanSync}}
 {{template "object.redis.sync" $obj}}
 {{end}}
 {{template "object.redis.read" $obj}}
