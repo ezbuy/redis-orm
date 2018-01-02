@@ -1109,7 +1109,7 @@ func (m *_UserRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_UserRedisPipel
 	return &_UserRedisPipeline{m.Pipeline(), nil}
 }
 
-func (m *_UserRedisMgr) Load(db DBFetcher) error {
+func (m *_UserRedisMgr) Load(db *_UserDBMgr) error {
 	if err := m.Clear(); err != nil {
 		return err
 	}
@@ -1120,27 +1120,22 @@ func (m *_UserRedisMgr) Load(db DBFetcher) error {
 
 }
 
-func (m *_UserRedisMgr) AddBySQL(db DBFetcher, sql string, args ...interface{}) error {
+func (m *_UserRedisMgr) AddBySQL(db *_UserDBMgr, sql string, args ...interface{}) error {
 	objs, err := db.FetchBySQL(sql, args...)
 	if err != nil {
 		return err
 	}
 
-	redisObjs := make([]*User, len(objs))
-	for i, obj := range objs {
-		redisObjs[i] = obj.(*User)
-	}
-
-	return m.SaveBatch(redisObjs)
+	return m.SaveBatch(objs)
 }
-func (m *_UserRedisMgr) DelBySQL(db DBFetcher, sql string, args ...interface{}) error {
+func (m *_UserRedisMgr) DelBySQL(db *_UserDBMgr, sql string, args ...interface{}) error {
 	objs, err := db.FetchBySQL(sql, args...)
 	if err != nil {
 		return err
 	}
 
 	for _, obj := range objs {
-		if err := m.Delete(obj.(*User)); err != nil {
+		if err := m.Delete(obj); err != nil {
 			return err
 		}
 	}

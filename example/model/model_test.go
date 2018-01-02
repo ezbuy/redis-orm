@@ -71,7 +71,8 @@ var _ = Describe("manager", func() {
 	Describe("load", func() {
 		It("mysql => redis", func() {
 			Ω(MySQL()).ShouldNot(BeNil())
-			Ω(UserRedisMgr(Redis()).Load(UserDBMgr(MySQL()))).ShouldNot(HaveOccurred())
+			dbMgr := UserDBMgr(MySQL())
+			Ω(UserRedisMgr(Redis()).Load(dbMgr)).ShouldNot(HaveOccurred())
 		})
 	})
 
@@ -368,7 +369,13 @@ var _ = Describe("redis-orm.mysql", func() {
 			Ω(int(total)).To(Equal(50))
 			Ω(len(pks)).To(Equal(50))
 
-			objs, err := UserDBMgr(MySQL()).FetchByPrimaryKeys(pks)
+			keys := make([]int32, len(pks))
+			for i, pk := range pks {
+				v := pk.(*IdOfUserPK)
+				keys[i] = v.Id
+			}
+
+			objs, err := UserDBMgr(MySQL()).FetchByPrimaryKeys(keys)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(len(objs)).To(Equal(50))
 
@@ -385,7 +392,13 @@ var _ = Describe("redis-orm.mysql", func() {
 			Ω(int(total)).To(Equal(24))
 			Ω(len(pks)).To(Equal(10))
 
-			objs, err := UserDBMgr(MySQL()).FetchByPrimaryKeys(pks)
+			keys := make([]int32, len(pks))
+			for i, pk := range pks {
+				v := pk.(*IdOfUserPK)
+				keys[i] = v.Id
+			}
+
+			objs, err := UserDBMgr(MySQL()).FetchByPrimaryKeys(keys)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(len(objs)).To(Equal(10))
 		})
