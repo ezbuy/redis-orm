@@ -295,3 +295,10 @@ func (m *MetaObject) Comment() string {
 
 	return m.DbTable
 }
+
+func (o *MetaObject) CanSync() bool {
+	if len(o.Dbs) > 1 && o.DbContains("redis") {
+		return o.DbSource != "" || o.ImportSQL != ""
+	}
+	return false
+}
