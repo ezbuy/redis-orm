@@ -17,7 +17,7 @@ func (obj *{{.Name}}) GetTableName() string {
 func (obj *{{.Name}}) GetColumns() []string {
 	columns := []string{
 	{{- range $field := .Fields}}
-	"{{$field.FieldName}}",
+	"{{$obj.DbTable}}.{{$field.FieldName}}",
 	{{- end}}
 	}
 	return columns
