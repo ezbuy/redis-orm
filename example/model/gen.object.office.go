@@ -78,15 +78,15 @@ func (obj *Office) GetTableName() string {
 
 func (obj *Office) GetColumns() []string {
 	columns := []string{
-		"office_id",
-		"office_area",
-		"office_name",
-		"search_origin_code",
-		"processing_origin_code",
-		"create_by",
-		"update_by",
-		"create_date",
-		"update_date",
+		"testCRUD.office_id",
+		"testCRUD.office_area",
+		"testCRUD.office_name",
+		"testCRUD.search_origin_code",
+		"testCRUD.processing_origin_code",
+		"testCRUD.create_by",
+		"testCRUD.update_by",
+		"testCRUD.create_date",
+		"testCRUD.update_date",
 	}
 	return columns
 }

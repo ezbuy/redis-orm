@@ -66,11 +66,11 @@ func (obj *UserBaseInfo) GetTableName() string {
 
 func (obj *UserBaseInfo) GetColumns() []string {
 	columns := []string{
-		"`id`",
-		"`name`",
-		"`mailbox`",
-		"`password`",
-		"`sex`",
+		".`id`",
+		".`name`",
+		".`mailbox`",
+		".`password`",
+		".`sex`",
 	}
 	return columns
 }

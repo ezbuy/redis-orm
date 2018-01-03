@@ -77,14 +77,14 @@ func (obj *Blog) GetTableName() string {
 
 func (obj *Blog) GetColumns() []string {
 	columns := []string{
-		"`id`",
-		"`user_id`",
-		"`title`",
-		"`content`",
-		"`status`",
-		"`readed`",
-		"`created_at`",
-		"`updated_at`",
+		"blogs.`id`",
+		"blogs.`user_id`",
+		"blogs.`title`",
+		"blogs.`content`",
+		"blogs.`status`",
+		"blogs.`readed`",
+		"blogs.`created_at`",
+		"blogs.`updated_at`",
 	}
 	return columns
 }

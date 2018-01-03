@@ -57,8 +57,8 @@ func (obj *UserBlogs) GetTableName() string {
 
 func (obj *UserBlogs) GetColumns() []string {
 	columns := []string{
-		"`user_id`",
-		"`blog_id`",
+		"user_blogs.`user_id`",
+		"user_blogs.`blog_id`",
 	}
 	return columns
 }
