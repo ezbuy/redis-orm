@@ -95,20 +95,20 @@ func (obj *User) GetTableName() string {
 
 func (obj *User) GetColumns() []string {
 	columns := []string{
-		"`id`",
-		"`name`",
-		"`mailbox`",
-		"`sex`",
-		"`age`",
-		"`longitude`",
-		"`latitude`",
-		"`description`",
-		"`password`",
-		"`head_url`",
-		"`status`",
-		"`created_at`",
-		"`updated_at`",
-		"`deleted_at`",
+		"users.`id`",
+		"users.`name`",
+		"users.`mailbox`",
+		"users.`sex`",
+		"users.`age`",
+		"users.`longitude`",
+		"users.`latitude`",
+		"users.`description`",
+		"users.`password`",
+		"users.`head_url`",
+		"users.`status`",
+		"users.`created_at`",
+		"users.`updated_at`",
+		"users.`deleted_at`",
 	}
 	return columns
 }
