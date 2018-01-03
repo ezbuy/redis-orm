@@ -31,9 +31,13 @@ model.UserDBMgr(db).Find(index)
 model.UserDBMgr(db).Range(scope)
 model.UserDBMgr(db).RangeRevert(scope)
 
+//! search usage
+blogs, err := model.BlogDBMgr(db).Search("INNER JOIN users ON blog.user_id = users.user_id WHERE users.mail_box=?", "", "", "foo@bar.com")
+
 //! fetch object 
 model.UserDBMgr(db).Fetch(pk PrimaryKey) (*User, error)
-model.UserDBMgr(db).FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error)
+model.UserDBMgr(db).FetchByPrimaryKey(id int32) (*User, error)
+model.UserDBMgr(db).FetchByPrimaryKeys(ids []int32) ([]*User, error)
 
 # redis
 model.RedisSetup(cf)
@@ -75,7 +79,8 @@ model.UserDBMgr(tx).Range(scope)
 model.UserDBMgr(tx).RangeRevert(scope)
 
 model.UserDBMgr(tx).Fetch(id string) (*User, error)
-model.UserDBMgr(tx).FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error)
+model.UserDBMgr(tx).FetchByPrimaryKey(id int32) (*User, error)
+model.UserDBMgr(tx).FetchByPrimaryKeys(ids []int32) ([]*User, error)
 
 # redis
 model.RedisSetup(cf)
