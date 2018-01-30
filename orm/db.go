@@ -166,7 +166,9 @@ func (tx *DBTx) Query(sql string, args ...interface{}) (*sql.Rows, error) {
 		log.Println("DEBUG: ", sql, args)
 	}
 	result, err := tx.tx.Query(sql, args...)
-	tx.err = err
+	if err != nil {
+		tx.err = err
+	}
 	return result, tx.err
 }
 
@@ -184,6 +186,9 @@ func (tx *DBTx) Exec(sql string, args ...interface{}) (sql.Result, error) {
 		log.Println("DEBUG: ", sql, args)
 	}
 	result, err := tx.tx.Exec(sql, args...)
+	if err != nil {
+		tx.err = err
+	}
 	tx.err = err
 	return result, tx.err
 }
