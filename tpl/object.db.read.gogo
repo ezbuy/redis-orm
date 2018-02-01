@@ -161,7 +161,7 @@ func (m *_{{$obj.Name}}DBMgr) FetchByPrimaryKey({{$primary.GetFuncParam}}) (*{{$
 	if len(objs) > 0 {
 		return objs[0], nil
 	}
-	return nil, fmt.Errorf("{{$obj.Name}} fetch record not found")
+	return nil, sql.ErrNoRows
 }
 
 {{- if $primary.IsSingleField}}
