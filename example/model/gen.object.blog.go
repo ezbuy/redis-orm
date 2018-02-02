@@ -473,6 +473,11 @@ func (m *_BlogDBMgr) Fetch(pk PrimaryKey) (*Blog, error) {
 	return nil, fmt.Errorf("Blog fetch record not found")
 }
 
+// err not found check
+func (m *_BlogDBMgr) IsErrNotFound(err error) bool {
+	return strings.Contains(err.Error(), "not found") || err == sql.ErrNoRows
+}
+
 // primary key
 func (m *_BlogDBMgr) FetchByPrimaryKey(id int32, userId int32) (*Blog, error) {
 	obj := BlogMgr.NewBlog()

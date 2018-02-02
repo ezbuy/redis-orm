@@ -86,25 +86,6 @@ func ExecuteConfigTemplate(output, db string, packageName string) error {
 	return nil
 }
 
-func ExecuteUtilTemplate(output, db, packageName string) error {
-	filename := filepath.Join(output, strings.Join([]string{"gen", "util", db, "go"}, "."))
-	fd, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
-	if err != nil {
-		return err
-	}
-	defer fd.Close()
-	if err := RedisOrmTemplate.ExecuteTemplate(fd, strings.Join([]string{"util", db}, "."), map[string]interface{}{
-		"GoPackage": packageName,
-	}); err != nil {
-		return err
-	}
-
-	oscmd := exec.Command("gofmt", "-w", filename)
-	oscmd.Run()
-	return nil
-
-}
-
 func init() {
 	funcMap := template.FuncMap{
 		"add":        Add,
@@ -121,10 +102,6 @@ func init() {
 		"tpl/conf.mongo.gogo",
 		"tpl/conf.mssql.gogo",
 		"tpl/conf.mysql.gogo",
-		"tpl/util.mysql.gogo",
-		"tpl/util.mssql.gogo",
-		"tpl/util.elastic.gogo",
-		"tpl/util.redis.gogo",
 		"tpl/conf.orm.gogo",
 		"tpl/conf.redis.gogo",
 		"tpl/object.db.gogo",

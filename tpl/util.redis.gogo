@@ -1,4 +1,0 @@
-{{define "util.redis"}}package {{.GoPackage}}
-{{end}}
-
-
