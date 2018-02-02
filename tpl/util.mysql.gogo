@@ -2,7 +2,7 @@
 
 import (
 	"strings"
-	"sql"
+	"database/sql"
 )
 
 func IsErrNotFound(err error) bool {
