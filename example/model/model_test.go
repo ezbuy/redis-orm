@@ -153,6 +153,9 @@ var _ = Describe("redis-orm.mysql", func() {
 			_, err = mgr.Fetch(user.GetPrimaryKey())
 			Ω(err).Should(HaveOccurred())
 
+			_, err = mgr.FetchByPrimaryKey(user.Id)
+			Ω(IsErrNotFound(err)).To(BeTrue())
+
 			//! save
 
 			user.HeadUrl = "ccc.png"

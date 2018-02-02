@@ -1,7 +1,10 @@
 package model
 
-import "strings"
+import (
+	"database/sql"
+	"strings"
+)
 
 func IsErrNotFound(err error) bool {
-	return strings.Contains(err.Error(), "not found")
+	return strings.Contains(err.Error(), "not found") || err == sql.ErrNoRows
 }
