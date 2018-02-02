@@ -1,9 +1,12 @@
 {{define "util.mysql"}}package {{.GoPackage}}
 
-import "strings"
+import (
+	"strings"
+	"sql"
+)
 
 func IsErrNotFound(err error) bool {
-	return strings.Contains(err.Error(), "not found")
+	return strings.Contains(err.Error(), "not found") || err == sql.ErrNoRows
 }
 
 {{end}}
