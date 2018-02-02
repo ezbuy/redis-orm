@@ -474,6 +474,11 @@ func (m *_UserBaseInfoDBMgr) Fetch(pk PrimaryKey) (*UserBaseInfo, error) {
 	return nil, fmt.Errorf("UserBaseInfo fetch record not found")
 }
 
+// err not found check
+func (m *_UserBaseInfoDBMgr) IsErrNotFound(err error) bool {
+	return strings.Contains(err.Error(), "not found") || err == sql.ErrNoRows
+}
+
 // primary key
 func (m *_UserBaseInfoDBMgr) FetchByPrimaryKey(id int32) (*UserBaseInfo, error) {
 	obj := UserBaseInfoMgr.NewUserBaseInfo()

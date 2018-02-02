@@ -399,6 +399,11 @@ func (m *_OfficeDBMgr) Fetch(pk PrimaryKey) (*Office, error) {
 	return nil, fmt.Errorf("Office fetch record not found")
 }
 
+// err not found check
+func (m *_OfficeDBMgr) IsErrNotFound(err error) bool {
+	return strings.Contains(err.Error(), "not found") || err == sql.ErrNoRows
+}
+
 // primary key
 func (m *_OfficeDBMgr) FetchByPrimaryKey(officeId int32) (*Office, error) {
 	obj := OfficeMgr.NewOffice()

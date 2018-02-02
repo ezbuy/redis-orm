@@ -683,6 +683,11 @@ func (m *_UserDBMgr) Fetch(pk PrimaryKey) (*User, error) {
 	return nil, fmt.Errorf("User fetch record not found")
 }
 
+// err not found check
+func (m *_UserDBMgr) IsErrNotFound(err error) bool {
+	return strings.Contains(err.Error(), "not found") || err == sql.ErrNoRows
+}
+
 // primary key
 func (m *_UserDBMgr) FetchByPrimaryKey(id int32) (*User, error) {
 	obj := UserMgr.NewUser()
