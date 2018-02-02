@@ -41,6 +41,7 @@ func GenerateCode() {
 	confTpls := map[string]bool{
 		"orm": true,
 	}
+	utilTpls := make(map[string]bool)
 	i := 0
 	for _, yaml := range yamls {
 		objs, err := parser.ReadYaml(packageName, yaml)
@@ -59,6 +60,7 @@ func GenerateCode() {
 					metaObjs[obj.Name] = obj
 					for _, db := range obj.Dbs {
 						confTpls[db] = true
+						utilTpls[db] = true
 					}
 					goto GeneratePoint
 				}
@@ -69,6 +71,7 @@ func GenerateCode() {
 				metaObjs[obj.Name] = obj
 				for _, db := range obj.Dbs {
 					confTpls[db] = true
+					utilTpls[db] = true
 				}
 			}
 		}
@@ -84,6 +87,12 @@ GeneratePoint:
 
 	for conf := range confTpls {
 		err = fs.ExecuteConfigTemplate(outputDir, conf, packageName)
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+	for db := range utilTpls {
+		err = fs.ExecuteUtilTemplate(outputDir, db, packageName)
 		if err != nil {
 			panic(err.Error())
 		}

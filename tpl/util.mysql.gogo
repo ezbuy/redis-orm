@@ -1,0 +1,10 @@
+{{define "util.mysql"}}package {{.GoPackage}}
+
+import "strings"
+
+func IsErrNotFound(err error) bool {
+	return strings.Contains(err.Error(), "not found")
+}
+
+{{end}}
+
