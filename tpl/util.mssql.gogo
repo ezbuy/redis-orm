@@ -1,0 +1,2 @@
+{{define "util.mssql"}}package {{.GoPackage}}
+{{end}}

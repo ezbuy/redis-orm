@@ -42,6 +42,10 @@
 // tpl/relation.zset.gogo
 // tpl/relation.zset.sync.gogo
 // tpl/script.mysql.sql
+// tpl/util.elastic.gogo
+// tpl/util.mssql.gogo
+// tpl/util.mysql.gogo
+// tpl/util.redis.gogo
 // tpl/view.gogo
 // DO NOT EDIT!
 
@@ -950,6 +954,86 @@ func tplScriptMysqlSql() (*asset, error) {
 	return a, nil
 }
 
+var _tplUtilElasticGogo = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\xaa\xae\x4e\x49\x4d\xcb\xcc\x4b\x55\x50\x2a\x2d\xc9\xcc\xd1\x4b\xcd\x49\x2c\x2e\xc9\x4c\x56\xaa\xad\x2d\x48\x4c\xce\x4e\x4c\x4f\x55\xa8\xae\xd6\x73\xcf\x0f\x80\x70\x6a\x6b\xb9\xaa\xab\x53\xf3\x52\x6a\x6b\xb9\xb8\x00\x01\x00\x00\xff\xff\xa0\xfc\xdc\xc6\x39\x00\x00\x00")
+
+func tplUtilElasticGogoBytes() ([]byte, error) {
+	return bindataRead(
+		_tplUtilElasticGogo,
+		"tpl/util.elastic.gogo",
+	)
+}
+
+func tplUtilElasticGogo() (*asset, error) {
+	bytes, err := tplUtilElasticGogoBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "tpl/util.elastic.gogo", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _tplUtilMssqlGogo = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\xaa\xae\x4e\x49\x4d\xcb\xcc\x4b\x55\x50\x2a\x2d\xc9\xcc\xd1\xcb\x2d\x2e\x2e\xcc\x51\xaa\xad\x2d\x48\x4c\xce\x4e\x4c\x4f\x55\xa8\xae\xd6\x73\xcf\x0f\x80\x70\x6a\x6b\xb9\xaa\xab\x53\xf3\x52\x6a\x6b\xb9\x00\x01\x00\x00\xff\xff\x39\xa4\x8b\x2f\x36\x00\x00\x00")
+
+func tplUtilMssqlGogoBytes() ([]byte, error) {
+	return bindataRead(
+		_tplUtilMssqlGogo,
+		"tpl/util.mssql.gogo",
+	)
+}
+
+func tplUtilMssqlGogo() (*asset, error) {
+	bytes, err := tplUtilMssqlGogoBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "tpl/util.mssql.gogo", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _tplUtilMysqlGogo = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x2c\xcd\x41\xaa\xc3\x30\x0c\x04\xd0\xf5\xd7\x29\x84\x57\x09\x7c\x7c\x89\x92\x96\x6e\x4a\xaf\x90\x26\x4a\x30\x4d\xa4\x54\x96\x17\x45\xf8\xee\xc5\xb4\xcb\x81\x37\x33\xee\x33\x2d\x89\x09\x43\xb1\xb4\xc5\xfd\x9d\x5f\x5b\xa8\xf5\x18\xa7\xe7\xb8\x12\xba\xc7\x8b\xdc\xbf\xa1\x56\x80\xb4\x1f\xa2\x86\x21\x9b\x26\x5e\x73\x00\x58\x0a\x4f\x78\xcd\x83\xea\x4d\xec\x2c\x85\xe7\x8e\x54\x91\x54\x45\x7b\x7c\x88\x6c\xe8\xf0\xa7\x64\x45\x19\x7f\xb5\x78\x12\xb6\x31\x71\x6e\x34\x0e\x8d\x76\xfd\x3f\x06\x16\xc3\xa5\x4d\x84\x1e\x2a\x80\x3b\xf1\xdc\x5e\x3f\x01\x00\x00\xff\xff\x34\x08\x40\x35\xa5\x00\x00\x00")
+
+func tplUtilMysqlGogoBytes() ([]byte, error) {
+	return bindataRead(
+		_tplUtilMysqlGogo,
+		"tpl/util.mysql.gogo",
+	)
+}
+
+func tplUtilMysqlGogo() (*asset, error) {
+	bytes, err := tplUtilMysqlGogoBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "tpl/util.mysql.gogo", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _tplUtilRedisGogo = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\xaa\xae\x4e\x49\x4d\xcb\xcc\x4b\x55\x50\x2a\x2d\xc9\xcc\xd1\x2b\x4a\x4d\xc9\x2c\x56\xaa\xad\x2d\x48\x4c\xce\x4e\x4c\x4f\x55\xa8\xae\xd6\x73\xcf\x0f\x80\x70\x6a\x6b\xb9\xaa\xab\x53\xf3\x52\x6a\x6b\xb9\xb8\xb8\x00\x01\x00\x00\xff\xff\x1a\xe3\x3d\x2e\x38\x00\x00\x00")
+
+func tplUtilRedisGogoBytes() ([]byte, error) {
+	return bindataRead(
+		_tplUtilRedisGogo,
+		"tpl/util.redis.gogo",
+	)
+}
+
+func tplUtilRedisGogo() (*asset, error) {
+	bytes, err := tplUtilRedisGogoBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "tpl/util.redis.gogo", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _tplViewGogo = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\xaa\xae\x4e\x49\x4d\xcb\xcc\x4b\x55\x50\x2a\xcb\x4c\x2d\x57\xaa\xad\xe5\xaa\xae\x2e\x49\xcd\x2d\xc8\x49\x2c\x49\x55\x50\xca\x4f\xca\x4a\x4d\x2e\x51\x52\xd0\x03\x8b\xa7\xe6\xa5\xd4\xd6\x72\x01\x02\x00\x00\xff\xff\xb3\xec\x14\xe9\x32\x00\x00\x00")
 
 func tplViewGogoBytes() ([]byte, error) {
@@ -1064,6 +1148,10 @@ var _bindata = map[string]func() (*asset, error){
 	"tpl/relation.zset.gogo": tplRelationZsetGogo,
 	"tpl/relation.zset.sync.gogo": tplRelationZsetSyncGogo,
 	"tpl/script.mysql.sql": tplScriptMysqlSql,
+	"tpl/util.elastic.gogo": tplUtilElasticGogo,
+	"tpl/util.mssql.gogo": tplUtilMssqlGogo,
+	"tpl/util.mysql.gogo": tplUtilMysqlGogo,
+	"tpl/util.redis.gogo": tplUtilRedisGogo,
 	"tpl/view.gogo": tplViewGogo,
 }
 
@@ -1150,6 +1238,10 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"relation.zset.gogo": &bintree{tplRelationZsetGogo, map[string]*bintree{}},
 		"relation.zset.sync.gogo": &bintree{tplRelationZsetSyncGogo, map[string]*bintree{}},
 		"script.mysql.sql": &bintree{tplScriptMysqlSql, map[string]*bintree{}},
+		"util.elastic.gogo": &bintree{tplUtilElasticGogo, map[string]*bintree{}},
+		"util.mssql.gogo": &bintree{tplUtilMssqlGogo, map[string]*bintree{}},
+		"util.mysql.gogo": &bintree{tplUtilMysqlGogo, map[string]*bintree{}},
+		"util.redis.gogo": &bintree{tplUtilRedisGogo, map[string]*bintree{}},
 		"view.gogo": &bintree{tplViewGogo, map[string]*bintree{}},
 	}},
 }}
