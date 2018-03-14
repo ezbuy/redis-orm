@@ -10,6 +10,7 @@ import (
 var (
 	_mysql_store *orm.DBStore
 	_mysql_cfg   MySQLConfig
+	_mysql_dsn   string
 	_mysql_once  sync.Once
 )
 
