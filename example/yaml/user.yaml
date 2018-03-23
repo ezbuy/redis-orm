@@ -13,6 +13,7 @@ User:
       validator: required
     - Sex: bool
       flags: [index]
+      default: false
     - Age: int32
       flags: [range, order]
     - Longitude: float64

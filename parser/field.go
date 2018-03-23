@@ -38,6 +38,7 @@ type Field struct {
 	Validator string
 	Obj       *MetaObject
 	ESIndex   ESIndex
+	Default   interface{}
 }
 
 func NewField() *Field {
@@ -151,6 +152,13 @@ func (f *Field) IsNumber() bool {
 		return true
 	}
 	return false
+}
+
+func (f *Field) IsBool() bool {
+	if transform := f.GetTransform(); transform != nil {
+		return strings.HasPrefix(transform.TypeOrigin, "bool")
+	}
+	return strings.HasPrefix(f.Type, "bool")
 }
 
 func (f *Field) IsString() bool {
@@ -423,6 +431,9 @@ func (f *Field) Read(data map[interface{}]interface{}) error {
 		case "es_date_format":
 			f.ESIndex.DateFormat = v.(string)
 
+		case "default":
+			f.Default = v
+
 		default:
 			return errors.New("invalid field name: " + key)
 		}
@@ -555,6 +566,16 @@ func (f *Field) SQLDefault(driver string) string {
 				return "DEFAULT '0'"
 			}
 		}
+
+		if f.IsBool() {
+			switch v, _ := f.Default.(bool); v {
+			case true:
+				return "DEFAULT '1'"
+			default:
+				return "DEFAULT '0'"
+			}
+		}
+
 		if f.IsNumber() {
 			return "DEFAULT '0'"
 		}
