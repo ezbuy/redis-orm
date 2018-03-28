@@ -593,6 +593,11 @@ func UserDBMgr(db orm.DB) *_UserDBMgr {
 
 func (m *_UserDBMgr) Search(where string, orderby string, limit string, args ...interface{}) ([]*User, error) {
 	obj := UserMgr.NewUser()
+
+	if limit = strings.ToUpper(strings.TrimSpace(limit)); limit != "" && !strings.HasPrefix(limit, "LIMIT") {
+		limit = "LIMIT " + limit
+	}
+
 	conditions := []string{where, orderby, limit}
 	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
 	return m.FetchBySQL(query, args...)
