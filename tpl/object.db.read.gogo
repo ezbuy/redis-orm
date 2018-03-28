@@ -21,6 +21,11 @@ func {{$obj.Name}}DBMgr(db orm.DB) *_{{$obj.Name}}DBMgr {
 
 func (m *_{{$obj.Name}}DBMgr) Search(where string, orderby string, limit string, args ...interface{}) ([]*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+
+    if limit = strings.ToUpper(strings.TrimSpace(limit)); limit !="" && !strings.HasPrefix(limit, "LIMIT") {
+	    limit = "LIMIT " + limit
+	}
+
 	conditions := []string{where, orderby, limit}
 	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
 	return m.FetchBySQL(query, args...)
