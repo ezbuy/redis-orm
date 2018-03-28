@@ -307,6 +307,11 @@ func UserBlogsDBMgr(db orm.DB) *_UserBlogsDBMgr {
 
 func (m *_UserBlogsDBMgr) Search(where string, orderby string, limit string, args ...interface{}) ([]*UserBlogs, error) {
 	obj := UserBlogsMgr.NewUserBlogs()
+
+	if limit = strings.ToUpper(strings.TrimSpace(limit)); limit != "" && !strings.HasPrefix(limit, "LIMIT") {
+		limit = "LIMIT " + limit
+	}
+
 	conditions := []string{where, orderby, limit}
 	query := fmt.Sprintf("SELECT %s FROM user_blogs %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
 	return m.FetchBySQL(query, args...)
