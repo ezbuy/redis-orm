@@ -193,7 +193,6 @@ func (tx *DBTx) Exec(sql string, args ...interface{}) (sql.Result, error) {
 	if err != nil {
 		tx.err = err
 	}
-	tx.err = err
 	return result, tx.err
 }
 

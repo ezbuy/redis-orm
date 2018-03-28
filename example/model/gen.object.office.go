@@ -321,6 +321,11 @@ func OfficeDBMgr(db orm.DB) *_OfficeDBMgr {
 
 func (m *_OfficeDBMgr) Search(where string, orderby string, limit string, args ...interface{}) ([]*Office, error) {
 	obj := OfficeMgr.NewOffice()
+
+	if limit = strings.ToUpper(strings.TrimSpace(limit)); limit != "" && !strings.HasPrefix(limit, "LIMIT") {
+		limit = "LIMIT " + limit
+	}
+
 	conditions := []string{where, orderby, limit}
 	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
 	return m.FetchBySQL(query, args...)
