@@ -1152,6 +1152,8 @@ func (m *_UserRedisMgr) DelBySQL(db *_UserDBMgr, sql string, args ...interface{}
 	return nil
 }
 
+var newUserObj = UserMgr.NewUser()
+
 //! redis model read
 func (m *_UserRedisMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	if relation := unique.UKRelation(m.RedisStore); relation != nil {
@@ -1279,11 +1281,16 @@ func (m *_UserRedisMgr) RangeRevertFetch(scope Range) (int64, []*User, error) {
 }
 
 func (m *_UserRedisMgr) Fetch(pk PrimaryKey) (*User, error) {
+	key := keyOfObject(newUserObj, pk.Key())
+	return m.FetchByKey(key)
+}
+
+func (m *_UserRedisMgr) FetchByKey(key string) (*User, error) {
 	obj := UserMgr.NewUser()
 
 	pipe := m.BeginPipeline()
-	pipe.Exists(keyOfObject(obj, pk.Key()))
-	pipe.HMGet(keyOfObject(obj, pk.Key()),
+	pipe.Exists(key)
+	pipe.HMGet(key,
 		"Id",
 		"Name",
 		"Mailbox",
@@ -1305,7 +1312,7 @@ func (m *_UserRedisMgr) Fetch(pk PrimaryKey) (*User, error) {
 
 	if b, err := cmds[0].(*redis.BoolCmd).Result(); err == nil {
 		if !b {
-			return nil, fmt.Errorf("User primary key:(%s) not exist", pk.Key())
+			return nil, fmt.Errorf("User primary key:(%s) not exist", key)
 		}
 	}
 
@@ -1313,55 +1320,71 @@ func (m *_UserRedisMgr) Fetch(pk PrimaryKey) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := orm.StringScan(strs[0].(string), &obj.Id); err != nil {
+
+	var sv string
+	sv, _ = strs[0].(string)
+	if err := orm.StringScan(sv, &obj.Id); err != nil {
 		return nil, err
 	}
-	if err := orm.StringScan(strs[1].(string), &obj.Name); err != nil {
+	sv, _ = strs[1].(string)
+	if err := orm.StringScan(sv, &obj.Name); err != nil {
 		return nil, err
 	}
-	if err := orm.StringScan(strs[2].(string), &obj.Mailbox); err != nil {
+	sv, _ = strs[2].(string)
+	if err := orm.StringScan(sv, &obj.Mailbox); err != nil {
 		return nil, err
 	}
-	if err := orm.StringScan(strs[3].(string), &obj.Sex); err != nil {
+	sv, _ = strs[3].(string)
+	if err := orm.StringScan(sv, &obj.Sex); err != nil {
 		return nil, err
 	}
-	if err := orm.StringScan(strs[4].(string), &obj.Age); err != nil {
+	sv, _ = strs[4].(string)
+	if err := orm.StringScan(sv, &obj.Age); err != nil {
 		return nil, err
 	}
-	if err := orm.StringScan(strs[5].(string), &obj.Longitude); err != nil {
+	sv, _ = strs[5].(string)
+	if err := orm.StringScan(sv, &obj.Longitude); err != nil {
 		return nil, err
 	}
-	if err := orm.StringScan(strs[6].(string), &obj.Latitude); err != nil {
+	sv, _ = strs[6].(string)
+	if err := orm.StringScan(sv, &obj.Latitude); err != nil {
 		return nil, err
 	}
-	if err := orm.StringScan(strs[7].(string), &obj.Description); err != nil {
+	sv, _ = strs[7].(string)
+	if err := orm.StringScan(sv, &obj.Description); err != nil {
 		return nil, err
 	}
-	if err := orm.StringScan(strs[8].(string), &obj.Password); err != nil {
+	sv, _ = strs[8].(string)
+	if err := orm.StringScan(sv, &obj.Password); err != nil {
 		return nil, err
 	}
-	if err := orm.StringScan(strs[9].(string), &obj.HeadUrl); err != nil {
+	sv, _ = strs[9].(string)
+	if err := orm.StringScan(sv, &obj.HeadUrl); err != nil {
 		return nil, err
 	}
 	obj.HeadUrl = orm.Decode(obj.HeadUrl)
-	if err := orm.StringScan(strs[10].(string), &obj.Status); err != nil {
+	sv, _ = strs[10].(string)
+	if err := orm.StringScan(sv, &obj.Status); err != nil {
 		return nil, err
 	}
+	sv, _ = strs[11].(string)
 	var val11 int64
-	if err := orm.StringScan(strs[11].(string), &val11); err != nil {
+	if err := orm.StringScan(sv, &val11); err != nil {
 		return nil, err
 	}
 	obj.CreatedAt = time.Unix(val11, 0)
+	sv, _ = strs[12].(string)
 	var val12 int64
-	if err := orm.StringScan(strs[12].(string), &val12); err != nil {
+	if err := orm.StringScan(sv, &val12); err != nil {
 		return nil, err
 	}
 	obj.UpdatedAt = time.Unix(val12, 0)
-	if strs[13].(string) == "nil" {
+	sv, _ = strs[13].(string)
+	if sv == "nil" {
 		obj.DeletedAt = nil
 	} else {
 		var val13 int64
-		if err := orm.StringScan(strs[13].(string), &val13); err != nil {
+		if err := orm.StringScan(sv, &val13); err != nil {
 			return nil, err
 		}
 		DeletedAtValue := time.Unix(val13, 0)
@@ -1514,8 +1537,8 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 			continue
 		}
-		var val11 int64
 		sv, ok = strs[11].(string)
+		var val11 int64
 		if !ok {
 			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[11]))
 			continue
@@ -1525,8 +1548,8 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 			continue
 		}
 		obj.CreatedAt = time.Unix(val11, 0)
-		var val12 int64
 		sv, ok = strs[12].(string)
+		var val12 int64
 		if !ok {
 			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[12]))
 			continue
@@ -1536,11 +1559,11 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 			continue
 		}
 		obj.UpdatedAt = time.Unix(val12, 0)
-		if strs[13].(string) == "nil" {
+		sv, ok = strs[13].(string)
+		if sv == "nil" {
 			obj.DeletedAt = nil
 		} else {
 			var val13 int64
-			sv, ok = strs[13].(string)
 			if !ok {
 				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[13]))
 				continue
