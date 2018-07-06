@@ -2,6 +2,7 @@ package model
 
 //! conf.mysql
 import (
+	"errors"
 	"sync"
 	"time"
 
@@ -11,8 +12,13 @@ import (
 var (
 	_mysql_store *orm.DBStore
 	_mysql_cfg   MySQLConfig
-	_mysql_dsn   string
-	_mysql_once  sync.Once
+
+	mysql_dsns        = map[string]string{}
+	mysql_multi_store = map[string]*orm.DBStore{}
+	mysql_multi_once  sync.Once
+
+	_mysql_dsn  string
+	_mysql_once sync.Once
 )
 
 type MySQLConfig struct {
@@ -31,6 +37,33 @@ func MySQLSetup(cf *MySQLConfig) {
 
 func MySQLDSNSetup(dsn string) {
 	_mysql_dsn = dsn
+}
+
+func MySQLMultiDSNSetup(key, dsn string) {
+	if _, ok := mysql_dsns[key]; ok {
+		panic(errors.New(key + " exists"))
+	}
+
+	mysql_dsns[key] = dsn
+}
+
+func MySQLInstance(key string) *orm.DBStore {
+	mysql_multi_once.Do(func() {
+		for key, dsn := range mysql_dsns {
+			s, err := orm.NewDBDSNStore("mysql", dsn)
+			if err != nil {
+				panic(err)
+			}
+
+			mysql_multi_store[key] = s
+		}
+	})
+
+	s, ok := mysql_multi_store[key]
+	if !ok {
+		panic(errors.New(key + " not found"))
+	}
+	return s
 }
 
 func MySQL() *orm.DBStore {
