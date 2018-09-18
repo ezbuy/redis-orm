@@ -76,13 +76,14 @@ func NewMultiColumns(columnsCond MultiColumnsCond) Cond {
 }
 
 // NewDefaultMultiColumns new cond with default multi columns search
-func NewDefaultMultiColumns(combineStr []string, key byte) Cond {
+// default splittor: ":", which means the `combineStr` should be splitted with ":" AKA "x:x"
+func NewDefaultMultiColumns(combineStr []string) Cond {
 	return Cond{
 		is:           []int{},
 		i32s:         []int32{},
 		i64s:         []int64{},
 		strs:         []string{},
-		multiColumns: NewMultiColumnsCond(string(key), combineStr),
+		multiColumns: NewMultiColumnsCond(combineStr),
 	}
 }
 
@@ -118,8 +119,11 @@ func (c Cond) BuildPlaceholderStr() (holder string) {
 		return buildHolders(strLen)
 	}
 
+	if c.multiColumns != nil {
+		return c.multiColumns.BuildMultiColumnsPlaceholderStr()
+	}
 	// OTHER TYPES
-	return c.multiColumns.BuildMultiColumnsPlaceholderStr()
+	return
 }
 
 // BuildPlaceholderStrWithQuote builds the (?,?...) str
@@ -174,6 +178,9 @@ func (c Cond) BuildArgs() (args []interface{}) {
 		return args
 	}
 
+	if c.multiColumns != nil {
+		return c.multiColumns.BuildMultiColumnsArgs()
+	}
 	// OTHER TYPES
-	return c.multiColumns.BuildMultiColumnsArgs()
+	return
 }

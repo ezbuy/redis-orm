@@ -8,8 +8,7 @@ import (
 
 // MultiColumnsCond handle the multi columns conditions
 type MultiColumnsCond interface {
-	SetSplitKey(key string)
-	SetMultiColumns(strs []string)
+	Key() string
 	BuildMultiColumnsPlaceholderStr() string
 	BuildMultiColumnsArgs() []interface{}
 	BuildMultiColumnsPlaceholderStrWithQuote() string
@@ -17,30 +16,29 @@ type MultiColumnsCond interface {
 
 // DefaultMultiColumnsCond impl the default MultiColumnsCond
 type DefaultMultiColumnsCond struct {
-	key         string
 	combinedStr []string
 }
 
-// SetSplitKey set the multi columns split key
-func (dm DefaultMultiColumnsCond) SetSplitKey(key string) {
-	dm.key = key
-}
-
-// SetMultiColumns set the combineStr
-func (dm DefaultMultiColumnsCond) SetMultiColumns(strs []string) {
-	dm.combinedStr = strs
+// Key set the multi columns split key
+func (dm DefaultMultiColumnsCond) Key() string {
+	return ":"
 }
 
 // BuildMultiColumnsPlaceholderStr builds ?,?,?... placeholders
 func (dm DefaultMultiColumnsCond) BuildMultiColumnsPlaceholderStr() string {
-	if len(dm.combinedStr) == 0 {
+	return BuildMultiColumnsPlaceholderStrWithKey(dm.combinedStr, dm.Key())
+}
+
+// BuildMultiColumnsPlaceholderStrWithKey build multi-columns with a split key
+func BuildMultiColumnsPlaceholderStrWithKey(strs []string, key string) string {
+	if len(strs) == 0 {
 		return ""
 	}
 	var holderStrSlice []string
-	for _, rawparam := range dm.combinedStr {
+	for _, rawparam := range strs {
 		buffer := bytes.NewBufferString("")
 		buffer.WriteByte('(')
-		splittedParam := strings.Split(rawparam, dm.key)
+		splittedParam := strings.Split(rawparam, key)
 		var tmpHolders []string
 		for range splittedParam {
 			tmpHolders = append(tmpHolders, "?")
@@ -65,25 +63,27 @@ func (dm DefaultMultiColumnsCond) BuildMultiColumnsPlaceholderStrWithQuote() str
 
 // BuildMultiColumnsArgs builds interface{} args
 func (dm DefaultMultiColumnsCond) BuildMultiColumnsArgs() []interface{} {
-	if len(dm.combinedStr) == 0 {
+	return BuildMultiColumnsArgsWithKey(dm.combinedStr, dm.Key())
+}
+
+// BuildMultiColumnsArgsWithKey builds interface{} args with split key
+func BuildMultiColumnsArgsWithKey(strs []string, key string) []interface{} {
+	if len(strs) == 0 {
 		return []interface{}{}
 	}
 	var args []interface{}
-	for _, s := range dm.combinedStr {
-		splitterArgs := strings.Split(s, dm.key)
+	for _, s := range strs {
+		splitterArgs := strings.Split(s, key)
 		for _, ss := range splitterArgs {
 			args = append(args, ss)
 		}
 	}
-
 	return args
-
 }
 
 // NewMultiColumnsCond new splitter
-func NewMultiColumnsCond(key string, splittedStr []string) DefaultMultiColumnsCond {
+func NewMultiColumnsCond(splittedStr []string) DefaultMultiColumnsCond {
 	cond := DefaultMultiColumnsCond{}
-	cond.SetMultiColumns(splittedStr)
-	cond.SetSplitKey(key)
+	cond.combinedStr = splittedStr
 	return cond
 }
