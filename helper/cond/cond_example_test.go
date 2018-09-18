@@ -10,6 +10,6 @@ func ExampleBuildPlaceholderStr_str() {}
 
 func ExampleBuildPlaceholderStr_multiColumns() {}
 
-func ExampleBuildPlaceholderStrWithQuote() {}
+func ExampleBuildPlaceholderStrWithBrackets() {}
 
 func ExampleBuildArgs() {}

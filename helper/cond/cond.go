@@ -87,13 +87,9 @@ func NewDefaultMultiColumns(combineStr []string) Cond {
 	}
 }
 
-// SetMaxQuestion reset default MaxQuestion
-func (c Cond) SetMaxQuestion(length uint16) error {
-	if length > maxQuestions {
-		return fmt.Errorf("query has too much questions,pls keep it below %d", maxQuestions)
-	}
-	c.questions = length
-	return nil
+// IsCondOverMaxQuestions is used to check questions len
+func IsCondOverMaxQuestions(count int) bool {
+	return uint16(count) > maxQuestions
 }
 
 // BuildPlaceholderStr builds raw ? holders str
@@ -126,8 +122,8 @@ func (c Cond) BuildPlaceholderStr() (holder string) {
 	return
 }
 
-// BuildPlaceholderStrWithQuote builds the (?,?...) str
-func (c Cond) BuildPlaceholderStrWithQuote() (quoteHolder string) {
+// BuildPlaceholderStrWithBrackets builds the (?,?...) str
+func (c Cond) BuildPlaceholderStrWithBrackets() (BracketsHolder string) {
 	hStr := c.BuildPlaceholderStr()
 	if hStr == "" {
 		return
