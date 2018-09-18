@@ -2,7 +2,6 @@ package cond
 
 import (
 	"bytes"
-	"fmt"
 	"strings"
 )
 
@@ -11,7 +10,6 @@ type MultiColumnsCond interface {
 	Key() string
 	BuildMultiColumnsPlaceholderStr() string
 	BuildMultiColumnsArgs() []interface{}
-	BuildMultiColumnsPlaceholderStrWithQuote() string
 }
 
 // DefaultMultiColumnsCond impl the default MultiColumnsCond
@@ -49,16 +47,6 @@ func BuildMultiColumnsPlaceholderStrWithKey(strs []string, key string) string {
 	}
 	holderStr := strings.Join(holderStrSlice, ",")
 	return holderStr
-}
-
-// BuildMultiColumnsPlaceholderStrWithQuote builds (?,?,?...) placeholders
-func (dm DefaultMultiColumnsCond) BuildMultiColumnsPlaceholderStrWithQuote() string {
-	str := dm.BuildMultiColumnsPlaceholderStr()
-	if str == "" {
-		return ""
-	}
-
-	return fmt.Sprintf("(%s)", str)
 }
 
 // BuildMultiColumnsArgs builds interface{} args
