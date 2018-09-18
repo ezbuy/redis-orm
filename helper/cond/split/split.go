@@ -1,5 +1,5 @@
-// Package in provides `IN` cond help functions
-package in
+// Package split provides `IN` cond help functions
+package split
 
 // Splittor defines in condition splittor
 type Splittor interface {
@@ -8,12 +8,15 @@ type Splittor interface {
 
 // Split splits the slice into the slice of the slice
 func Split(src []interface{}, splittor Splittor) (res [][]interface{}) {
+	if splittor.Size() == 0 {
+		return
+	}
 	tmp := make([]interface{}, 0, splittor.Size())
 	for _, s := range src {
 		tmp = append(tmp, s)
 		if len(tmp) == splittor.Size() {
 			res = append(res, tmp)
-			tmp = tmp[:0]
+			tmp = make([]interface{}, 0, splittor.Size())
 		}
 	}
 	if len(tmp) != 0 {
@@ -28,7 +31,7 @@ type DefaultSplittor struct {
 }
 
 // NewSplittor new the splittor
-func (ds DefaultSplittor) NewSplittor(size int) DefaultSplittor {
+func NewSplittor(size int) DefaultSplittor {
 	return DefaultSplittor{
 		size: size,
 	}
