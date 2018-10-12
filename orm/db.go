@@ -199,3 +199,33 @@ func (tx *DBTx) Exec(sql string, args ...interface{}) (sql.Result, error) {
 func (tx *DBTx) SetError(err error) {
 	tx.err = err
 }
+
+func TransactFunc(db *DBStore, txFunc func(*DBTx) error) (err error) {
+	tx, err := db.BeginTx()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if p := recover(); p != nil {
+			tx.SetError(fmt.Errorf("panic: %v", p))
+			tx.Close()
+			panic(p)
+		} else if err != nil {
+			tx.SetError(err)
+			tx.Close()
+		} else {
+			err = tx.Close()
+		}
+	}()
+
+	err = txFunc(tx)
+	return err
+}
+
+type Transactor interface {
+	Transact(tx *DBTx) error
+}
+
+func Transact(db *DBStore, t Transactor) error {
+	return TransactFunc(db, t.Transact)
+}
