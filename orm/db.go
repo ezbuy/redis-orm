@@ -178,6 +178,7 @@ type DBTx struct {
 	err          error
 	rowsAffected int64
 	wrappers     []database.Wrapper
+	afterCommit  func(err error)
 }
 
 func (store *DBStore) BeginTx() (*DBTx, error) {
@@ -202,7 +203,9 @@ func (tx *DBTx) Close() error {
 	if tx.err != nil {
 		return tx.tx.Rollback()
 	}
-	return tx.tx.Commit()
+	err := tx.tx.Commit()
+	tx.afterCommit(err)
+	return err
 }
 
 func (tx *DBTx) Query(sql string, args ...interface{}) (*sql.Rows, error) {
@@ -279,6 +282,10 @@ func (tx *DBTx) SetError(err error) {
 	tx.err = err
 }
 
+func (tx *DBTx) AfterCommit(afterCommit func(err error)) {
+	tx.afterCommit = afterCommit
+}
+
 func TransactFunc(db *DBStore, txFunc func(*DBTx) error) (err error) {
 	tx, err := db.BeginTx()
 	if err != nil {
@@ -337,4 +344,15 @@ type TransactorWithContext interface {
 
 func TransactContext(ctx context.Context, db *DBStore, t TransactorWithContext) error {
 	return TransactFuncContext(ctx, db, t.TransactContext)
+}
+
+func BeginTx(ctx context.Context, db *sql.DB) (*DBTx, error) {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &DBTx{
+		tx: tx,
+	}, nil
 }
