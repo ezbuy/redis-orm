@@ -1,14 +1,15 @@
 package orm
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
-	"strings"
-
 	_ "github.com/denisenkom/go-mssqldb"
+	"github.com/ezbuy/redis-orm/trace/database/mysql"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -16,6 +17,12 @@ type DB interface {
 	Query(sql string, args ...interface{}) (*sql.Rows, error)
 	Exec(sql string, args ...interface{}) (sql.Result, error)
 	SetError(err error)
+	ContextDB
+}
+
+type ContextDB interface {
+	QueryContext(ctx context.Context, sql string, args ...interface{}) (*sql.Rows, error)
+	ExecContext(ctx context.Context, sql string, args ...interface{}) (sql.Result, error)
 }
 
 type DBStore struct {
@@ -128,6 +135,18 @@ func (store *DBStore) Close() error {
 	return nil
 }
 
+func (store *DBStore) QueryContext(ctx context.Context, sql string,
+	args ...interface{}) (*sql.Rows, error) {
+	t := mysql.NewDefaultTracer(store.DB, false)
+	return t.QueryContext(ctx, sql, args...)
+}
+
+func (store *DBStore) ExecContext(ctx context.Context, sql string,
+	args ...interface{}) (sql.Result, error) {
+	t := mysql.NewDefaultTracer(store.DB, false)
+	return t.ExecContext(ctx, sql, args...)
+}
+
 type DBTx struct {
 	tx           *sql.Tx
 	debug        bool
@@ -194,6 +213,18 @@ func (tx *DBTx) Exec(sql string, args ...interface{}) (sql.Result, error) {
 		tx.err = err
 	}
 	return result, tx.err
+}
+
+func (tx *DBTx) QueryContext(ctx context.Context, sql string,
+	args ...interface{}) (*sql.Rows, error) {
+	t := mysql.NewDefaultTracer(tx.tx, false)
+	return t.QueryContext(ctx, sql, args...)
+}
+
+func (tx *DBTx) ExecContext(ctx context.Context, sql string,
+	args ...interface{}) (sql.Result, error) {
+	t := mysql.NewDefaultTracer(tx.tx, false)
+	return t.ExecContext(ctx, sql, args...)
 }
 
 func (tx *DBTx) SetError(err error) {
