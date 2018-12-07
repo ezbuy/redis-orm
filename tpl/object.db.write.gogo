@@ -3,6 +3,7 @@
 {{$primary := $obj.PrimaryKey}}
 {{$primaryField := $primary.FirstField }}
 
+
 func (m *_{{$obj.Name}}DBMgr) BatchCreate(objs []*{{$obj.Name}}) (int64, error) {
 	if len(objs) == 0 {
 		return 0, nil
@@ -36,6 +37,39 @@ func (m *_{{$obj.Name}}DBMgr) BatchCreate(objs []*{{$obj.Name}}) (int64, error) 
 	return result.RowsAffected()
 }
 
+func (m *_{{$obj.Name}}DBMgr) BatchCreateContext(ctx context.Context,objs []*{{$obj.Name}}) (int64, error) {
+	if len(objs) == 0 {
+		return 0, nil
+	}
+
+	params := make([]string, 0, len(objs))
+	values := make([]interface{}, 0, len(objs)*{{len $obj.NoneIncrementFields}})
+	for _, obj := range objs {
+		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice({{len $obj.NoneIncrementFields}}, "?"), ",")))
+		{{- range $i, $field := $obj.Fields -}}
+			{{- if not $field.IsAutoIncrement}}
+				{{- if and $field.IsNullable $field.IsNeedTransform}}
+					if obj.{{$field.Name}} == nil {
+						values = append(values, nil)
+					} else {
+						values = append(values, {{$field.GetTransformValue "obj."}})
+					}
+				{{- else if $field.IsEncode}}
+					values = append(values, orm.Encode({{$field.GetTransformValue "obj."}}))
+				{{- else }}
+					values = append(values, {{$field.GetTransformValue "obj."}})
+				{{- end}}
+			{{- end}}
+		{{- end}}
+	}
+	query := fmt.Sprintf("INSERT INTO {{$obj.FromDB}}(%s) VALUES %s", strings.Join(objs[0].GetNoneIncrementColumns(), ","), strings.Join(params, ","))
+	result, err := m.db.ExecContext(ctx,query, values...)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 // argument example:
 // set:"a=?, b=?"
 // where:"c=? and d=?"
@@ -46,6 +80,22 @@ func (m *_{{$obj.Name}}DBMgr) UpdateBySQL(set, where string, args ...interface{}
 		query = fmt.Sprintf("UPDATE {{$obj.FromDB}} SET %s WHERE %s", set, where)
 	}
 	result, err := m.db.Exec(query, args...)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+// argument example:
+// set:"a=?, b=?"
+// where:"c=? and d=?"
+// params:[]interface{}{"a", "b", "c", "d"}...
+func (m *_{{$obj.Name}}DBMgr) UpdateBySQLContext(ctx context.Context,set, where string, args ...interface{}) (int64, error) {
+	query := fmt.Sprintf("UPDATE {{$obj.FromDB}} SET %s", set)
+	if where != "" {
+		query = fmt.Sprintf("UPDATE {{$obj.FromDB}} SET %s WHERE %s", set, where)
+	}
+	result, err := m.db.ExecContext(ctx,query, args...)
 	if err != nil {
 		return 0, err
 	}
@@ -75,6 +125,42 @@ func (m *_{{$obj.Name}}DBMgr) Create(obj *{{$obj.Name}}) (int64, error) {
 		{{- end}}
 	{{- end}}
 	result, err := m.db.Exec(q, values...)
+	if err != nil {
+		return 0, err
+	}
+	{{- if $primary.IsAutocrement}}
+		lastInsertId, err := result.LastInsertId()
+		if err != nil {
+			return 0, err
+		}
+		obj.{{$primaryField.Name}} = {{$primaryField.GetType}}(lastInsertId)
+	{{- end}}
+	return result.RowsAffected()
+}
+
+func (m *_{{$obj.Name}}DBMgr) CreateContext(ctx context.Context,obj *{{$obj.Name}}) (int64, error) {
+	params := orm.NewStringSlice({{len $obj.NoneIncrementFields}}, "?")
+	q := fmt.Sprintf("INSERT INTO {{$obj.FromDB}}(%s) VALUES(%s)",
+		strings.Join(obj.GetNoneIncrementColumns(), ","),
+		strings.Join(params, ","))
+
+	values := make([]interface{}, 0, {{len $obj.Fields}})
+	{{- range $i, $field := $obj.Fields -}}
+		{{- if not $field.IsAutoIncrement}}
+			{{- if and $field.IsNullable $field.IsNeedTransform}}
+				if obj.{{$field.Name}} == nil {
+					values = append(values, nil)
+				} else {
+					values = append(values, {{$field.GetTransformValue "obj."}})
+				}
+			{{- else if $field.IsEncode}}
+					values = append(values, orm.Encode({{$field.GetTransformValue "obj."}}))
+			{{- else }}
+				values = append(values, {{$field.GetTransformValue "obj."}})
+			{{- end}}
+		{{- end}}
+	{{- end}}
+	result, err := m.db.ExecContext(ctx,q, values...)
 	if err != nil {
 		return 0, err
 	}
@@ -124,6 +210,42 @@ func (m *_{{$obj.Name}}DBMgr) Update(obj *{{$obj.Name}}) (int64, error) {
 	return result.RowsAffected()
 }
 
+func (m *_{{$obj.Name}}DBMgr) UpdateContext(ctx context.Context,obj *{{$obj.Name}}) (int64, error) {
+	columns := []string{
+	{{- range $i, $field := $obj.Fields}}
+		{{- if not $field.IsPrimary}}
+		"{{$field.FieldName}} = ?",
+		{{- end}}
+	{{- end}}
+	}
+
+	pk := obj.GetPrimaryKey()
+	q := fmt.Sprintf("UPDATE {{$obj.FromDB}} SET %s %s", strings.Join(columns, ","), pk.SQLFormat())
+	values := make([]interface{}, 0, {{len $obj.Fields}} - {{len $primary.Fields}})
+	{{- range $i, $field := $obj.Fields -}}
+			{{- if not $field.IsPrimary}}
+				{{- if and $field.IsNullable $field.IsNeedTransform}}
+					if obj.{{$field.Name}} == nil {
+						values = append(values, nil)
+					} else {
+						values = append(values, {{$field.GetTransformValue "obj."}})
+					}
+				{{- else if $field.IsEncode}}
+					values = append(values, orm.Encode({{$field.GetTransformValue "obj."}}))
+				{{- else}}
+					values = append(values, {{$field.GetTransformValue "obj."}})
+				{{- end}}
+			{{- end}}
+		{{- end}}
+	values = append(values, pk.SQLParams()...)
+
+	result, err := m.db.ExecContext(ctx,q, values...)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 func (m *_{{$obj.Name}}DBMgr) Save(obj *{{$obj.Name}}) (int64, error) {
 	affected, err := m.Update(obj)
 	if err != nil {
@@ -135,8 +257,23 @@ func (m *_{{$obj.Name}}DBMgr) Save(obj *{{$obj.Name}}) (int64, error) {
 	return affected, err
 }
 
+func (m *_{{$obj.Name}}DBMgr) SaveContext(ctx context.Context,obj *{{$obj.Name}}) (int64, error) {
+	affected, err := m.UpdateContext(ctx,obj)
+	if err != nil {
+		return affected, err
+	}
+	if affected == 0 {
+		return m.CreateContext(ctx,obj)
+	}
+	return affected, err
+}
+
 func (m *_{{$obj.Name}}DBMgr) Delete(obj *{{$obj.Name}}) (int64, error) {
 	return m.DeleteByPrimaryKey({{$primary.GetObjectParam}})
+}
+
+func (m *_{{$obj.Name}}DBMgr) DeleteContext(ctx context.Context,obj *{{$obj.Name}}) (int64, error) {
+	return m.DeleteByPrimaryKeyContext(ctx,{{$primary.GetObjectParam}})
 }
 
 func (m *_{{$obj.Name}}DBMgr) DeleteByPrimaryKey({{$primary.GetFuncParam}}) (int64, error) {
@@ -145,6 +282,18 @@ func (m *_{{$obj.Name}}DBMgr) DeleteByPrimaryKey({{$primary.GetFuncParam}}) (int
 	}
 	q := fmt.Sprintf("DELETE FROM {{$obj.FromDB}} %s", pk.SQLFormat())
 	result, err := m.db.Exec(q , pk.SQLParams()...)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+func (m *_{{$obj.Name}}DBMgr) DeleteByPrimaryKeyContext(ctx context.Context,{{$primary.GetFuncParam}}) (int64, error) {
+	pk:= &{{$primary.Name}}{
+	{{$primary.GetConstructor}}
+	}
+	q := fmt.Sprintf("DELETE FROM {{$obj.FromDB}} %s", pk.SQLFormat())
+	result, err := m.db.ExecContext(ctx,q , pk.SQLParams()...)
 	if err != nil {
 		return 0, err
 	}
@@ -163,4 +312,15 @@ func (m *_{{$obj.Name}}DBMgr) DeleteBySQL(where string, args ...interface{}) (in
 	return result.RowsAffected()
 }
 
+func (m *_{{$obj.Name}}DBMgr) DeleteBySQLContext(ctx context.Context,where string, args ...interface{}) (int64, error) {
+	query := fmt.Sprintf("DELETE FROM {{$obj.FromDB}}")
+	if where != "" {
+		query = fmt.Sprintf("DELETE FROM {{$obj.FromDB}} WHERE %s", where)
+	}
+	result, err := m.db.ExecContext(ctx,query, args...)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
 {{end}}

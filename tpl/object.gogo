@@ -13,6 +13,7 @@ import (
 	{{- if $obj.DbContains "redis"}}
 	"errors"
 	{{- end}}
+	"context"
 
 	"github.com/ezbuy/redis-orm/orm"
 	"gopkg.in/go-playground/validator.v9"

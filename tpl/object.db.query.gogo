@@ -1,6 +1,5 @@
 {{define "object.db.query"}}
 {{$obj := .}}
-
 type _{{$obj.Name}}DBMgr struct {
 	db orm.DB
 }
@@ -18,6 +17,75 @@ func {{$obj.Name}}DBMgr(db orm.DB) *_{{$obj.Name}}DBMgr {
 
 func (m *_{{$obj.Name}}DBMgr) QueryBySQL(q string, args ... interface{}) (results []*{{$obj.Name}}, err error) {
 	rows, err := m.db.Query(q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("{{$obj.Name}} fetch error: %v", err)
+	}
+	defer rows.Close()
+
+	{{range $index, $field := $obj.Fields}}
+		{{- if $field.IsNullable }}
+			var {{$field.Name}} sql.{{$field.GetNullSQLType}}
+		{{- else if $field.IsNeedTransform }}
+			var {{$field.Name}} {{$field.GetTransform.TypeOrigin}}
+		{{- end -}}
+	{{- end }}
+
+	for rows.Next() {
+		var result {{$obj.Name}}
+		err = rows.Scan(
+		{{- range $index, $field := $obj.Fields -}}
+		{{- if or $field.IsNullable $field.IsNeedTransform -}}
+			&{{$field.Name}},
+		{{- else -}}
+			&(result.{{$field.Name}}),
+		{{- end }}
+		{{- end -}}
+		)
+		if err != nil {
+			m.db.SetError(err)
+			return nil, err
+		}
+
+		{{range $index, $field := $obj.Fields}}
+			{{- if $field.IsNeedTransform }}
+				{{- if $field.IsNullable -}}
+					if {{$field.Name}}.Valid {
+						{{- with $v := (printf "%sValue" $field.Name)}}
+						{{$field.Name}}Value := {{$field.Name}}.{{$field.NullSQLTypeValue}}
+						{{$field.Name}}Point := {{- printf $field.GetTransform.ConvertTo $v}}
+						result.{{$field.Name}} = &{{$field.Name}}Point
+						{{- end}}
+					} else {
+						result.{{$field.Name}} = nil
+					}
+				{{- else -}}
+				result.{{$field.Name}} = {{- printf $field.GetTransform.ConvertTo $field.Name}}
+				{{- end -}}
+			{{- else }}
+				{{- if $field.IsNullable -}}
+					result.{{$field.Name}} =
+					{{- if $field.NullSQLTypeNeedCast -}}
+					{{$field.GetType}}({{$field.Name}}.{{$field.NullSQLTypeValue}})
+					{{- else -}}
+					{{$field.Name}}.{{$field.NullSQLTypeValue}}
+					{{- end -}}
+				{{- end -}}
+			{{- end}}
+			{{- if $field.IsEncode}}
+			result.{{$field.Name}} = orm.Decode(result.{{$field.Name}})
+			{{- end}}
+		{{end}}
+		results = append(results, &result)
+	}
+	if err = rows.Err() ;err != nil {
+		m.db.SetError(err)
+		return nil, fmt.Errorf("{{$obj.Name}} fetch result error: %v", err)
+	}
+	return
+}
+
+func (m *_{{$obj.Name}}DBMgr) QueryBySQLContext(ctx context.Context,q string, args ... interface{}) (results []*{{$obj.Name}}, err error) {
+	rows, err := m.db.QueryContext(ctx,q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("{{$obj.Name}} fetch error: %v", err)
 	}

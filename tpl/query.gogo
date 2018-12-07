@@ -6,6 +6,7 @@ import (
 	"time"
 	"strings"
 	"database/sql"
+	"context"
 	"github.com/ezbuy/redis-orm/orm"
 )
 
