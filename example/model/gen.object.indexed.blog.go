@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -281,6 +282,10 @@ func (u *IdOfIndexedBlogRNG) IncludeEnd(f bool) {
 func (u *IdOfIndexedBlogRNG) RNGRelation(store *orm.RedisStore) RangeRelation {
 	return nil
 }
+
+var (
+	_ context.Context
+)
 
 //! orm.elastic
 var IndexedBlogElasticFields = struct {
