@@ -231,7 +231,7 @@ func (tx *DBTx) SetError(err error) {
 	tx.err = err
 }
 
-func TransactFunc(db *DBStore, txFunc func(*DBTx) error) (err error) {
+func TransactFunc(ctx context.Context, db *DBStore, txFunc func(context.Context, *DBTx) error) (err error) {
 	tx, err := db.BeginTx()
 	if err != nil {
 		return err
@@ -249,14 +249,14 @@ func TransactFunc(db *DBStore, txFunc func(*DBTx) error) (err error) {
 		}
 	}()
 
-	err = txFunc(tx)
+	err = txFunc(ctx, tx)
 	return err
 }
 
 type Transactor interface {
-	Transact(tx *DBTx) error
+	Transact(ctx context.Context, tx *DBTx) error
 }
 
-func Transact(db *DBStore, t Transactor) error {
-	return TransactFunc(db, t.Transact)
+func Transact(ctx context.Context, db *DBStore, t Transactor) error {
+	return TransactFunc(ctx, db, t.Transact)
 }
