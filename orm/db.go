@@ -27,8 +27,10 @@ type ContextDB interface {
 
 type DBStore struct {
 	*sql.DB
-	debug   bool
-	slowlog time.Duration
+	debug    bool
+	slowlog  time.Duration
+	instance string
+	user     string
 }
 
 func NewDBStore(driver, host string, port int, database, username, password string) (*DBStore, error) {
@@ -47,15 +49,15 @@ func NewDBStore(driver, host string, port int, database, username, password stri
 	default:
 		return nil, fmt.Errorf("unsupport db driver: %s", driver)
 	}
-	return NewDBDSNStore(driver, dsn)
+	return NewDBDSNStore(driver, dsn, database, username)
 }
 
-func NewDBDSNStore(driver, dsn string) (*DBStore, error) {
+func NewDBDSNStore(driver, dsn, database, username string) (*DBStore, error) {
 	db, err := sql.Open(driver, dsn)
 	if err != nil {
 		return nil, err
 	}
-	return &DBStore{db, false, time.Duration(0)}, nil
+	return &DBStore{db, false, time.Duration(0), database, username}, nil
 }
 
 func NewDBStoreCharset(driver, host string, port int, database, username, password, charset string) (*DBStore, error) {
@@ -82,7 +84,7 @@ func NewDBStoreCharset(driver, host string, port int, database, username, passwo
 	if err != nil {
 		return nil, err
 	}
-	return &DBStore{db, false, time.Duration(0)}, nil
+	return &DBStore{db, false, time.Duration(0), database, username}, nil
 }
 
 func (store *DBStore) Debug(b bool) {
@@ -137,13 +139,13 @@ func (store *DBStore) Close() error {
 
 func (store *DBStore) QueryContext(ctx context.Context, sql string,
 	args ...interface{}) (*sql.Rows, error) {
-	t := mysql.NewDefaultTracer(store.DB, false)
+	t := mysql.NewDefaultTracer(store.DB, false, store.instance, store.user)
 	return t.QueryContext(ctx, sql, args...)
 }
 
 func (store *DBStore) ExecContext(ctx context.Context, sql string,
 	args ...interface{}) (sql.Result, error) {
-	t := mysql.NewDefaultTracer(store.DB, false)
+	t := mysql.NewDefaultTracer(store.DB, false, store.instance, store.user)
 	return t.ExecContext(ctx, sql, args...)
 }
 
@@ -153,6 +155,8 @@ type DBTx struct {
 	slowlog      time.Duration
 	err          error
 	rowsAffected int64
+	instance     string
+	user         string
 }
 
 func (store *DBStore) BeginTx() (*DBTx, error) {
@@ -162,9 +166,11 @@ func (store *DBStore) BeginTx() (*DBTx, error) {
 	}
 
 	return &DBTx{
-		tx:      tx,
-		debug:   store.debug,
-		slowlog: store.slowlog,
+		tx:       tx,
+		debug:    store.debug,
+		slowlog:  store.slowlog,
+		instance: store.instance,
+		user:     store.user,
 	}, nil
 }
 
@@ -217,13 +223,13 @@ func (tx *DBTx) Exec(sql string, args ...interface{}) (sql.Result, error) {
 
 func (tx *DBTx) QueryContext(ctx context.Context, sql string,
 	args ...interface{}) (*sql.Rows, error) {
-	t := mysql.NewDefaultTracer(tx.tx, false)
+	t := mysql.NewDefaultTracer(tx.tx, false, tx.instance, tx.user)
 	return t.QueryContext(ctx, sql, args...)
 }
 
 func (tx *DBTx) ExecContext(ctx context.Context, sql string,
 	args ...interface{}) (sql.Result, error) {
-	t := mysql.NewDefaultTracer(tx.tx, false)
+	t := mysql.NewDefaultTracer(tx.tx, false, tx.instance, tx.user)
 	return t.ExecContext(ctx, sql, args...)
 }
 

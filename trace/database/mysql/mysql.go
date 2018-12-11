@@ -6,13 +6,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ezbuy/redis-orm/trace/wrapper"
+	wpsql "github.com/ezbuy/redis-orm/trace/wrapper/sql"
 	"github.com/golang-sql/sqlexp"
-	"github.com/opentracing/opentracing-go"
-	tags "github.com/opentracing/opentracing-go/ext"
-)
-
-const (
-	dbTracerServiceMySQL = "MySQL"
 )
 
 // Operation defines database common operations
@@ -25,28 +21,26 @@ func NewCustmizedTracer(op Operation) Operation {
 	return op
 }
 
-func NewDefaultTracer(db sqlexp.Querier, enableRawQuery bool) Operation {
+func NewDefaultTracer(db sqlexp.Querier, enableRawQuery bool, instance string, user string) Operation {
 	return &DefaultTracer{
-		tracer:           opentracing.GlobalTracer(),
 		db:               db,
 		isRawQueryEnable: enableRawQuery,
+		wrappers: []wrapper.Wrapper{
+			wpsql.NewMySQLTracer(instance, user),
+		},
 	}
 }
 
 type DefaultTracer struct {
-	tracer           opentracing.Tracer
 	db               sqlexp.Querier
 	isRawQueryEnable bool
+	wrappers         []wrapper.Wrapper
 }
 
 func (t *DefaultTracer) QueryContext(ctx context.Context, sql string, args ...interface{}) (*sql.Rows, error) {
-	if span := opentracing.SpanFromContext(ctx); span != nil {
-		span := t.tracer.StartSpan(dbTracerServiceMySQL, opentracing.ChildOf(span.Context()))
-		tags.SpanKindRPCClient.Set(span)
-		tags.PeerService.Set(span, dbTracerServiceMySQL)
-		span.SetTag("sql.query", t.hackQueryBuilder(sql, args...))
-		ctx = opentracing.ContextWithSpan(ctx, span)
-		defer span.Finish()
+	for _, w := range t.wrappers {
+		w.Do(ctx, sql)
+		defer w.Close()
 	}
 	rows, err := t.db.QueryContext(ctx, sql, args...)
 	if err != nil {
@@ -56,13 +50,9 @@ func (t *DefaultTracer) QueryContext(ctx context.Context, sql string, args ...in
 }
 
 func (t *DefaultTracer) ExecContext(ctx context.Context, sql string, args ...interface{}) (sql.Result, error) {
-	if span := opentracing.SpanFromContext(ctx); span != nil {
-		span := t.tracer.StartSpan(dbTracerServiceMySQL, opentracing.ChildOf(span.Context()))
-		tags.SpanKindRPCClient.Set(span)
-		tags.PeerService.Set(span, dbTracerServiceMySQL)
-		span.SetTag("sql.query", t.hackQueryBuilder(sql, args...))
-		ctx = opentracing.ContextWithSpan(ctx, span)
-		defer span.Finish()
+	for _, w := range t.wrappers {
+		w.Do(ctx, sql)
+		defer w.Close()
 	}
 	res, err := t.db.ExecContext(ctx, sql, args...)
 	if err != nil {
