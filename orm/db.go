@@ -204,7 +204,9 @@ func (tx *DBTx) Close() error {
 		return tx.tx.Rollback()
 	}
 	err := tx.tx.Commit()
-	tx.afterCommit(err)
+	if tx.afterCommit != nil {
+		tx.afterCommit(err)
+	}
 	return err
 }
 
