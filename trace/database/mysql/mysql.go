@@ -2,63 +2,84 @@ package mysql
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 
-	"github.com/ezbuy/redis-orm/trace/wrapper"
-	wpsql "github.com/ezbuy/redis-orm/trace/wrapper/sql"
+	"github.com/ezbuy/redis-orm/orm/wrapper"
 	"github.com/golang-sql/sqlexp"
+	"github.com/opentracing/opentracing-go"
+	tags "github.com/opentracing/opentracing-go/ext"
 )
 
-// Operation defines database common operations
-type Operation interface {
-	QueryContext(ctx context.Context, sql string, args ...interface{}) (*sql.Rows, error)
-	ExecContext(ctx context.Context, sql string, args ...interface{}) (sql.Result, error)
+type Tracer struct {
+	instance  string
+	statement string
+	dbtype    string
+	user      string
+	span      opentracing.Span
 }
 
-func NewCustmizedTracer(op Operation) Operation {
-	return op
+func NewMySQLTracer(ins string, user string) *Tracer {
+	return &Tracer{
+		dbtype:   "mysql",
+		instance: ins,
+		user:     user,
+	}
 }
 
-func NewDefaultTracer(db sqlexp.Querier, enableRawQuery bool, instance string, user string) Operation {
+func (t *Tracer) Do(ctx context.Context, statement string) {
+	tracer := opentracing.GlobalTracer()
+	span := opentracing.SpanFromContext(ctx)
+	if span == nil {
+		return
+	}
+	span = tracer.StartSpan("SQL wrapper.Wrapper", opentracing.ChildOf(span.Context()))
+	tags.DBInstance.Set(span, t.instance)
+	tags.DBStatement.Set(span, statement)
+	tags.DBType.Set(span, "mysql")
+	tags.DBUser.Set(span, t.user)
+	ctx = opentracing.ContextWithSpan(ctx, span)
+	t.span = span
+}
+
+func (t *Tracer) Close() {
+	t.span.Finish()
+}
+
+func NewCustmizedTracer(tracer wrapper.Wrapper) wrapper.Wrapper {
+	return tracer
+}
+
+func NewDefaultTracerWrapper(db sqlexp.Querier, enableRawQuery bool, instance string, user string) wrapper.Wrapper {
 	return &DefaultTracer{
 		db:               db,
 		isRawQueryEnable: enableRawQuery,
-		wrappers: []wrapper.Wrapper{
-			wpsql.NewMySQLTracer(instance, user),
-		},
+		tracer:           NewMySQLTracer(instance, user),
 	}
 }
 
 type DefaultTracer struct {
 	db               sqlexp.Querier
 	isRawQueryEnable bool
-	wrappers         []wrapper.Wrapper
+	tracer           *Tracer
 }
 
-func (t *DefaultTracer) QueryContext(ctx context.Context, sql string, args ...interface{}) (*sql.Rows, error) {
-	for _, w := range t.wrappers {
-		w.Do(ctx, sql)
-		defer w.Close()
-	}
-	rows, err := t.db.QueryContext(ctx, sql, args...)
-	if err != nil {
-		return nil, err
-	}
-	return rows, nil
+func (t *DefaultTracer) WrapQueryContext(ctx context.Context, fn wrapper.QueryContextFunc,
+	query string, args ...interface{}) wrapper.QueryContextFunc {
+	t.tracer.Do(ctx, query)
+	defer t.tracer.Close()
+	return fn
 }
 
-func (t *DefaultTracer) ExecContext(ctx context.Context, sql string, args ...interface{}) (sql.Result, error) {
-	for _, w := range t.wrappers {
-		w.Do(ctx, sql)
-		defer w.Close()
-	}
-	res, err := t.db.ExecContext(ctx, sql, args...)
-	if err != nil {
-		return nil, err
-	}
-	return res, nil
+func (t *DefaultTracer) WrapQueryExecContext(ctx context.Context, fn wrapper.ExecContextFunc,
+	query string, args ...interface{}) wrapper.ExecContextFunc {
+	t.tracer.Do(ctx, query)
+	defer t.tracer.Close()
+	return fn
+}
+
+func (t *DefaultTracer) Close() {
+	t.tracer.Close()
 }
 
 func (t *DefaultTracer) hackQueryBuilder(query string, args ...interface{}) string {

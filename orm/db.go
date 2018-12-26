@@ -9,6 +9,7 @@ import (
 	"time"
 
 	_ "github.com/denisenkom/go-mssqldb"
+	"github.com/ezbuy/redis-orm/orm/wrapper"
 	"github.com/ezbuy/redis-orm/trace/database/mysql"
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -31,6 +32,7 @@ type DBStore struct {
 	slowlog  time.Duration
 	instance string
 	user     string
+	wps      []wrapper.Wrapper
 }
 
 func NewDBStore(driver, host string, port int, database, username, password string) (*DBStore, error) {
@@ -57,7 +59,10 @@ func NewDBDSNStore(driver, dsn, database, username string) (*DBStore, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &DBStore{db, false, time.Duration(0), database, username}, nil
+	wps := []wrapper.Wrapper{
+		mysql.NewDefaultTracerWrapper(db, false, database, username),
+	}
+	return &DBStore{db, false, time.Duration(0), database, username, wps}, nil
 }
 
 func NewDBStoreCharset(driver, host string, port int, database, username, password, charset string) (*DBStore, error) {
@@ -84,7 +89,10 @@ func NewDBStoreCharset(driver, host string, port int, database, username, passwo
 	if err != nil {
 		return nil, err
 	}
-	return &DBStore{db, false, time.Duration(0), database, username}, nil
+	wps := []wrapper.Wrapper{
+		mysql.NewDefaultTracerWrapper(db, false, database, username),
+	}
+	return &DBStore{db, false, time.Duration(0), database, username, wps}, nil
 }
 
 func (store *DBStore) Debug(b bool) {
@@ -137,16 +145,32 @@ func (store *DBStore) Close() error {
 	return nil
 }
 
-func (store *DBStore) QueryContext(ctx context.Context, sql string,
-	args ...interface{}) (*sql.Rows, error) {
-	t := mysql.NewDefaultTracer(store.DB, false, store.instance, store.user)
-	return t.QueryContext(ctx, sql, args...)
+func (store *DBStore) AddWrapper(wp wrapper.Wrapper) {
+	store.wps = append(store.wps, wp)
 }
 
-func (store *DBStore) ExecContext(ctx context.Context, sql string,
+func (store *DBStore) QueryContext(ctx context.Context, query string,
+	args ...interface{}) (*sql.Rows, error) {
+	fn := func(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+		return store.DB.QueryContext(ctx, query, args...)
+	}
+	for _, wp := range store.wps {
+		fn = wp.WrapQueryContext(ctx, fn, query, args...)
+		defer wp.Close()
+	}
+	return fn(ctx, query, args...)
+}
+
+func (store *DBStore) ExecContext(ctx context.Context, query string,
 	args ...interface{}) (sql.Result, error) {
-	t := mysql.NewDefaultTracer(store.DB, false, store.instance, store.user)
-	return t.ExecContext(ctx, sql, args...)
+	fn := func(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+		return store.DB.ExecContext(ctx, query, args...)
+	}
+	for _, wp := range store.wps {
+		fn = wp.WrapQueryExecContext(ctx, fn, query, args...)
+		defer wp.Close()
+	}
+	return fn(ctx, query, args...)
 }
 
 type DBTx struct {
@@ -157,6 +181,7 @@ type DBTx struct {
 	rowsAffected int64
 	instance     string
 	user         string
+	wps          []wrapper.Wrapper
 }
 
 func (store *DBStore) BeginTx() (*DBTx, error) {
@@ -171,6 +196,7 @@ func (store *DBStore) BeginTx() (*DBTx, error) {
 		slowlog:  store.slowlog,
 		instance: store.instance,
 		user:     store.user,
+		wps:      store.wps,
 	}, nil
 }
 
@@ -221,16 +247,28 @@ func (tx *DBTx) Exec(sql string, args ...interface{}) (sql.Result, error) {
 	return result, tx.err
 }
 
-func (tx *DBTx) QueryContext(ctx context.Context, sql string,
+func (tx *DBTx) QueryContext(ctx context.Context, query string,
 	args ...interface{}) (*sql.Rows, error) {
-	t := mysql.NewDefaultTracer(tx.tx, false, tx.instance, tx.user)
-	return t.QueryContext(ctx, sql, args...)
+	fn := func(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+		return tx.tx.QueryContext(ctx, query, args...)
+	}
+	for _, wp := range tx.wps {
+		fn = wp.WrapQueryContext(ctx, fn, query, args...)
+		defer wp.Close()
+	}
+	return fn(ctx, query, args...)
 }
 
-func (tx *DBTx) ExecContext(ctx context.Context, sql string,
+func (tx *DBTx) ExecContext(ctx context.Context, query string,
 	args ...interface{}) (sql.Result, error) {
-	t := mysql.NewDefaultTracer(tx.tx, false, tx.instance, tx.user)
-	return t.ExecContext(ctx, sql, args...)
+	fn := func(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+		return tx.tx.ExecContext(ctx, query, args...)
+	}
+	for _, wp := range tx.wps {
+		fn = wp.WrapQueryExecContext(ctx, fn, query, args...)
+		defer wp.Close()
+	}
+	return fn(ctx, query, args...)
 }
 
 func (tx *DBTx) SetError(err error) {
