@@ -2,7 +2,6 @@
 {{$obj := .}}
 type _{{$obj.Name}}DBMgr struct {
 	db orm.DB
-	contextDB orm.ContextDB
 }
 
 func (m *_{{$obj.Name}}Mgr) DB(db orm.DB) *_{{$obj.Name}}DBMgr {

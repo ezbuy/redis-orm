@@ -70,7 +70,6 @@ func MySQL() *orm.DBStore {
 	var err error
 	_mysql_once.Do(func() {
 		if _mysql_dsn != "" {
-			// TODO: support parse dsn
 			_mysql_store, err = orm.NewDBDSNStore("mysql", _mysql_dsn)
 			if err != nil {
 				panic(err)

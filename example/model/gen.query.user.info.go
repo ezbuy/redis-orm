@@ -35,8 +35,7 @@ func (m *_UserInfoMgr) NewUserInfo() *UserInfo {
 }
 
 type _UserInfoDBMgr struct {
-	db        orm.DB
-	contextDB orm.ContextDB
+	db orm.DB
 }
 
 func (m *_UserInfoMgr) DB(db orm.DB) *_UserInfoDBMgr {
