@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"regexp"
 	"strings"
@@ -34,29 +35,31 @@ func (t *Tracer) Do(ctx context.Context, statement string) {
 	if span == nil {
 		return
 	}
-	span = tracer.StartSpan("SQL Operation", opentracing.ChildOf(span.Context()))
+	span = tracer.StartSpan(t.dbtype, opentracing.ChildOf(span.Context()))
 	tags.DBInstance.Set(span, t.instance)
 	tags.DBStatement.Set(span, statement)
-	tags.DBType.Set(span, "mysql")
+	tags.DBType.Set(span, t.dbtype)
 	tags.DBUser.Set(span, t.user)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 	t.span = span
 }
 
 func (t *Tracer) Close() {
-	t.span.Finish()
+	if t.span != nil {
+		t.span.Finish()
+	}
 }
 
 func NewCustmizedTracer(tracer wrapper.Wrapper) wrapper.Wrapper {
 	return tracer
 }
 
-func NewDefaultTracerWrapper(db sqlexp.Querier, enableRawQuery bool, instance string, user string) wrapper.Wrapper {
+func NewDefaultTracerWrapper(db sqlexp.Querier, enableRawQuery bool) wrapper.Wrapper {
 	return &DefaultTracer{
 		db:                    db,
 		isRawQueryEnable:      enableRawQuery,
 		isIgnoreSeleteColumns: true,
-		tracer:                NewMySQLTracer(instance, user),
+		tracer:                NewMySQLTracer("", ""),
 	}
 }
 
@@ -69,18 +72,22 @@ type DefaultTracer struct {
 
 func (t *DefaultTracer) WrapQueryContext(ctx context.Context, fn wrapper.QueryContextFunc,
 	query string, args ...interface{}) wrapper.QueryContextFunc {
-	t.tracer.Do(ctx, t.hackQueryBuilder(query, args...))
-	return fn
+	tracerFn := func(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+		t.tracer.Do(ctx, t.hackQueryBuilder(query, args...))
+		defer t.tracer.Close()
+		return fn(ctx, query, args...)
+	}
+	return tracerFn
 }
 
-func (t *DefaultTracer) WrapQueryExecContext(ctx context.Context, fn wrapper.ExecContextFunc,
+func (t *DefaultTracer) WrapExecContext(ctx context.Context, fn wrapper.ExecContextFunc,
 	query string, args ...interface{}) wrapper.ExecContextFunc {
-	t.tracer.Do(ctx, t.hackQueryBuilder(query, args...))
-	return fn
-}
-
-func (t *DefaultTracer) Close() {
-	t.tracer.Close()
+	tracerFn := func(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+		t.tracer.Do(ctx, t.hackQueryBuilder(query, args...))
+		defer t.tracer.Close()
+		return fn(ctx, query, args...)
+	}
+	return tracerFn
 }
 
 func (t *DefaultTracer) hackQueryBuilder(query string, args ...interface{}) string {
