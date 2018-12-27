@@ -12,6 +12,5 @@ type ExecContextFunc func(ctx context.Context, query string, args ...interface{}
 // Wrapper defines database common operations
 type Wrapper interface {
 	WrapQueryContext(ctx context.Context, fn QueryContextFunc, sql string, args ...interface{}) QueryContextFunc
-	WrapQueryExecContext(ctx context.Context, fn ExecContextFunc, sql string, args ...interface{}) ExecContextFunc
-	Close()
+	WrapExecContext(ctx context.Context, fn ExecContextFunc, sql string, args ...interface{}) ExecContextFunc
 }

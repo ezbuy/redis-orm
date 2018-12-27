@@ -18,21 +18,19 @@ type DB interface {
 	Query(sql string, args ...interface{}) (*sql.Rows, error)
 	Exec(sql string, args ...interface{}) (sql.Result, error)
 	SetError(err error)
-	ContextDB
 }
 
 type ContextDB interface {
 	QueryContext(ctx context.Context, sql string, args ...interface{}) (*sql.Rows, error)
 	ExecContext(ctx context.Context, sql string, args ...interface{}) (sql.Result, error)
+	DB
 }
 
 type DBStore struct {
 	*sql.DB
 	debug    bool
 	slowlog  time.Duration
-	instance string
-	user     string
-	wps      []wrapper.Wrapper
+	wrappers []wrapper.Wrapper
 }
 
 func NewDBStore(driver, host string, port int, database, username, password string) (*DBStore, error) {
@@ -51,18 +49,18 @@ func NewDBStore(driver, host string, port int, database, username, password stri
 	default:
 		return nil, fmt.Errorf("unsupport db driver: %s", driver)
 	}
-	return NewDBDSNStore(driver, dsn, database, username)
+	return NewDBDSNStore(driver, dsn)
 }
 
-func NewDBDSNStore(driver, dsn, database, username string) (*DBStore, error) {
+func NewDBDSNStore(driver, dsn string) (*DBStore, error) {
 	db, err := sql.Open(driver, dsn)
 	if err != nil {
 		return nil, err
 	}
 	wps := []wrapper.Wrapper{
-		mysql.NewDefaultTracerWrapper(db, false, database, username),
+		mysql.NewDefaultTracerWrapper(db, false),
 	}
-	return &DBStore{db, false, time.Duration(0), database, username, wps}, nil
+	return &DBStore{db, false, time.Duration(0), wps}, nil
 }
 
 func NewDBStoreCharset(driver, host string, port int, database, username, password, charset string) (*DBStore, error) {
@@ -90,9 +88,9 @@ func NewDBStoreCharset(driver, host string, port int, database, username, passwo
 		return nil, err
 	}
 	wps := []wrapper.Wrapper{
-		mysql.NewDefaultTracerWrapper(db, false, database, username),
+		mysql.NewDefaultTracerWrapper(db, false),
 	}
-	return &DBStore{db, false, time.Duration(0), database, username, wps}, nil
+	return &DBStore{db, false, time.Duration(0), wps}, nil
 }
 
 func (store *DBStore) Debug(b bool) {
@@ -146,7 +144,7 @@ func (store *DBStore) Close() error {
 }
 
 func (store *DBStore) AddWrapper(wp wrapper.Wrapper) {
-	store.wps = append(store.wps, wp)
+	store.wrappers = append(store.wrappers, wp)
 }
 
 func (store *DBStore) QueryContext(ctx context.Context, query string,
@@ -154,9 +152,8 @@ func (store *DBStore) QueryContext(ctx context.Context, query string,
 	fn := func(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
 		return store.DB.QueryContext(ctx, query, args...)
 	}
-	for _, wp := range store.wps {
+	for _, wp := range store.wrappers {
 		fn = wp.WrapQueryContext(ctx, fn, query, args...)
-		defer wp.Close()
 	}
 	return fn(ctx, query, args...)
 }
@@ -166,9 +163,8 @@ func (store *DBStore) ExecContext(ctx context.Context, query string,
 	fn := func(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
 		return store.DB.ExecContext(ctx, query, args...)
 	}
-	for _, wp := range store.wps {
-		fn = wp.WrapQueryExecContext(ctx, fn, query, args...)
-		defer wp.Close()
+	for _, wp := range store.wrappers {
+		fn = wp.WrapExecContext(ctx, fn, query, args...)
 	}
 	return fn(ctx, query, args...)
 }
@@ -179,9 +175,7 @@ type DBTx struct {
 	slowlog      time.Duration
 	err          error
 	rowsAffected int64
-	instance     string
-	user         string
-	wps          []wrapper.Wrapper
+	wrappers     []wrapper.Wrapper
 }
 
 func (store *DBStore) BeginTx() (*DBTx, error) {
@@ -194,9 +188,7 @@ func (store *DBStore) BeginTx() (*DBTx, error) {
 		tx:       tx,
 		debug:    store.debug,
 		slowlog:  store.slowlog,
-		instance: store.instance,
-		user:     store.user,
-		wps:      store.wps,
+		wrappers: store.wrappers,
 	}, nil
 }
 
@@ -252,9 +244,8 @@ func (tx *DBTx) QueryContext(ctx context.Context, query string,
 	fn := func(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
 		return tx.tx.QueryContext(ctx, query, args...)
 	}
-	for _, wp := range tx.wps {
+	for _, wp := range tx.wrappers {
 		fn = wp.WrapQueryContext(ctx, fn, query, args...)
-		defer wp.Close()
 	}
 	return fn(ctx, query, args...)
 }
@@ -264,9 +255,8 @@ func (tx *DBTx) ExecContext(ctx context.Context, query string,
 	fn := func(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
 		return tx.tx.ExecContext(ctx, query, args...)
 	}
-	for _, wp := range tx.wps {
-		fn = wp.WrapQueryExecContext(ctx, fn, query, args...)
-		defer wp.Close()
+	for _, wp := range tx.wrappers {
+		fn = wp.WrapExecContext(ctx, fn, query, args...)
 	}
 	return fn(ctx, query, args...)
 }
