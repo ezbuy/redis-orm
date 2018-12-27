@@ -170,7 +170,11 @@ func (m *_{{$obj.Name}}DBMgr) FetchBySQL(q string, args ... interface{}) (result
 }
 
 func (m *_{{$obj.Name}}DBMgr) FetchBySQLContext(ctx context.Context,q string, args ... interface{}) (results []*{{$obj.Name}}, err error) {
-	rows, err := m.db.QueryContext(ctx,q, args...)
+	ctxDB,ok := m.db.(orm.ContextDB)
+	if !ok{
+		return nil,fmt.Errorf("%s","db has no context")
+	}
+	rows, err := ctxDB.QueryContext(ctx,q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("{{$obj.Name}} fetch error: %v", err)
 	}
@@ -669,7 +673,11 @@ func (m *_{{$obj.Name}}DBMgr) queryLimit(where string, limit int, args ...interf
 func (m *_{{$obj.Name}}DBMgr) queryLimitContext(ctx context.Context,where string, limit int, args ...interface{}) (results []PrimaryKey, err error){
 	pk := {{$obj.Name}}Mgr.NewPrimaryKey()
 	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(pk.Columns(), ","), where)
-	rows, err := m.db.QueryContext(ctx,query, args...)
+	ctxDB,ok := m.db.(orm.ContextDB)
+	if !ok{
+		return nil,fmt.Errorf("%s","db has no context")
+	}
+	rows, err := ctxDB.QueryContext(ctx,query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("{{$obj.Name}} query limit error: %v", err)
 	}
@@ -765,7 +773,11 @@ func (m *_{{$obj.Name}}DBMgr) queryCount(where string, args ...interface{}) (int
 
 func (m *_{{$obj.Name}}DBMgr) queryCountContext(ctx context.Context,where string, args ...interface{}) (int64, error){
 	query := fmt.Sprintf("SELECT count({{$primaryField.FieldName}}) FROM {{$obj.FromDB}} %s", where)
-	rows, err := m.db.QueryContext(ctx,query, args...)
+	ctxDB,ok := m.db.(orm.ContextDB)
+	if !ok{
+		return 0,fmt.Errorf("%s","db has no context")
+	}
+	rows, err := ctxDB.QueryContext(ctx,query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("{{$obj.Name}} query count error: %v", err)
 	}

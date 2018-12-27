@@ -35,7 +35,8 @@ func (m *_UserInfoMgr) NewUserInfo() *UserInfo {
 }
 
 type _UserInfoDBMgr struct {
-	db orm.DB
+	db        orm.DB
+	contextDB orm.ContextDB
 }
 
 func (m *_UserInfoMgr) DB(db orm.DB) *_UserInfoDBMgr {
@@ -74,7 +75,11 @@ func (m *_UserInfoDBMgr) QueryBySQL(q string, args ...interface{}) (results []*U
 }
 
 func (m *_UserInfoDBMgr) QueryBySQLContext(ctx context.Context, q string, args ...interface{}) (results []*UserInfo, err error) {
-	rows, err := m.db.QueryContext(ctx, q, args...)
+	ctxDB, ok := m.db.(orm.ContextDB)
+	if !ok {
+		return nil, fmt.Errorf("%s", "db has no context")
+	}
+	rows, err := ctxDB.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("UserInfo fetch error: %v", err)
 	}

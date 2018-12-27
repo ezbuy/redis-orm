@@ -2,6 +2,7 @@
 {{$obj := .}}
 type _{{$obj.Name}}DBMgr struct {
 	db orm.DB
+	contextDB orm.ContextDB
 }
 
 func (m *_{{$obj.Name}}Mgr) DB(db orm.DB) *_{{$obj.Name}}DBMgr {
@@ -85,7 +86,11 @@ func (m *_{{$obj.Name}}DBMgr) QueryBySQL(q string, args ... interface{}) (result
 }
 
 func (m *_{{$obj.Name}}DBMgr) QueryBySQLContext(ctx context.Context,q string, args ... interface{}) (results []*{{$obj.Name}}, err error) {
-	rows, err := m.db.QueryContext(ctx,q, args...)
+	ctxDB,ok := m.db.(orm.ContextDB)
+	if !ok {
+		return nil,fmt.Errorf("%s","db has no context")
+	}
+	rows, err := ctxDB.QueryContext(ctx,q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("{{$obj.Name}} fetch error: %v", err)
 	}

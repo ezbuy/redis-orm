@@ -491,7 +491,11 @@ func (m *_UserBaseInfoDBMgr) FetchBySQL(q string, args ...interface{}) (results 
 }
 
 func (m *_UserBaseInfoDBMgr) FetchBySQLContext(ctx context.Context, q string, args ...interface{}) (results []*UserBaseInfo, err error) {
-	rows, err := m.db.QueryContext(ctx, q, args...)
+	ctxDB, ok := m.db.(orm.ContextDB)
+	if !ok {
+		return nil, fmt.Errorf("%s", "db has no context")
+	}
+	rows, err := ctxDB.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("UserBaseInfo fetch error: %v", err)
 	}
@@ -894,7 +898,11 @@ func (m *_UserBaseInfoDBMgr) queryLimit(where string, limit int, args ...interfa
 func (m *_UserBaseInfoDBMgr) queryLimitContext(ctx context.Context, where string, limit int, args ...interface{}) (results []PrimaryKey, err error) {
 	pk := UserBaseInfoMgr.NewPrimaryKey()
 	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(pk.Columns(), ","), where)
-	rows, err := m.db.QueryContext(ctx, query, args...)
+	ctxDB, ok := m.db.(orm.ContextDB)
+	if !ok {
+		return nil, fmt.Errorf("%s", "db has no context")
+	}
+	rows, err := ctxDB.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("UserBaseInfo query limit error: %v", err)
 	}
@@ -945,7 +953,11 @@ func (m *_UserBaseInfoDBMgr) queryCount(where string, args ...interface{}) (int6
 
 func (m *_UserBaseInfoDBMgr) queryCountContext(ctx context.Context, where string, args ...interface{}) (int64, error) {
 	query := fmt.Sprintf("SELECT count(`id`) FROM user_base_info %s", where)
-	rows, err := m.db.QueryContext(ctx, query, args...)
+	ctxDB, ok := m.db.(orm.ContextDB)
+	if !ok {
+		return 0, fmt.Errorf("%s", "db has no context")
+	}
+	rows, err := ctxDB.QueryContext(ctx, query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("UserBaseInfo query count error: %v", err)
 	}

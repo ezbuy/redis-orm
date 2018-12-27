@@ -50,8 +50,7 @@ func MySQLMultiDSNSetup(key, dsn string) {
 func MySQLInstance(key string) *orm.DBStore {
 	mysql_multi_once.Do(func() {
 		for key, dsn := range mysql_dsns {
-			// TODO: support parse dsn
-			s, err := orm.NewDBDSNStore("mysql", dsn, "", "")
+			s, err := orm.NewDBDSNStore("mysql", dsn)
 			if err != nil {
 				panic(err)
 			}
@@ -72,7 +71,7 @@ func MySQL() *orm.DBStore {
 	_mysql_once.Do(func() {
 		if _mysql_dsn != "" {
 			// TODO: support parse dsn
-			_mysql_store, err = orm.NewDBDSNStore("mysql", _mysql_dsn, "", "")
+			_mysql_store, err = orm.NewDBDSNStore("mysql", _mysql_dsn)
 			if err != nil {
 				panic(err)
 			}

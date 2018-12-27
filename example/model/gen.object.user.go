@@ -700,7 +700,11 @@ func (m *_UserDBMgr) FetchBySQL(q string, args ...interface{}) (results []*User,
 }
 
 func (m *_UserDBMgr) FetchBySQLContext(ctx context.Context, q string, args ...interface{}) (results []*User, err error) {
-	rows, err := m.db.QueryContext(ctx, q, args...)
+	ctxDB, ok := m.db.(orm.ContextDB)
+	if !ok {
+		return nil, fmt.Errorf("%s", "db has no context")
+	}
+	rows, err := ctxDB.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("User fetch error: %v", err)
 	}
@@ -1124,7 +1128,11 @@ func (m *_UserDBMgr) queryLimit(where string, limit int, args ...interface{}) (r
 func (m *_UserDBMgr) queryLimitContext(ctx context.Context, where string, limit int, args ...interface{}) (results []PrimaryKey, err error) {
 	pk := UserMgr.NewPrimaryKey()
 	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(pk.Columns(), ","), where)
-	rows, err := m.db.QueryContext(ctx, query, args...)
+	ctxDB, ok := m.db.(orm.ContextDB)
+	if !ok {
+		return nil, fmt.Errorf("%s", "db has no context")
+	}
+	rows, err := ctxDB.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("User query limit error: %v", err)
 	}
@@ -1175,7 +1183,11 @@ func (m *_UserDBMgr) queryCount(where string, args ...interface{}) (int64, error
 
 func (m *_UserDBMgr) queryCountContext(ctx context.Context, where string, args ...interface{}) (int64, error) {
 	query := fmt.Sprintf("SELECT count(`id`) FROM users %s", where)
-	rows, err := m.db.QueryContext(ctx, query, args...)
+	ctxDB, ok := m.db.(orm.ContextDB)
+	if !ok {
+		return 0, fmt.Errorf("%s", "db has no context")
+	}
+	rows, err := ctxDB.QueryContext(ctx, query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("User query count error: %v", err)
 	}
@@ -1255,7 +1267,11 @@ func (m *_UserDBMgr) BatchCreateContext(ctx context.Context, objs []*User) (int6
 		}
 	}
 	query := fmt.Sprintf("INSERT INTO users(%s) VALUES %s", strings.Join(objs[0].GetNoneIncrementColumns(), ","), strings.Join(params, ","))
-	result, err := m.db.ExecContext(ctx, query, values...)
+	ctxDB, ok := m.db.(orm.ContextDB)
+	if !ok {
+		return 0, fmt.Errorf("%s", "db has no context")
+	}
+	result, err := ctxDB.ExecContext(ctx, query, values...)
 	if err != nil {
 		return 0, err
 	}
@@ -1287,7 +1303,11 @@ func (m *_UserDBMgr) UpdateBySQLContext(ctx context.Context, set, where string, 
 	if where != "" {
 		query = fmt.Sprintf("UPDATE users SET %s WHERE %s", set, where)
 	}
-	result, err := m.db.ExecContext(ctx, query, args...)
+	ctxDB, ok := m.db.(orm.ContextDB)
+	if !ok {
+		return 0, fmt.Errorf("%s", "db has no context")
+	}
+	result, err := ctxDB.ExecContext(ctx, query, args...)
 	if err != nil {
 		return 0, err
 	}
@@ -1354,7 +1374,11 @@ func (m *_UserDBMgr) CreateContext(ctx context.Context, obj *User) (int64, error
 	} else {
 		values = append(values, obj.DeletedAt.Unix())
 	}
-	result, err := m.db.ExecContext(ctx, q, values...)
+	ctxDB, ok := m.db.(orm.ContextDB)
+	if !ok {
+		return 0, fmt.Errorf("%s", "db has no context")
+	}
+	result, err := ctxDB.ExecContext(ctx, q, values...)
 	if err != nil {
 		return 0, err
 	}
@@ -1451,7 +1475,11 @@ func (m *_UserDBMgr) UpdateContext(ctx context.Context, obj *User) (int64, error
 	}
 	values = append(values, pk.SQLParams()...)
 
-	result, err := m.db.ExecContext(ctx, q, values...)
+	ctxDB, ok := m.db.(orm.ContextDB)
+	if !ok {
+		return 0, fmt.Errorf("%s", "db has no context")
+	}
+	result, err := ctxDB.ExecContext(ctx, q, values...)
 	if err != nil {
 		return 0, err
 	}
@@ -1504,8 +1532,12 @@ func (m *_UserDBMgr) DeleteByPrimaryKeyContext(ctx context.Context, id int32) (i
 	pk := &IdOfUserPK{
 		Id: id,
 	}
+	ctxDB, ok := m.db.(orm.ContextDB)
+	if !ok {
+		return 0, fmt.Errorf("%s", "db has no context")
+	}
 	q := fmt.Sprintf("DELETE FROM users %s", pk.SQLFormat())
-	result, err := m.db.ExecContext(ctx, q, pk.SQLParams()...)
+	result, err := ctxDB.ExecContext(ctx, q, pk.SQLParams()...)
 	if err != nil {
 		return 0, err
 	}
@@ -1529,7 +1561,11 @@ func (m *_UserDBMgr) DeleteBySQLContext(ctx context.Context, where string, args 
 	if where != "" {
 		query = fmt.Sprintf("DELETE FROM users WHERE %s", where)
 	}
-	result, err := m.db.ExecContext(ctx, query, args...)
+	ctxDB, ok := m.db.(orm.ContextDB)
+	if !ok {
+		return 0, fmt.Errorf("%s", "db has no context")
+	}
+	result, err := ctxDB.ExecContext(ctx, query, args...)
 	if err != nil {
 		return 0, err
 	}
