@@ -3,6 +3,7 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/ezbuy/redis-orm/orm/wrapper"
@@ -33,7 +34,7 @@ func (t *Tracer) Do(ctx context.Context, statement string) {
 	if span == nil {
 		return
 	}
-	span = tracer.StartSpan("SQL wrapper.Wrapper", opentracing.ChildOf(span.Context()))
+	span = tracer.StartSpan("SQL Operation", opentracing.ChildOf(span.Context()))
 	tags.DBInstance.Set(span, t.instance)
 	tags.DBStatement.Set(span, statement)
 	tags.DBType.Set(span, "mysql")
@@ -52,29 +53,29 @@ func NewCustmizedTracer(tracer wrapper.Wrapper) wrapper.Wrapper {
 
 func NewDefaultTracerWrapper(db sqlexp.Querier, enableRawQuery bool, instance string, user string) wrapper.Wrapper {
 	return &DefaultTracer{
-		db:               db,
-		isRawQueryEnable: enableRawQuery,
-		tracer:           NewMySQLTracer(instance, user),
+		db:                    db,
+		isRawQueryEnable:      enableRawQuery,
+		isIgnoreSeleteColumns: true,
+		tracer:                NewMySQLTracer(instance, user),
 	}
 }
 
 type DefaultTracer struct {
-	db               sqlexp.Querier
-	isRawQueryEnable bool
-	tracer           *Tracer
+	db                    sqlexp.Querier
+	isRawQueryEnable      bool
+	isIgnoreSeleteColumns bool
+	tracer                *Tracer
 }
 
 func (t *DefaultTracer) WrapQueryContext(ctx context.Context, fn wrapper.QueryContextFunc,
 	query string, args ...interface{}) wrapper.QueryContextFunc {
-	t.tracer.Do(ctx, query)
-	defer t.tracer.Close()
+	t.tracer.Do(ctx, t.hackQueryBuilder(query, args...))
 	return fn
 }
 
 func (t *DefaultTracer) WrapQueryExecContext(ctx context.Context, fn wrapper.ExecContextFunc,
 	query string, args ...interface{}) wrapper.ExecContextFunc {
-	t.tracer.Do(ctx, query)
-	defer t.tracer.Close()
+	t.tracer.Do(ctx, t.hackQueryBuilder(query, args...))
 	return fn
 }
 
@@ -85,7 +86,13 @@ func (t *DefaultTracer) Close() {
 func (t *DefaultTracer) hackQueryBuilder(query string, args ...interface{}) string {
 	if t.isRawQueryEnable {
 		q := strings.Replace(query, "?", "%v", -1)
-		return fmt.Sprintf(q, args...)
+		query = fmt.Sprintf(q, args...)
+	}
+	if t.isIgnoreSeleteColumns {
+		query = strings.Replace(query, "select", "SELECT", -1)
+		query = strings.Replace(query, "from", "FROM", -1)
+		r := regexp.MustCompile("SELECT (.*) FROM")
+		query = r.ReplaceAllString(query, "SELECT ... FROM")
 	}
 	return query
 }
