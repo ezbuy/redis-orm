@@ -8,8 +8,10 @@ import (
 	"strings"
 	"time"
 
+	_ "github.com/denisenkom/go-mssqldb" // register driver for go-mssqldb
 	"github.com/ezbuy/redis-orm/orm/wrapper"
 	"github.com/ezbuy/redis-orm/trace/database/mysql"
+	_ "github.com/go-sql-driver/mysql" // register driver for mysql
 )
 
 type DB interface {
