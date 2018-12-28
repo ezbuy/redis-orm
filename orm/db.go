@@ -10,6 +10,7 @@ import (
 
 	_ "github.com/denisenkom/go-mssqldb" // register driver for go-mssqldb
 	"github.com/ezbuy/wrapper"
+	"github.com/ezbuy/wrapper/trace/database"
 	"github.com/ezbuy/wrapper/trace/database/mysql"
 	_ "github.com/go-sql-driver/mysql" // register driver for mysql
 )
@@ -54,7 +55,7 @@ func NewDBStore(driver, host string, port int, database, username, password stri
 
 func NewDBStoreWithRawDB(db *sql.DB) *DBStore {
 	wps := []wrapper.Wrapper{
-		mysql.NewDefaultTracerWrapper(db, false),
+		database.NewCustmizedTracerWrapper(mysql.NewMySQLTracer("", ""), db, false),
 	}
 	return &DBStore{db, false, time.Duration(0), wps}
 }
@@ -65,12 +66,12 @@ func NewDBDSNStore(driver, dsn string) (*DBStore, error) {
 		return nil, err
 	}
 	wps := []wrapper.Wrapper{
-		mysql.NewDefaultTracerWrapper(db, false),
+		database.NewCustmizedTracerWrapper(mysql.NewMySQLTracer("", ""), db, false),
 	}
 	return &DBStore{db, false, time.Duration(0), wps}, nil
 }
 
-func NewDBStoreCharset(driver, host string, port int, database, username, password, charset string) (*DBStore, error) {
+func NewDBStoreCharset(driver, host string, port int, databaseName, username, password, charset string) (*DBStore, error) {
 	var dsn string
 	switch strings.ToLower(driver) {
 	case "mysql":
@@ -82,11 +83,11 @@ func NewDBStoreCharset(driver, host string, port int, database, username, passwo
 			password,
 			host,
 			port,
-			database,
+			databaseName,
 			charset)
 	case "mssql":
 		dsn = fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d;database=%s",
-			host, username, password, port, database)
+			host, username, password, port, databaseName)
 	default:
 		return nil, fmt.Errorf("unsupport db driver: %s", driver)
 	}
@@ -95,7 +96,7 @@ func NewDBStoreCharset(driver, host string, port int, database, username, passwo
 		return nil, err
 	}
 	wps := []wrapper.Wrapper{
-		mysql.NewDefaultTracerWrapper(db, false),
+		database.NewCustmizedTracerWrapper(mysql.NewMySQLTracer("", ""), db, false),
 	}
 	return &DBStore{db, false, time.Duration(0), wps}, nil
 }
