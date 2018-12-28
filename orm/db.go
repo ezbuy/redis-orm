@@ -10,8 +10,6 @@ import (
 
 	_ "github.com/denisenkom/go-mssqldb" // register driver for go-mssqldb
 	"github.com/ezbuy/wrapper"
-	"github.com/ezbuy/wrapper/trace/database"
-	"github.com/ezbuy/wrapper/trace/database/mysql"
 	_ "github.com/go-sql-driver/mysql" // register driver for mysql
 )
 
@@ -55,7 +53,7 @@ func NewDBStore(driver, host string, port int, database, username, password stri
 
 func NewDBStoreWithRawDB(db *sql.DB) *DBStore {
 	wps := []wrapper.Wrapper{
-		database.NewCustmizedTracerWrapper(mysql.NewMySQLTracer("", ""), db, false),
+		// insert common wrappers here...
 	}
 	return &DBStore{db, false, time.Duration(0), wps}
 }
@@ -66,7 +64,7 @@ func NewDBDSNStore(driver, dsn string) (*DBStore, error) {
 		return nil, err
 	}
 	wps := []wrapper.Wrapper{
-		database.NewCustmizedTracerWrapper(mysql.NewMySQLTracer("", ""), db, false),
+		// insert common wrappers here...
 	}
 	return &DBStore{db, false, time.Duration(0), wps}, nil
 }
@@ -96,7 +94,7 @@ func NewDBStoreCharset(driver, host string, port int, databaseName, username, pa
 		return nil, err
 	}
 	wps := []wrapper.Wrapper{
-		database.NewCustmizedTracerWrapper(mysql.NewMySQLTracer("", ""), db, false),
+		// insert common wrappers here...
 	}
 	return &DBStore{db, false, time.Duration(0), wps}, nil
 }
@@ -151,8 +149,8 @@ func (store *DBStore) Close() error {
 	return nil
 }
 
-func (store *DBStore) AddWrapper(wp wrapper.Wrapper) {
-	store.wrappers = append(store.wrappers, wp)
+func (store *DBStore) AddWrappers(wp ...wrapper.Wrapper) {
+	store.wrappers = append(store.wrappers, wp...)
 }
 
 func (store *DBStore) QueryContext(ctx context.Context, query string,
