@@ -8,10 +8,8 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/denisenkom/go-mssqldb"
 	"github.com/ezbuy/redis-orm/orm/wrapper"
 	"github.com/ezbuy/redis-orm/trace/database/mysql"
-	_ "github.com/go-sql-driver/mysql"
 )
 
 type DB interface {
@@ -265,7 +263,7 @@ func (tx *DBTx) SetError(err error) {
 	tx.err = err
 }
 
-func TransactFunc(ctx context.Context, db *DBStore, txFunc func(context.Context, *DBTx) error) (err error) {
+func TransactFunc(db *DBStore, txFunc func(*DBTx) error) (err error) {
 	tx, err := db.BeginTx()
 	if err != nil {
 		return err
@@ -283,14 +281,14 @@ func TransactFunc(ctx context.Context, db *DBStore, txFunc func(context.Context,
 		}
 	}()
 
-	err = txFunc(ctx, tx)
+	err = txFunc(tx)
 	return err
 }
 
 type Transactor interface {
-	Transact(ctx context.Context, tx *DBTx) error
+	Transact(tx *DBTx) error
 }
 
-func Transact(ctx context.Context, db *DBStore, t Transactor) error {
-	return TransactFunc(ctx, db, t.Transact)
+func Transact(db *DBStore, t Transactor) error {
+	return TransactFunc(db, t.Transact)
 }

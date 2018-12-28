@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/ezbuy/redis-orm/orm/wrapper"
-	"github.com/golang-sql/sqlexp"
+	"github.com/ezbuy/redis-orm/trace/database"
 	"github.com/opentracing/opentracing-go"
 	tags "github.com/opentracing/opentracing-go/ext"
 )
@@ -54,7 +54,7 @@ func NewCustmizedTracer(tracer wrapper.Wrapper) wrapper.Wrapper {
 	return tracer
 }
 
-func NewDefaultTracerWrapper(db sqlexp.Querier, enableRawQuery bool) wrapper.Wrapper {
+func NewDefaultTracerWrapper(db database.Querier, enableRawQuery bool) wrapper.Wrapper {
 	return &DefaultTracer{
 		db:                    db,
 		isRawQueryEnable:      enableRawQuery,
@@ -64,7 +64,7 @@ func NewDefaultTracerWrapper(db sqlexp.Querier, enableRawQuery bool) wrapper.Wra
 }
 
 type DefaultTracer struct {
-	db                    sqlexp.Querier
+	db                    database.Querier
 	isRawQueryEnable      bool
 	isIgnoreSeleteColumns bool
 	tracer                *Tracer
