@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/ezbuy/redis-orm/orm"
+	"github.com/ezbuy/wrapper/trace/database"
+	"github.com/ezbuy/wrapper/trace/database/mssql"
 )
 
 var (
@@ -45,6 +47,9 @@ func MsSQL() *orm.DBStore {
 		}
 		_mssql_store.SetMaxIdleConns(_mssql_cfg.PoolSize)
 		_mssql_store.SetMaxOpenConns(_mssql_cfg.PoolSize)
+		_mssql_store.AddWrappers(
+			database.NewCustmizedTracerWrapper(mssql.NewMsSQLTracer("", ""), _mssql_store, false),
+		)
 	})
 	return _mssql_store
 }
