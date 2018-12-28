@@ -9,8 +9,8 @@ import (
 	"time"
 
 	_ "github.com/denisenkom/go-mssqldb" // register driver for go-mssqldb
-	"github.com/ezbuy/redis-orm/orm/wrapper"
-	"github.com/ezbuy/redis-orm/trace/database/mysql"
+	"github.com/ezbuy/wrapper"
+	"github.com/ezbuy/wrapper/trace/database/mysql"
 	_ "github.com/go-sql-driver/mysql" // register driver for mysql
 )
 
@@ -50,6 +50,13 @@ func NewDBStore(driver, host string, port int, database, username, password stri
 		return nil, fmt.Errorf("unsupport db driver: %s", driver)
 	}
 	return NewDBDSNStore(driver, dsn)
+}
+
+func NewDBStoreWithRawDB(db *sql.DB) *DBStore {
+	wps := []wrapper.Wrapper{
+		mysql.NewDefaultTracerWrapper(db, false),
+	}
+	return &DBStore{db, false, time.Duration(0), wps}
 }
 
 func NewDBDSNStore(driver, dsn string) (*DBStore, error) {
