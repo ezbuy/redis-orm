@@ -16,13 +16,9 @@ import (
 type DB interface {
 	Query(sql string, args ...interface{}) (*sql.Rows, error)
 	Exec(sql string, args ...interface{}) (sql.Result, error)
-	SetError(err error)
-}
-
-type ContextDB interface {
 	QueryContext(ctx context.Context, sql string, args ...interface{}) (*sql.Rows, error)
 	ExecContext(ctx context.Context, sql string, args ...interface{}) (sql.Result, error)
-	DB
+	SetError(err error)
 }
 
 type DBStore struct {

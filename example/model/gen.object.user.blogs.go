@@ -393,11 +393,7 @@ func (m *_UserBlogsDBMgr) FetchBySQL(q string, args ...interface{}) (results []*
 }
 
 func (m *_UserBlogsDBMgr) FetchBySQLContext(ctx context.Context, q string, args ...interface{}) (results []*UserBlogs, err error) {
-	ctxDB, ok := m.db.(orm.ContextDB)
-	if !ok {
-		return nil, fmt.Errorf("%s", "db has no context")
-	}
-	rows, err := ctxDB.QueryContext(ctx, q, args...)
+	rows, err := m.db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("UserBlogs fetch error: %v", err)
 	}
@@ -665,11 +661,7 @@ func (m *_UserBlogsDBMgr) queryLimit(where string, limit int, args ...interface{
 func (m *_UserBlogsDBMgr) queryLimitContext(ctx context.Context, where string, limit int, args ...interface{}) (results []PrimaryKey, err error) {
 	pk := UserBlogsMgr.NewPrimaryKey()
 	query := fmt.Sprintf("SELECT %s FROM user_blogs %s", strings.Join(pk.Columns(), ","), where)
-	ctxDB, ok := m.db.(orm.ContextDB)
-	if !ok {
-		return nil, fmt.Errorf("%s", "db has no context")
-	}
-	rows, err := ctxDB.QueryContext(ctx, query, args...)
+	rows, err := m.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("UserBlogs query limit error: %v", err)
 	}
@@ -720,11 +712,7 @@ func (m *_UserBlogsDBMgr) queryCount(where string, args ...interface{}) (int64, 
 
 func (m *_UserBlogsDBMgr) queryCountContext(ctx context.Context, where string, args ...interface{}) (int64, error) {
 	query := fmt.Sprintf("SELECT count(`user_id`) FROM user_blogs %s", where)
-	ctxDB, ok := m.db.(orm.ContextDB)
-	if !ok {
-		return 0, fmt.Errorf("%s", "db has no context")
-	}
-	rows, err := ctxDB.QueryContext(ctx, query, args...)
+	rows, err := m.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("UserBlogs query count error: %v", err)
 	}
@@ -774,11 +762,7 @@ func (m *_UserBlogsDBMgr) BatchCreateContext(ctx context.Context, objs []*UserBl
 		values = append(values, obj.BlogId)
 	}
 	query := fmt.Sprintf("INSERT INTO user_blogs(%s) VALUES %s", strings.Join(objs[0].GetNoneIncrementColumns(), ","), strings.Join(params, ","))
-	ctxDB, ok := m.db.(orm.ContextDB)
-	if !ok {
-		return 0, fmt.Errorf("%s", "db has no context")
-	}
-	result, err := ctxDB.ExecContext(ctx, query, values...)
+	result, err := m.db.ExecContext(ctx, query, values...)
 	if err != nil {
 		return 0, err
 	}
@@ -810,11 +794,7 @@ func (m *_UserBlogsDBMgr) UpdateBySQLContext(ctx context.Context, set, where str
 	if where != "" {
 		query = fmt.Sprintf("UPDATE user_blogs SET %s WHERE %s", set, where)
 	}
-	ctxDB, ok := m.db.(orm.ContextDB)
-	if !ok {
-		return 0, fmt.Errorf("%s", "db has no context")
-	}
-	result, err := ctxDB.ExecContext(ctx, query, args...)
+	result, err := m.db.ExecContext(ctx, query, args...)
 	if err != nil {
 		return 0, err
 	}
@@ -846,11 +826,7 @@ func (m *_UserBlogsDBMgr) CreateContext(ctx context.Context, obj *UserBlogs) (in
 	values := make([]interface{}, 0, 2)
 	values = append(values, obj.UserId)
 	values = append(values, obj.BlogId)
-	ctxDB, ok := m.db.(orm.ContextDB)
-	if !ok {
-		return 0, fmt.Errorf("%s", "db has no context")
-	}
-	result, err := ctxDB.ExecContext(ctx, q, values...)
+	result, err := m.db.ExecContext(ctx, q, values...)
 	if err != nil {
 		return 0, err
 	}
@@ -880,11 +856,7 @@ func (m *_UserBlogsDBMgr) UpdateContext(ctx context.Context, obj *UserBlogs) (in
 	values := make([]interface{}, 0, 2-2)
 	values = append(values, pk.SQLParams()...)
 
-	ctxDB, ok := m.db.(orm.ContextDB)
-	if !ok {
-		return 0, fmt.Errorf("%s", "db has no context")
-	}
-	result, err := ctxDB.ExecContext(ctx, q, values...)
+	result, err := m.db.ExecContext(ctx, q, values...)
 	if err != nil {
 		return 0, err
 	}
@@ -939,12 +911,8 @@ func (m *_UserBlogsDBMgr) DeleteByPrimaryKeyContext(ctx context.Context, userId 
 		UserId: userId,
 		BlogId: blogId,
 	}
-	ctxDB, ok := m.db.(orm.ContextDB)
-	if !ok {
-		return 0, fmt.Errorf("%s", "db has no context")
-	}
 	q := fmt.Sprintf("DELETE FROM user_blogs %s", pk.SQLFormat())
-	result, err := ctxDB.ExecContext(ctx, q, pk.SQLParams()...)
+	result, err := m.db.ExecContext(ctx, q, pk.SQLParams()...)
 	if err != nil {
 		return 0, err
 	}
@@ -968,11 +936,7 @@ func (m *_UserBlogsDBMgr) DeleteBySQLContext(ctx context.Context, where string, 
 	if where != "" {
 		query = fmt.Sprintf("DELETE FROM user_blogs WHERE %s", where)
 	}
-	ctxDB, ok := m.db.(orm.ContextDB)
-	if !ok {
-		return 0, fmt.Errorf("%s", "db has no context")
-	}
-	result, err := ctxDB.ExecContext(ctx, query, args...)
+	result, err := m.db.ExecContext(ctx, query, args...)
 	if err != nil {
 		return 0, err
 	}

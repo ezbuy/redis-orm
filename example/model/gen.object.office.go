@@ -419,11 +419,7 @@ func (m *_OfficeDBMgr) FetchBySQL(q string, args ...interface{}) (results []*Off
 }
 
 func (m *_OfficeDBMgr) FetchBySQLContext(ctx context.Context, q string, args ...interface{}) (results []*Office, err error) {
-	ctxDB, ok := m.db.(orm.ContextDB)
-	if !ok {
-		return nil, fmt.Errorf("%s", "db has no context")
-	}
-	rows, err := ctxDB.QueryContext(ctx, q, args...)
+	rows, err := m.db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("Office fetch error: %v", err)
 	}
@@ -725,11 +721,7 @@ func (m *_OfficeDBMgr) queryLimit(where string, limit int, args ...interface{}) 
 func (m *_OfficeDBMgr) queryLimitContext(ctx context.Context, where string, limit int, args ...interface{}) (results []PrimaryKey, err error) {
 	pk := OfficeMgr.NewPrimaryKey()
 	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] %s", strings.Join(pk.Columns(), ","), where)
-	ctxDB, ok := m.db.(orm.ContextDB)
-	if !ok {
-		return nil, fmt.Errorf("%s", "db has no context")
-	}
-	rows, err := ctxDB.QueryContext(ctx, query, args...)
+	rows, err := m.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("Office query limit error: %v", err)
 	}
@@ -780,11 +772,7 @@ func (m *_OfficeDBMgr) queryCount(where string, args ...interface{}) (int64, err
 
 func (m *_OfficeDBMgr) queryCountContext(ctx context.Context, where string, args ...interface{}) (int64, error) {
 	query := fmt.Sprintf("SELECT count(office_id) FROM [dbo].[testCRUD] %s", where)
-	ctxDB, ok := m.db.(orm.ContextDB)
-	if !ok {
-		return 0, fmt.Errorf("%s", "db has no context")
-	}
-	rows, err := ctxDB.QueryContext(ctx, query, args...)
+	rows, err := m.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("Office query count error: %v", err)
 	}
@@ -846,11 +834,7 @@ func (m *_OfficeDBMgr) BatchCreateContext(ctx context.Context, objs []*Office) (
 		values = append(values, orm.MsSQLTimeFormat(obj.UpdateDate))
 	}
 	query := fmt.Sprintf("INSERT INTO [dbo].[testCRUD](%s) VALUES %s", strings.Join(objs[0].GetNoneIncrementColumns(), ","), strings.Join(params, ","))
-	ctxDB, ok := m.db.(orm.ContextDB)
-	if !ok {
-		return 0, fmt.Errorf("%s", "db has no context")
-	}
-	result, err := ctxDB.ExecContext(ctx, query, values...)
+	result, err := m.db.ExecContext(ctx, query, values...)
 	if err != nil {
 		return 0, err
 	}
@@ -882,11 +866,7 @@ func (m *_OfficeDBMgr) UpdateBySQLContext(ctx context.Context, set, where string
 	if where != "" {
 		query = fmt.Sprintf("UPDATE [dbo].[testCRUD] SET %s WHERE %s", set, where)
 	}
-	ctxDB, ok := m.db.(orm.ContextDB)
-	if !ok {
-		return 0, fmt.Errorf("%s", "db has no context")
-	}
-	result, err := ctxDB.ExecContext(ctx, query, args...)
+	result, err := m.db.ExecContext(ctx, query, args...)
 	if err != nil {
 		return 0, err
 	}
@@ -935,11 +915,7 @@ func (m *_OfficeDBMgr) CreateContext(ctx context.Context, obj *Office) (int64, e
 	values = append(values, obj.UpdateBy)
 	values = append(values, orm.MsSQLTimeFormat(obj.CreateDate))
 	values = append(values, orm.MsSQLTimeFormat(obj.UpdateDate))
-	ctxDB, ok := m.db.(orm.ContextDB)
-	if !ok {
-		return 0, fmt.Errorf("%s", "db has no context")
-	}
-	result, err := ctxDB.ExecContext(ctx, q, values...)
+	result, err := m.db.ExecContext(ctx, q, values...)
 	if err != nil {
 		return 0, err
 	}
@@ -1008,11 +984,7 @@ func (m *_OfficeDBMgr) UpdateContext(ctx context.Context, obj *Office) (int64, e
 	values = append(values, orm.MsSQLTimeFormat(obj.UpdateDate))
 	values = append(values, pk.SQLParams()...)
 
-	ctxDB, ok := m.db.(orm.ContextDB)
-	if !ok {
-		return 0, fmt.Errorf("%s", "db has no context")
-	}
-	result, err := ctxDB.ExecContext(ctx, q, values...)
+	result, err := m.db.ExecContext(ctx, q, values...)
 	if err != nil {
 		return 0, err
 	}
@@ -1065,12 +1037,8 @@ func (m *_OfficeDBMgr) DeleteByPrimaryKeyContext(ctx context.Context, officeId i
 	pk := &OfficeIdOfOfficePK{
 		OfficeId: officeId,
 	}
-	ctxDB, ok := m.db.(orm.ContextDB)
-	if !ok {
-		return 0, fmt.Errorf("%s", "db has no context")
-	}
 	q := fmt.Sprintf("DELETE FROM [dbo].[testCRUD] %s", pk.SQLFormat())
-	result, err := ctxDB.ExecContext(ctx, q, pk.SQLParams()...)
+	result, err := m.db.ExecContext(ctx, q, pk.SQLParams()...)
 	if err != nil {
 		return 0, err
 	}
@@ -1094,11 +1062,7 @@ func (m *_OfficeDBMgr) DeleteBySQLContext(ctx context.Context, where string, arg
 	if where != "" {
 		query = fmt.Sprintf("DELETE FROM [dbo].[testCRUD] WHERE %s", where)
 	}
-	ctxDB, ok := m.db.(orm.ContextDB)
-	if !ok {
-		return 0, fmt.Errorf("%s", "db has no context")
-	}
-	result, err := ctxDB.ExecContext(ctx, query, args...)
+	result, err := m.db.ExecContext(ctx, query, args...)
 	if err != nil {
 		return 0, err
 	}

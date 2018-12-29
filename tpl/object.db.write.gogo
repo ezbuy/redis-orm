@@ -63,11 +63,7 @@ func (m *_{{$obj.Name}}DBMgr) BatchCreateContext(ctx context.Context,objs []*{{$
 		{{- end}}
 	}
 	query := fmt.Sprintf("INSERT INTO {{$obj.FromDB}}(%s) VALUES %s", strings.Join(objs[0].GetNoneIncrementColumns(), ","), strings.Join(params, ","))
-	ctxDB,ok := m.db.(orm.ContextDB)
-	if !ok{
-		return 0,fmt.Errorf("%s","db has no context")
-	}
-	result, err := ctxDB.ExecContext(ctx,query, values...)
+	result, err := m.db.ExecContext(ctx,query, values...)
 	if err != nil {
 		return 0, err
 	}
@@ -99,11 +95,7 @@ func (m *_{{$obj.Name}}DBMgr) UpdateBySQLContext(ctx context.Context,set, where 
 	if where != "" {
 		query = fmt.Sprintf("UPDATE {{$obj.FromDB}} SET %s WHERE %s", set, where)
 	}
-	ctxDB,ok := m.db.(orm.ContextDB)
-	if !ok{
-		return 0,fmt.Errorf("%s","db has no context")
-	}
-	result, err := ctxDB.ExecContext(ctx,query, args...)
+	result, err := m.db.ExecContext(ctx,query, args...)
 	if err != nil {
 		return 0, err
 	}
@@ -168,11 +160,7 @@ func (m *_{{$obj.Name}}DBMgr) CreateContext(ctx context.Context,obj *{{$obj.Name
 			{{- end}}
 		{{- end}}
 	{{- end}}
-	ctxDB,ok := m.db.(orm.ContextDB)
-	if !ok{
-		return 0,fmt.Errorf("%s","db has no context")
-	}
-	result, err := ctxDB.ExecContext(ctx,q, values...)
+	result, err := m.db.ExecContext(ctx,q, values...)
 	if err != nil {
 		return 0, err
 	}
@@ -251,11 +239,7 @@ func (m *_{{$obj.Name}}DBMgr) UpdateContext(ctx context.Context,obj *{{$obj.Name
 		{{- end}}
 	values = append(values, pk.SQLParams()...)
 
-	ctxDB,ok := m.db.(orm.ContextDB)
-	if !ok{
-		return 0,fmt.Errorf("%s","db has no context")
-	}
-	result, err := ctxDB.ExecContext(ctx,q, values...)
+	result, err := m.db.ExecContext(ctx,q, values...)
 	if err != nil {
 		return 0, err
 	}
@@ -308,12 +292,8 @@ func (m *_{{$obj.Name}}DBMgr) DeleteByPrimaryKeyContext(ctx context.Context,{{$p
 	pk:= &{{$primary.Name}}{
 	{{$primary.GetConstructor}}
 	}
-	ctxDB,ok := m.db.(orm.ContextDB)
-	if !ok{
-		return 0,fmt.Errorf("%s","db has no context")
-	}
 	q := fmt.Sprintf("DELETE FROM {{$obj.FromDB}} %s", pk.SQLFormat())
-	result, err := ctxDB.ExecContext(ctx,q , pk.SQLParams()...)
+	result, err := m.db.ExecContext(ctx,q , pk.SQLParams()...)
 	if err != nil {
 		return 0, err
 	}
@@ -337,11 +317,7 @@ func (m *_{{$obj.Name}}DBMgr) DeleteBySQLContext(ctx context.Context,where strin
 	if where != "" {
 		query = fmt.Sprintf("DELETE FROM {{$obj.FromDB}} WHERE %s", where)
 	}
-	ctxDB,ok := m.db.(orm.ContextDB)
-	if !ok{
-		return 0,fmt.Errorf("%s","db has no context")
-	}
-	result, err := ctxDB.ExecContext(ctx,query, args...)
+	result, err := m.db.ExecContext(ctx,query, args...)
 	if err != nil {
 		return 0, err
 	}
