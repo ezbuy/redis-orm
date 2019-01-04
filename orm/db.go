@@ -288,6 +288,10 @@ func (tx *DBTx) AfterCommit(afterCommit func(err error)) {
 	tx.afterCommit = afterCommit
 }
 
+func (tx *DBTx) GetStdTx() *sql.Tx {
+	return tx.tx
+}
+
 func TransactFunc(db *DBStore, txFunc func(*DBTx) error) (err error) {
 	tx, err := db.BeginTx()
 	if err != nil {
