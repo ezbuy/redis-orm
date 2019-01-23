@@ -9,7 +9,7 @@ import (
 	"time"
 
 	_ "github.com/denisenkom/go-mssqldb" // register driver for go-mssqldb
-	"github.com/ezbuy/wrapper"
+	"github.com/ezbuy/wrapper/database"
 	_ "github.com/go-sql-driver/mysql" // register driver for mysql
 )
 
@@ -25,7 +25,7 @@ type DBStore struct {
 	*sql.DB
 	debug    bool
 	slowlog  time.Duration
-	wrappers []wrapper.Wrapper
+	wrappers []database.Wrapper
 }
 
 func NewDBStore(driver, host string, port int, database, username, password string) (*DBStore, error) {
@@ -48,7 +48,7 @@ func NewDBStore(driver, host string, port int, database, username, password stri
 }
 
 func NewDBStoreWithRawDB(db *sql.DB) *DBStore {
-	wps := []wrapper.Wrapper{
+	wps := []database.Wrapper{
 		// insert common wrappers here...
 	}
 	return &DBStore{db, false, time.Duration(0), wps}
@@ -59,7 +59,7 @@ func NewDBDSNStore(driver, dsn string) (*DBStore, error) {
 	if err != nil {
 		return nil, err
 	}
-	wps := []wrapper.Wrapper{
+	wps := []database.Wrapper{
 		// insert common wrappers here...
 	}
 	return &DBStore{db, false, time.Duration(0), wps}, nil
@@ -89,7 +89,7 @@ func NewDBStoreCharset(driver, host string, port int, databaseName, username, pa
 	if err != nil {
 		return nil, err
 	}
-	wps := []wrapper.Wrapper{
+	wps := []database.Wrapper{
 		// insert common wrappers here...
 	}
 	return &DBStore{db, false, time.Duration(0), wps}, nil
@@ -145,7 +145,7 @@ func (store *DBStore) Close() error {
 	return nil
 }
 
-func (store *DBStore) AddWrappers(wp ...wrapper.Wrapper) {
+func (store *DBStore) AddWrappers(wp ...database.Wrapper) {
 	store.wrappers = append(store.wrappers, wp...)
 }
 
@@ -155,7 +155,7 @@ func (store *DBStore) QueryContext(ctx context.Context, query string,
 		return store.DB.QueryContext(ctx, query, args...)
 	}
 	for _, wp := range store.wrappers {
-		fn = wp.WrapQueryContext(ctx, fn, query, args...)
+		fn = wp.WrapQueryContext(fn, query, args...)
 	}
 	return fn(ctx, query, args...)
 }
@@ -166,7 +166,7 @@ func (store *DBStore) ExecContext(ctx context.Context, query string,
 		return store.DB.ExecContext(ctx, query, args...)
 	}
 	for _, wp := range store.wrappers {
-		fn = wp.WrapExecContext(ctx, fn, query, args...)
+		fn = wp.WrapExecContext(fn, query, args...)
 	}
 	return fn(ctx, query, args...)
 }
@@ -177,7 +177,7 @@ type DBTx struct {
 	slowlog      time.Duration
 	err          error
 	rowsAffected int64
-	wrappers     []wrapper.Wrapper
+	wrappers     []database.Wrapper
 }
 
 func (store *DBStore) BeginTx() (*DBTx, error) {
@@ -247,7 +247,7 @@ func (tx *DBTx) QueryContext(ctx context.Context, query string,
 		return tx.tx.QueryContext(ctx, query, args...)
 	}
 	for _, wp := range tx.wrappers {
-		fn = wp.WrapQueryContext(ctx, fn, query, args...)
+		fn = wp.WrapQueryContext(fn, query, args...)
 	}
 	return fn(ctx, query, args...)
 }
@@ -258,7 +258,7 @@ func (tx *DBTx) ExecContext(ctx context.Context, query string,
 		return tx.tx.ExecContext(ctx, query, args...)
 	}
 	for _, wp := range tx.wrappers {
-		fn = wp.WrapExecContext(ctx, fn, query, args...)
+		fn = wp.WrapExecContext(fn, query, args...)
 	}
 	return fn(ctx, query, args...)
 }
