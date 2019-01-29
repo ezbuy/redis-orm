@@ -384,7 +384,7 @@ func (m *_OfficeDBMgr) SearchConditionsCount(conditions []string, args ...interf
 	return m.queryCount(orm.SQLWhere(conditions), args...)
 }
 
-func (m *_OfficeDBMgr) SearchConditionsCountContexr(ctx context.Context, conditions []string, args ...interface{}) (int64, error) {
+func (m *_OfficeDBMgr) SearchConditionsCountContext(ctx context.Context, conditions []string, args ...interface{}) (int64, error) {
 	return m.queryCountContext(ctx, orm.SQLWhere(conditions), args...)
 }
 

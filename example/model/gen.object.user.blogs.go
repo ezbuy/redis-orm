@@ -364,7 +364,7 @@ func (m *_UserBlogsDBMgr) SearchConditionsCount(conditions []string, args ...int
 	return m.queryCount(orm.SQLWhere(conditions), args...)
 }
 
-func (m *_UserBlogsDBMgr) SearchConditionsCountContexr(ctx context.Context, conditions []string, args ...interface{}) (int64, error) {
+func (m *_UserBlogsDBMgr) SearchConditionsCountContext(ctx context.Context, conditions []string, args ...interface{}) (int64, error) {
 	return m.queryCountContext(ctx, orm.SQLWhere(conditions), args...)
 }
 

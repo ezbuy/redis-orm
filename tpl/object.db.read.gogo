@@ -96,7 +96,7 @@ func (m *_{{$obj.Name}}DBMgr) SearchConditionsCount(conditions []string, args ..
 	return m.queryCount(orm.SQLWhere(conditions), args...)
 }
 
-func (m *_{{$obj.Name}}DBMgr) SearchConditionsCountContexr(ctx context.Context,conditions []string, args ...interface{}) (int64, error){
+func (m *_{{$obj.Name}}DBMgr) SearchConditionsCountContext(ctx context.Context,conditions []string, args ...interface{}) (int64, error){
 	return m.queryCountContext(ctx,orm.SQLWhere(conditions), args...)
 }
 
