@@ -92,7 +92,7 @@ func MySQL() *orm.DBStore {
 			_mysql_store.SetMaxIdleConns(_mysql_cfg.PoolSize)
 			_mysql_store.SetMaxOpenConns(_mysql_cfg.PoolSize)
 			_mysql_store.AddWrappers(
-				database.NewDefaultMySQLTracerWrapper(),
+				database.NewMySQLTracerWrapper(),
 			)
 		}
 	})

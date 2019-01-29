@@ -46,7 +46,7 @@ func MsSQL() *orm.DBStore {
 		_mssql_store.SetMaxIdleConns(_mssql_cfg.PoolSize)
 		_mssql_store.SetMaxOpenConns(_mssql_cfg.PoolSize)
 		_mssql_store.AddWrappers(
-				database.NewDefaultMsSQLTracerWrapper(),
+				database.NewMsSQLTracerWrapper(),
 		)
 	})
 	return _mssql_store
