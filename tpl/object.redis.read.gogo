@@ -163,6 +163,7 @@ func (m *_{{$obj.Name}}RedisMgr) FetchByKey(key string) (*{{$obj.Name}}, error) 
 
 	var sv string
 	{{- range $i, $field := $obj.Fields}}
+		if strs[{{$i}}] != nil {
 		sv, _ = strs[{{$i}}].(string)
 		{{- if $field.IsNeedTransform}}
 			{{- if $field.IsNullable }}
@@ -191,6 +192,7 @@ func (m *_{{$obj.Name}}RedisMgr) FetchByKey(key string) (*{{$obj.Name}}, error) 
 		{{- if $field.IsEncode}}
 			obj.{{$field.Name}} = orm.Decode(obj.{{$field.Name}})
 		{{- end}}
+		}
 	{{- end}}
 	return obj, nil
 }
@@ -229,6 +231,7 @@ func (m *_{{$obj.Name}}RedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*{{$obj
 
 		obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 		{{- range $i, $field := $obj.Fields}}
+			if strs[{{$i}}] != nil {
 			sv, ok = strs[{{$i}}].(string)
 			{{- if $field.IsNeedTransform}}
 				{{- if $field.IsNullable }}
@@ -272,6 +275,7 @@ func (m *_{{$obj.Name}}RedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*{{$obj
 			{{- if $field.IsEncode}}
 				obj.{{$field.Name}} = orm.Decode(obj.{{$field.Name}})
 			{{- end}}
+			}
 		{{- end}}
 		objs = append(objs, obj)
 	}
