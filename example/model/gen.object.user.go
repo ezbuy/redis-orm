@@ -1322,73 +1322,101 @@ func (m *_UserRedisMgr) FetchByKey(key string) (*User, error) {
 	}
 
 	var sv string
-	sv, _ = strs[0].(string)
-	if err := orm.StringScan(sv, &obj.Id); err != nil {
-		return nil, err
-	}
-	sv, _ = strs[1].(string)
-	if err := orm.StringScan(sv, &obj.Name); err != nil {
-		return nil, err
-	}
-	sv, _ = strs[2].(string)
-	if err := orm.StringScan(sv, &obj.Mailbox); err != nil {
-		return nil, err
-	}
-	sv, _ = strs[3].(string)
-	if err := orm.StringScan(sv, &obj.Sex); err != nil {
-		return nil, err
-	}
-	sv, _ = strs[4].(string)
-	if err := orm.StringScan(sv, &obj.Age); err != nil {
-		return nil, err
-	}
-	sv, _ = strs[5].(string)
-	if err := orm.StringScan(sv, &obj.Longitude); err != nil {
-		return nil, err
-	}
-	sv, _ = strs[6].(string)
-	if err := orm.StringScan(sv, &obj.Latitude); err != nil {
-		return nil, err
-	}
-	sv, _ = strs[7].(string)
-	if err := orm.StringScan(sv, &obj.Description); err != nil {
-		return nil, err
-	}
-	sv, _ = strs[8].(string)
-	if err := orm.StringScan(sv, &obj.Password); err != nil {
-		return nil, err
-	}
-	sv, _ = strs[9].(string)
-	if err := orm.StringScan(sv, &obj.HeadUrl); err != nil {
-		return nil, err
-	}
-	obj.HeadUrl = orm.Decode(obj.HeadUrl)
-	sv, _ = strs[10].(string)
-	if err := orm.StringScan(sv, &obj.Status); err != nil {
-		return nil, err
-	}
-	sv, _ = strs[11].(string)
-	var val11 int64
-	if err := orm.StringScan(sv, &val11); err != nil {
-		return nil, err
-	}
-	obj.CreatedAt = time.Unix(val11, 0)
-	sv, _ = strs[12].(string)
-	var val12 int64
-	if err := orm.StringScan(sv, &val12); err != nil {
-		return nil, err
-	}
-	obj.UpdatedAt = time.Unix(val12, 0)
-	sv, _ = strs[13].(string)
-	if sv == "nil" {
-		obj.DeletedAt = nil
-	} else {
-		var val13 int64
-		if err := orm.StringScan(sv, &val13); err != nil {
+	if strs[0] != nil {
+		sv, _ = strs[0].(string)
+		if err := orm.StringScan(sv, &obj.Id); err != nil {
 			return nil, err
 		}
-		DeletedAtValue := time.Unix(val13, 0)
-		obj.DeletedAt = &DeletedAtValue
+	}
+	if strs[1] != nil {
+		sv, _ = strs[1].(string)
+		if err := orm.StringScan(sv, &obj.Name); err != nil {
+			return nil, err
+		}
+	}
+	if strs[2] != nil {
+		sv, _ = strs[2].(string)
+		if err := orm.StringScan(sv, &obj.Mailbox); err != nil {
+			return nil, err
+		}
+	}
+	if strs[3] != nil {
+		sv, _ = strs[3].(string)
+		if err := orm.StringScan(sv, &obj.Sex); err != nil {
+			return nil, err
+		}
+	}
+	if strs[4] != nil {
+		sv, _ = strs[4].(string)
+		if err := orm.StringScan(sv, &obj.Age); err != nil {
+			return nil, err
+		}
+	}
+	if strs[5] != nil {
+		sv, _ = strs[5].(string)
+		if err := orm.StringScan(sv, &obj.Longitude); err != nil {
+			return nil, err
+		}
+	}
+	if strs[6] != nil {
+		sv, _ = strs[6].(string)
+		if err := orm.StringScan(sv, &obj.Latitude); err != nil {
+			return nil, err
+		}
+	}
+	if strs[7] != nil {
+		sv, _ = strs[7].(string)
+		if err := orm.StringScan(sv, &obj.Description); err != nil {
+			return nil, err
+		}
+	}
+	if strs[8] != nil {
+		sv, _ = strs[8].(string)
+		if err := orm.StringScan(sv, &obj.Password); err != nil {
+			return nil, err
+		}
+	}
+	if strs[9] != nil {
+		sv, _ = strs[9].(string)
+		if err := orm.StringScan(sv, &obj.HeadUrl); err != nil {
+			return nil, err
+		}
+		obj.HeadUrl = orm.Decode(obj.HeadUrl)
+	}
+	if strs[10] != nil {
+		sv, _ = strs[10].(string)
+		if err := orm.StringScan(sv, &obj.Status); err != nil {
+			return nil, err
+		}
+	}
+	if strs[11] != nil {
+		sv, _ = strs[11].(string)
+		var val11 int64
+		if err := orm.StringScan(sv, &val11); err != nil {
+			return nil, err
+		}
+		obj.CreatedAt = time.Unix(val11, 0)
+	}
+	if strs[12] != nil {
+		sv, _ = strs[12].(string)
+		var val12 int64
+		if err := orm.StringScan(sv, &val12); err != nil {
+			return nil, err
+		}
+		obj.UpdatedAt = time.Unix(val12, 0)
+	}
+	if strs[13] != nil {
+		sv, _ = strs[13].(string)
+		if sv == "nil" {
+			obj.DeletedAt = nil
+		} else {
+			var val13 int64
+			if err := orm.StringScan(sv, &val13); err != nil {
+				return nil, err
+			}
+			DeletedAtValue := time.Unix(val13, 0)
+			obj.DeletedAt = &DeletedAtValue
+		}
 	}
 	return obj, nil
 }
@@ -1437,143 +1465,171 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 		}
 
 		obj := UserMgr.NewUser()
-		sv, ok = strs[0].(string)
-		if !ok {
-			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[0]))
-			continue
-		}
-		if err := orm.StringScan(sv, &obj.Id); err != nil {
-			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
-			continue
-		}
-		sv, ok = strs[1].(string)
-		if !ok {
-			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[1]))
-			continue
-		}
-		if err := orm.StringScan(sv, &obj.Name); err != nil {
-			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
-			continue
-		}
-		sv, ok = strs[2].(string)
-		if !ok {
-			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[2]))
-			continue
-		}
-		if err := orm.StringScan(sv, &obj.Mailbox); err != nil {
-			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
-			continue
-		}
-		sv, ok = strs[3].(string)
-		if !ok {
-			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[3]))
-			continue
-		}
-		if err := orm.StringScan(sv, &obj.Sex); err != nil {
-			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
-			continue
-		}
-		sv, ok = strs[4].(string)
-		if !ok {
-			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[4]))
-			continue
-		}
-		if err := orm.StringScan(sv, &obj.Age); err != nil {
-			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
-			continue
-		}
-		sv, ok = strs[5].(string)
-		if !ok {
-			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[5]))
-			continue
-		}
-		if err := orm.StringScan(sv, &obj.Longitude); err != nil {
-			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
-			continue
-		}
-		sv, ok = strs[6].(string)
-		if !ok {
-			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[6]))
-			continue
-		}
-		if err := orm.StringScan(sv, &obj.Latitude); err != nil {
-			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
-			continue
-		}
-		sv, ok = strs[7].(string)
-		if !ok {
-			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[7]))
-			continue
-		}
-		if err := orm.StringScan(sv, &obj.Description); err != nil {
-			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
-			continue
-		}
-		sv, ok = strs[8].(string)
-		if !ok {
-			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[8]))
-			continue
-		}
-		if err := orm.StringScan(sv, &obj.Password); err != nil {
-			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
-			continue
-		}
-		sv, ok = strs[9].(string)
-		if !ok {
-			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[9]))
-			continue
-		}
-		if err := orm.StringScan(sv, &obj.HeadUrl); err != nil {
-			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
-			continue
-		}
-		obj.HeadUrl = orm.Decode(obj.HeadUrl)
-		sv, ok = strs[10].(string)
-		if !ok {
-			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[10]))
-			continue
-		}
-		if err := orm.StringScan(sv, &obj.Status); err != nil {
-			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
-			continue
-		}
-		sv, ok = strs[11].(string)
-		var val11 int64
-		if !ok {
-			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[11]))
-			continue
-		}
-		if err := orm.StringScan(sv, &val11); err != nil {
-			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
-			continue
-		}
-		obj.CreatedAt = time.Unix(val11, 0)
-		sv, ok = strs[12].(string)
-		var val12 int64
-		if !ok {
-			errall = append(errall, fmt.Sprintf("convert %v to string error", strs[12]))
-			continue
-		}
-		if err := orm.StringScan(sv, &val12); err != nil {
-			errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
-			continue
-		}
-		obj.UpdatedAt = time.Unix(val12, 0)
-		sv, ok = strs[13].(string)
-		if sv == "nil" {
-			obj.DeletedAt = nil
-		} else {
-			var val13 int64
+		if strs[0] != nil {
+			sv, ok = strs[0].(string)
 			if !ok {
-				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[13]))
+				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[0]))
 				continue
 			}
-			if err := orm.StringScan(sv, &val13); err != nil {
+			if err := orm.StringScan(sv, &obj.Id); err != nil {
 				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 				continue
 			}
-			DeletedAtValue := time.Unix(val13, 0)
-			obj.DeletedAt = &DeletedAtValue
+		}
+		if strs[1] != nil {
+			sv, ok = strs[1].(string)
+			if !ok {
+				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[1]))
+				continue
+			}
+			if err := orm.StringScan(sv, &obj.Name); err != nil {
+				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+				continue
+			}
+		}
+		if strs[2] != nil {
+			sv, ok = strs[2].(string)
+			if !ok {
+				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[2]))
+				continue
+			}
+			if err := orm.StringScan(sv, &obj.Mailbox); err != nil {
+				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+				continue
+			}
+		}
+		if strs[3] != nil {
+			sv, ok = strs[3].(string)
+			if !ok {
+				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[3]))
+				continue
+			}
+			if err := orm.StringScan(sv, &obj.Sex); err != nil {
+				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+				continue
+			}
+		}
+		if strs[4] != nil {
+			sv, ok = strs[4].(string)
+			if !ok {
+				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[4]))
+				continue
+			}
+			if err := orm.StringScan(sv, &obj.Age); err != nil {
+				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+				continue
+			}
+		}
+		if strs[5] != nil {
+			sv, ok = strs[5].(string)
+			if !ok {
+				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[5]))
+				continue
+			}
+			if err := orm.StringScan(sv, &obj.Longitude); err != nil {
+				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+				continue
+			}
+		}
+		if strs[6] != nil {
+			sv, ok = strs[6].(string)
+			if !ok {
+				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[6]))
+				continue
+			}
+			if err := orm.StringScan(sv, &obj.Latitude); err != nil {
+				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+				continue
+			}
+		}
+		if strs[7] != nil {
+			sv, ok = strs[7].(string)
+			if !ok {
+				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[7]))
+				continue
+			}
+			if err := orm.StringScan(sv, &obj.Description); err != nil {
+				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+				continue
+			}
+		}
+		if strs[8] != nil {
+			sv, ok = strs[8].(string)
+			if !ok {
+				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[8]))
+				continue
+			}
+			if err := orm.StringScan(sv, &obj.Password); err != nil {
+				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+				continue
+			}
+		}
+		if strs[9] != nil {
+			sv, ok = strs[9].(string)
+			if !ok {
+				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[9]))
+				continue
+			}
+			if err := orm.StringScan(sv, &obj.HeadUrl); err != nil {
+				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+				continue
+			}
+			obj.HeadUrl = orm.Decode(obj.HeadUrl)
+		}
+		if strs[10] != nil {
+			sv, ok = strs[10].(string)
+			if !ok {
+				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[10]))
+				continue
+			}
+			if err := orm.StringScan(sv, &obj.Status); err != nil {
+				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+				continue
+			}
+		}
+		if strs[11] != nil {
+			sv, ok = strs[11].(string)
+			var val11 int64
+			if !ok {
+				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[11]))
+				continue
+			}
+			if err := orm.StringScan(sv, &val11); err != nil {
+				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+				continue
+			}
+			obj.CreatedAt = time.Unix(val11, 0)
+		}
+		if strs[12] != nil {
+			sv, ok = strs[12].(string)
+			var val12 int64
+			if !ok {
+				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[12]))
+				continue
+			}
+			if err := orm.StringScan(sv, &val12); err != nil {
+				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+				continue
+			}
+			obj.UpdatedAt = time.Unix(val12, 0)
+		}
+		if strs[13] != nil {
+			sv, ok = strs[13].(string)
+			if sv == "nil" {
+				obj.DeletedAt = nil
+			} else {
+				var val13 int64
+				if !ok {
+					errall = append(errall, fmt.Sprintf("convert %v to string error", strs[13]))
+					continue
+				}
+				if err := orm.StringScan(sv, &val13); err != nil {
+					errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+					continue
+				}
+				DeletedAtValue := time.Unix(val13, 0)
+				obj.DeletedAt = &DeletedAtValue
+			}
 		}
 		objs = append(objs, obj)
 	}
