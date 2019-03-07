@@ -217,8 +217,9 @@ func (m *_{{$obj.Name}}RedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*{{$obj
 	pipe := m.BeginPipeline()
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	for _, pk := range pks {
-		pipe.Exists(keyOfObject(obj, pk.Key()))
-		pipe.HMGet(keyOfObject(obj, pk.Key()),
+		key := pk.Key()
+		pipe.Exists(keyOfObject(obj, key))
+		pipe.HMGet(keyOfObject(obj, key),
 		{{- range $i, $field := $obj.Fields}}
 		"{{$field.Name}}",
 		{{- end -}})
