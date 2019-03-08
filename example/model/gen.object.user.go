@@ -1154,6 +1154,15 @@ func (m *_UserRedisMgr) DelBySQL(db *_UserDBMgr, sql string, args ...interface{}
 
 var newUserObj = UserMgr.NewUser()
 
+// get redis key of User, PrimaryKeys: id int32
+func RedisKeyOfPrimaryUser(Id int32) string {
+	strs := []string{
+		"Id",
+		fmt.Sprint(Id),
+	}
+	return keyOfObject(newUserObj, fmt.Sprintf("%s", strings.Join(strs, ":")))
+}
+
 //! redis model read
 func (m *_UserRedisMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	if relation := unique.UKRelation(m.RedisStore); relation != nil {

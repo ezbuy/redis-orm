@@ -5,6 +5,21 @@
 
 var new{{$obj.Name}}Obj = {{$obj.Name}}Mgr.New{{$obj.Name}}()
 
+// get redis key of {{$obj.Name}}, PrimaryKeys: {{$primary.GetFuncParam}}
+func RedisKeyOfPrimary{{$obj.Name}}({{- range $j, $field := $primary.Fields}} {{$field.Name}} {{$field.Type}} {{- if lt (add $j 1) (len $primary.Fields)}}, {{- end}} {{- end}}) string {
+	strs := []string{
+		{{- range $j, $field := $primary.Fields}}
+		"{{$field.Name}}",
+			{{- if $field.IsEncode}}
+			orm.Encode(fmt.Sprint({{$field.Name}})),
+			{{- else}}
+			fmt.Sprint({{$field.Name}}),
+			{{- end}}
+		{{- end}}
+	}
+	return keyOfObject(new{{$obj.Name}}Obj, fmt.Sprintf("%s", strings.Join(strs, ":")))
+}
+
 //! redis model read
 func (m *_{{$obj.Name}}RedisMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	if relation := unique.UKRelation(m.RedisStore); relation != nil {
