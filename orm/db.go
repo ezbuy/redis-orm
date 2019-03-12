@@ -1,27 +1,31 @@
 package orm
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
-	"strings"
-
-	_ "github.com/denisenkom/go-mssqldb"
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/denisenkom/go-mssqldb" // register driver for go-mssqldb
+	"github.com/ezbuy/wrapper/database"
+	_ "github.com/go-sql-driver/mysql" // register driver for mysql
 )
 
 type DB interface {
 	Query(sql string, args ...interface{}) (*sql.Rows, error)
 	Exec(sql string, args ...interface{}) (sql.Result, error)
+	QueryContext(ctx context.Context, sql string, args ...interface{}) (*sql.Rows, error)
+	ExecContext(ctx context.Context, sql string, args ...interface{}) (sql.Result, error)
 	SetError(err error)
 }
 
 type DBStore struct {
 	*sql.DB
-	debug   bool
-	slowlog time.Duration
+	debug    bool
+	slowlog  time.Duration
+	wrappers []database.Wrapper
 }
 
 func NewDBStore(driver, host string, port int, database, username, password string) (*DBStore, error) {
@@ -43,15 +47,25 @@ func NewDBStore(driver, host string, port int, database, username, password stri
 	return NewDBDSNStore(driver, dsn)
 }
 
+func NewDBStoreWithRawDB(db *sql.DB) *DBStore {
+	wps := []database.Wrapper{
+		// insert common wrappers here...
+	}
+	return &DBStore{db, false, time.Duration(0), wps}
+}
+
 func NewDBDSNStore(driver, dsn string) (*DBStore, error) {
 	db, err := sql.Open(driver, dsn)
 	if err != nil {
 		return nil, err
 	}
-	return &DBStore{db, false, time.Duration(0)}, nil
+	wps := []database.Wrapper{
+		// insert common wrappers here...
+	}
+	return &DBStore{db, false, time.Duration(0), wps}, nil
 }
 
-func NewDBStoreCharset(driver, host string, port int, database, username, password, charset string) (*DBStore, error) {
+func NewDBStoreCharset(driver, host string, port int, databaseName, username, password, charset string) (*DBStore, error) {
 	var dsn string
 	switch strings.ToLower(driver) {
 	case "mysql":
@@ -63,11 +77,11 @@ func NewDBStoreCharset(driver, host string, port int, database, username, passwo
 			password,
 			host,
 			port,
-			database,
+			databaseName,
 			charset)
 	case "mssql":
 		dsn = fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d;database=%s",
-			host, username, password, port, database)
+			host, username, password, port, databaseName)
 	default:
 		return nil, fmt.Errorf("unsupport db driver: %s", driver)
 	}
@@ -75,7 +89,10 @@ func NewDBStoreCharset(driver, host string, port int, database, username, passwo
 	if err != nil {
 		return nil, err
 	}
-	return &DBStore{db, false, time.Duration(0)}, nil
+	wps := []database.Wrapper{
+		// insert common wrappers here...
+	}
+	return &DBStore{db, false, time.Duration(0), wps}, nil
 }
 
 func (store *DBStore) Debug(b bool) {
@@ -128,12 +145,39 @@ func (store *DBStore) Close() error {
 	return nil
 }
 
+func (store *DBStore) AddWrappers(wp ...database.Wrapper) {
+	store.wrappers = append(store.wrappers, wp...)
+}
+
+func (store *DBStore) QueryContext(ctx context.Context, query string,
+	args ...interface{}) (*sql.Rows, error) {
+	fn := func(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+		return store.DB.QueryContext(ctx, query, args...)
+	}
+	for _, wp := range store.wrappers {
+		fn = wp.WrapQueryContext(fn, query, args...)
+	}
+	return fn(ctx, query, args...)
+}
+
+func (store *DBStore) ExecContext(ctx context.Context, query string,
+	args ...interface{}) (sql.Result, error) {
+	fn := func(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+		return store.DB.ExecContext(ctx, query, args...)
+	}
+	for _, wp := range store.wrappers {
+		fn = wp.WrapExecContext(fn, query, args...)
+	}
+	return fn(ctx, query, args...)
+}
+
 type DBTx struct {
 	tx           *sql.Tx
 	debug        bool
 	slowlog      time.Duration
 	err          error
 	rowsAffected int64
+	wrappers     []database.Wrapper
 }
 
 func (store *DBStore) BeginTx() (*DBTx, error) {
@@ -143,9 +187,10 @@ func (store *DBStore) BeginTx() (*DBTx, error) {
 	}
 
 	return &DBTx{
-		tx:      tx,
-		debug:   store.debug,
-		slowlog: store.slowlog,
+		tx:       tx,
+		debug:    store.debug,
+		slowlog:  store.slowlog,
+		wrappers: store.wrappers,
 	}, nil
 }
 
@@ -194,6 +239,28 @@ func (tx *DBTx) Exec(sql string, args ...interface{}) (sql.Result, error) {
 		tx.err = err
 	}
 	return result, tx.err
+}
+
+func (tx *DBTx) QueryContext(ctx context.Context, query string,
+	args ...interface{}) (*sql.Rows, error) {
+	fn := func(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+		return tx.tx.QueryContext(ctx, query, args...)
+	}
+	for _, wp := range tx.wrappers {
+		fn = wp.WrapQueryContext(fn, query, args...)
+	}
+	return fn(ctx, query, args...)
+}
+
+func (tx *DBTx) ExecContext(ctx context.Context, query string,
+	args ...interface{}) (sql.Result, error) {
+	fn := func(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+		return tx.tx.ExecContext(ctx, query, args...)
+	}
+	for _, wp := range tx.wrappers {
+		fn = wp.WrapExecContext(fn, query, args...)
+	}
+	return fn(ctx, query, args...)
 }
 
 func (tx *DBTx) SetError(err error) {

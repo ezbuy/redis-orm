@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ezbuy/redis-orm/orm"
+	"github.com/ezbuy/wrapper/database"
 )
 
 var (
@@ -90,6 +91,9 @@ func MySQL() *orm.DBStore {
 			}
 			_mysql_store.SetMaxIdleConns(_mysql_cfg.PoolSize)
 			_mysql_store.SetMaxOpenConns(_mysql_cfg.PoolSize)
+			_mysql_store.AddWrappers(
+				database.NewMySQLTracerWrapper(),
+			)
 		}
 	})
 	return _mysql_store

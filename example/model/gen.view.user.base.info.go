@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -415,6 +416,18 @@ func (m *_UserBaseInfoDBMgr) Search(where string, orderby string, limit string, 
 	return m.FetchBySQL(query, args...)
 }
 
+func (m *_UserBaseInfoDBMgr) SearchContext(ctx context.Context, where string, orderby string, limit string, args ...interface{}) ([]*UserBaseInfo, error) {
+	obj := UserBaseInfoMgr.NewUserBaseInfo()
+
+	if limit = strings.ToUpper(strings.TrimSpace(limit)); limit != "" && !strings.HasPrefix(limit, "LIMIT") {
+		limit = "LIMIT " + limit
+	}
+
+	conditions := []string{where, orderby, limit}
+	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
+	return m.FetchBySQLContext(ctx, query, args...)
+}
+
 func (m *_UserBaseInfoDBMgr) SearchConditions(conditions []string, orderby string, offset int, limit int, args ...interface{}) ([]*UserBaseInfo, error) {
 	obj := UserBaseInfoMgr.NewUserBaseInfo()
 	q := fmt.Sprintf("SELECT %s FROM user_base_info %s %s %s",
@@ -426,16 +439,59 @@ func (m *_UserBaseInfoDBMgr) SearchConditions(conditions []string, orderby strin
 	return m.FetchBySQL(q, args...)
 }
 
+func (m *_UserBaseInfoDBMgr) SearchConditionsContext(ctx context.Context, conditions []string, orderby string, offset int, limit int, args ...interface{}) ([]*UserBaseInfo, error) {
+	obj := UserBaseInfoMgr.NewUserBaseInfo()
+	q := fmt.Sprintf("SELECT %s FROM user_base_info %s %s %s",
+		strings.Join(obj.GetColumns(), ","),
+		orm.SQLWhere(conditions),
+		orderby,
+		orm.SQLOffsetLimit(offset, limit))
+
+	return m.FetchBySQLContext(ctx, q, args...)
+}
+
 func (m *_UserBaseInfoDBMgr) SearchCount(where string, args ...interface{}) (int64, error) {
 	return m.queryCount(where, args...)
+}
+
+func (m *_UserBaseInfoDBMgr) SearchCountContext(ctx context.Context, where string, args ...interface{}) (int64, error) {
+	return m.queryCountContext(ctx, where, args...)
 }
 
 func (m *_UserBaseInfoDBMgr) SearchConditionsCount(conditions []string, args ...interface{}) (int64, error) {
 	return m.queryCount(orm.SQLWhere(conditions), args...)
 }
 
+func (m *_UserBaseInfoDBMgr) SearchConditionsCountContext(ctx context.Context, conditions []string, args ...interface{}) (int64, error) {
+	return m.queryCountContext(ctx, orm.SQLWhere(conditions), args...)
+}
+
 func (m *_UserBaseInfoDBMgr) FetchBySQL(q string, args ...interface{}) (results []*UserBaseInfo, err error) {
 	rows, err := m.db.Query(q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("UserBaseInfo fetch error: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var result UserBaseInfo
+		err = rows.Scan(&(result.Id), &(result.Name), &(result.Mailbox), &(result.Password), &(result.Sex))
+		if err != nil {
+			m.db.SetError(err)
+			return nil, err
+		}
+
+		results = append(results, &result)
+	}
+	if err = rows.Err(); err != nil {
+		m.db.SetError(err)
+		return nil, fmt.Errorf("UserBaseInfo fetch result error: %v", err)
+	}
+	return
+}
+
+func (m *_UserBaseInfoDBMgr) FetchBySQLContext(ctx context.Context, q string, args ...interface{}) (results []*UserBaseInfo, err error) {
+	rows, err := m.db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("UserBaseInfo fetch error: %v", err)
 	}
@@ -502,6 +558,23 @@ func (m *_UserBaseInfoDBMgr) FetchByPrimaryKey(id int32) (*UserBaseInfo, error) 
 	return nil, fmt.Errorf("UserBaseInfo fetch record not found")
 }
 
+func (m *_UserBaseInfoDBMgr) FetchByPrimaryKeyContext(ctx context.Context, id int32) (*UserBaseInfo, error) {
+	obj := UserBaseInfoMgr.NewUserBaseInfo()
+	pk := &IdOfUserBaseInfoPK{
+		Id: id,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	objs, err := m.FetchBySQLContext(ctx, query, pk.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0], nil
+	}
+	return nil, fmt.Errorf("UserBaseInfo fetch record not found")
+}
+
 func (m *_UserBaseInfoDBMgr) FetchByPrimaryKeys(ids []int32) ([]*UserBaseInfo, error) {
 	size := len(ids)
 	if size == 0 {
@@ -515,6 +588,21 @@ func (m *_UserBaseInfoDBMgr) FetchByPrimaryKeys(ids []int32) ([]*UserBaseInfo, e
 	query := fmt.Sprintf("SELECT %s FROM user_base_info WHERE `id` IN (?%s)", strings.Join(obj.GetColumns(), ","),
 		strings.Repeat(",?", size-1))
 	return m.FetchBySQL(query, params...)
+}
+
+func (m *_UserBaseInfoDBMgr) FetchByPrimaryKeysContext(ctx context.Context, ids []int32) ([]*UserBaseInfo, error) {
+	size := len(ids)
+	if size == 0 {
+		return nil, nil
+	}
+	params := make([]interface{}, 0, size)
+	for _, pk := range ids {
+		params = append(params, pk)
+	}
+	obj := UserBaseInfoMgr.NewUserBaseInfo()
+	query := fmt.Sprintf("SELECT %s FROM user_base_info WHERE `id` IN (?%s)", strings.Join(obj.GetColumns(), ","),
+		strings.Repeat(",?", size-1))
+	return m.FetchBySQLContext(ctx, query, params...)
 }
 
 // indexes
@@ -531,6 +619,17 @@ func (m *_UserBaseInfoDBMgr) FindByName(name string, limit int, offset int) ([]*
 	return m.FetchBySQL(query, idx.SQLParams()...)
 }
 
+func (m *_UserBaseInfoDBMgr) FindByNameContext(ctx context.Context, name string, limit int, offset int) ([]*UserBaseInfo, error) {
+	obj := UserBaseInfoMgr.NewUserBaseInfo()
+	idx := &NameOfUserBaseInfoIDX{
+		Name:   name,
+		limit:  limit,
+		offset: offset,
+	}
+	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
+	return m.FetchBySQLContext(ctx, query, idx.SQLParams()...)
+}
+
 func (m *_UserBaseInfoDBMgr) FindAllByName(name string) ([]*UserBaseInfo, error) {
 	obj := UserBaseInfoMgr.NewUserBaseInfo()
 	idx := &NameOfUserBaseInfoIDX{
@@ -539,6 +638,16 @@ func (m *_UserBaseInfoDBMgr) FindAllByName(name string) ([]*UserBaseInfo, error)
 
 	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
 	return m.FetchBySQL(query, idx.SQLParams()...)
+}
+
+func (m *_UserBaseInfoDBMgr) FindAllByNameContext(ctx context.Context, name string) ([]*UserBaseInfo, error) {
+	obj := UserBaseInfoMgr.NewUserBaseInfo()
+	idx := &NameOfUserBaseInfoIDX{
+		Name: name,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
+	return m.FetchBySQLContext(ctx, query, idx.SQLParams()...)
 }
 
 func (m *_UserBaseInfoDBMgr) FindByNameGroup(items []string) ([]*UserBaseInfo, error) {
@@ -553,6 +662,20 @@ func (m *_UserBaseInfoDBMgr) FindByNameGroup(items []string) ([]*UserBaseInfo, e
 	query := fmt.Sprintf("SELECT %s FROM user_base_info where `name` in (?", strings.Join(obj.GetColumns(), ",")) +
 		strings.Repeat(",?", len(items)-1) + ")"
 	return m.FetchBySQL(query, params...)
+}
+
+func (m *_UserBaseInfoDBMgr) FindByNameGroupContext(ctx context.Context, items []string) ([]*UserBaseInfo, error) {
+	obj := UserBaseInfoMgr.NewUserBaseInfo()
+	if len(items) == 0 {
+		return nil, nil
+	}
+	params := make([]interface{}, 0, len(items))
+	for _, item := range items {
+		params = append(params, item)
+	}
+	query := fmt.Sprintf("SELECT %s FROM user_base_info where `name` in (?", strings.Join(obj.GetColumns(), ",")) +
+		strings.Repeat(",?", len(items)-1) + ")"
+	return m.FetchBySQLContext(ctx, query, params...)
 }
 
 // uniques
@@ -575,8 +698,37 @@ func (m *_UserBaseInfoDBMgr) FetchByMailboxPassword(mailbox string, password str
 	return nil, fmt.Errorf("UserBaseInfo fetch record not found")
 }
 
+func (m *_UserBaseInfoDBMgr) FetchByMailboxPasswordContext(ctx context.Context, mailbox string, password string) (*UserBaseInfo, error) {
+	obj := UserBaseInfoMgr.NewUserBaseInfo()
+	uniq := &MailboxPasswordOfUserBaseInfoUK{
+		Mailbox:  mailbox,
+		Password: password,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(obj.GetColumns(), ","), uniq.SQLFormat(true))
+	objs, err := m.FetchBySQLContext(ctx, query, uniq.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0], nil
+	}
+	return nil, fmt.Errorf("UserBaseInfo fetch record not found")
+}
+
 func (m *_UserBaseInfoDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	objs, err := m.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0], nil
+	}
+	return nil, fmt.Errorf("UserBaseInfo find record not found")
+}
+
+func (m *_UserBaseInfoDBMgr) FindOneContext(ctx context.Context, unique Unique) (PrimaryKey, error) {
+	objs, err := m.queryLimitContext(ctx, unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
 		return nil, err
 	}
@@ -625,12 +777,36 @@ func (m *_UserBaseInfoDBMgr) FindFetch(index Index) (int64, []*UserBaseInfo, err
 	return total, results, nil
 }
 
+func (m *_UserBaseInfoDBMgr) FindFetchContext(ctx context.Context, index Index) (int64, []*UserBaseInfo, error) {
+	total, err := m.queryCountContext(ctx, index.SQLFormat(false), index.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+
+	obj := UserBaseInfoMgr.NewUserBaseInfo()
+	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
+	results, err := m.FetchBySQL(query, index.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+	return total, results, nil
+}
+
 func (m *_UserBaseInfoDBMgr) Range(scope Range) (int64, []PrimaryKey, error) {
 	total, err := m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
 	if err != nil {
 		return total, nil, err
 	}
 	pks, err := m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
+	return total, pks, err
+}
+
+func (m *_UserBaseInfoDBMgr) RangeContext(ctx context.Context, scope Range) (int64, []PrimaryKey, error) {
+	total, err := m.queryCountContext(ctx, scope.SQLFormat(false), scope.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+	pks, err := m.queryLimitContext(ctx, scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 	return total, pks, err
 }
 
@@ -648,14 +824,38 @@ func (m *_UserBaseInfoDBMgr) RangeFetch(scope Range) (int64, []*UserBaseInfo, er
 	return total, results, nil
 }
 
+func (m *_UserBaseInfoDBMgr) RangeFetchContext(ctx context.Context, scope Range) (int64, []*UserBaseInfo, error) {
+	total, err := m.queryCountContext(ctx, scope.SQLFormat(false), scope.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+	obj := UserBaseInfoMgr.NewUserBaseInfo()
+	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
+	results, err := m.FetchBySQLContext(ctx, query, scope.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+	return total, results, nil
+}
+
 func (m *_UserBaseInfoDBMgr) RangeRevert(scope Range) (int64, []PrimaryKey, error) {
 	scope.Revert(true)
 	return m.Range(scope)
 }
 
+func (m *_UserBaseInfoDBMgr) RangeRevertContext(ctx context.Context, scope Range) (int64, []PrimaryKey, error) {
+	scope.Revert(true)
+	return m.RangeContext(ctx, scope)
+}
+
 func (m *_UserBaseInfoDBMgr) RangeRevertFetch(scope Range) (int64, []*UserBaseInfo, error) {
 	scope.Revert(true)
 	return m.RangeFetch(scope)
+}
+
+func (m *_UserBaseInfoDBMgr) RangeRevertFetchContext(ctx context.Context, scope Range) (int64, []*UserBaseInfo, error) {
+	scope.Revert(true)
+	return m.RangeFetchContext(ctx, scope)
 }
 
 func (m *_UserBaseInfoDBMgr) queryLimit(where string, limit int, args ...interface{}) (results []PrimaryKey, err error) {
@@ -691,9 +891,61 @@ func (m *_UserBaseInfoDBMgr) queryLimit(where string, limit int, args ...interfa
 	return
 }
 
+func (m *_UserBaseInfoDBMgr) queryLimitContext(ctx context.Context, where string, limit int, args ...interface{}) (results []PrimaryKey, err error) {
+	pk := UserBaseInfoMgr.NewPrimaryKey()
+	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(pk.Columns(), ","), where)
+	rows, err := m.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("UserBaseInfo query limit error: %v", err)
+	}
+	defer rows.Close()
+
+	offset := 0
+
+	for rows.Next() {
+		if limit >= 0 && offset >= limit {
+			break
+		}
+		offset++
+
+		result := UserBaseInfoMgr.NewPrimaryKey()
+		err = rows.Scan(&(result.Id))
+		if err != nil {
+			m.db.SetError(err)
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+	if err := rows.Err(); err != nil {
+		m.db.SetError(err)
+		return nil, fmt.Errorf("UserBaseInfo query limit result error: %v", err)
+	}
+	return
+}
+
 func (m *_UserBaseInfoDBMgr) queryCount(where string, args ...interface{}) (int64, error) {
 	query := fmt.Sprintf("SELECT count(`id`) FROM user_base_info %s", where)
 	rows, err := m.db.Query(query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("UserBaseInfo query count error: %v", err)
+	}
+	defer rows.Close()
+
+	var count int64
+	for rows.Next() {
+		if err = rows.Scan(&count); err != nil {
+			m.db.SetError(err)
+			return 0, err
+		}
+		break
+	}
+	return count, nil
+}
+
+func (m *_UserBaseInfoDBMgr) queryCountContext(ctx context.Context, where string, args ...interface{}) (int64, error) {
+	query := fmt.Sprintf("SELECT count(`id`) FROM user_base_info %s", where)
+	rows, err := m.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("UserBaseInfo query count error: %v", err)
 	}

@@ -1,5 +1,8 @@
 {{define "object.elastic"}}
 {{$obj := .}}
+var (
+	_ context.Context
+)
 //! orm.elastic
 var {{$obj.Name}}ElasticFields = struct{
 	{{- range $field := .Fields}}

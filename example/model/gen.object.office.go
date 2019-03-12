@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -331,6 +332,18 @@ func (m *_OfficeDBMgr) Search(where string, orderby string, limit string, args .
 	return m.FetchBySQL(query, args...)
 }
 
+func (m *_OfficeDBMgr) SearchContext(ctx context.Context, where string, orderby string, limit string, args ...interface{}) ([]*Office, error) {
+	obj := OfficeMgr.NewOffice()
+
+	if limit = strings.ToUpper(strings.TrimSpace(limit)); limit != "" && !strings.HasPrefix(limit, "LIMIT") {
+		limit = "LIMIT " + limit
+	}
+
+	conditions := []string{where, orderby, limit}
+	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
+	return m.FetchBySQLContext(ctx, query, args...)
+}
+
 func (m *_OfficeDBMgr) SearchConditions(conditions []string, orderby string, offset int, limit int, args ...interface{}) ([]*Office, error) {
 	obj := OfficeMgr.NewOffice()
 	if orderby == "" {
@@ -345,16 +358,68 @@ func (m *_OfficeDBMgr) SearchConditions(conditions []string, orderby string, off
 	return m.FetchBySQL(q, args...)
 }
 
+func (m *_OfficeDBMgr) SearchConditionsContext(ctx context.Context, conditions []string, orderby string, offset int, limit int, args ...interface{}) ([]*Office, error) {
+	obj := OfficeMgr.NewOffice()
+	if orderby == "" {
+		orderby = orm.SQLOrderBy("office_id", false)
+	}
+	q := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] %s %s %s",
+		strings.Join(obj.GetColumns(), ","),
+		orm.SQLWhere(conditions),
+		orderby,
+		orm.MsSQLOffsetLimit(offset, limit))
+
+	return m.FetchBySQLContext(ctx, q, args...)
+}
+
 func (m *_OfficeDBMgr) SearchCount(where string, args ...interface{}) (int64, error) {
 	return m.queryCount(where, args...)
+}
+
+func (m *_OfficeDBMgr) SearchCountContext(ctx context.Context, where string, args ...interface{}) (int64, error) {
+	return m.queryCountContext(ctx, where, args...)
 }
 
 func (m *_OfficeDBMgr) SearchConditionsCount(conditions []string, args ...interface{}) (int64, error) {
 	return m.queryCount(orm.SQLWhere(conditions), args...)
 }
 
+func (m *_OfficeDBMgr) SearchConditionsCountContext(ctx context.Context, conditions []string, args ...interface{}) (int64, error) {
+	return m.queryCountContext(ctx, orm.SQLWhere(conditions), args...)
+}
+
 func (m *_OfficeDBMgr) FetchBySQL(q string, args ...interface{}) (results []*Office, err error) {
 	rows, err := m.db.Query(q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("Office fetch error: %v", err)
+	}
+	defer rows.Close()
+
+	var CreateDate string
+	var UpdateDate string
+
+	for rows.Next() {
+		var result Office
+		err = rows.Scan(&(result.OfficeId), &(result.OfficeArea), &(result.OfficeName), &(result.SearchOriginCode), &(result.ProcessingOriginCode), &(result.CreateBy), &(result.UpdateBy), &CreateDate, &UpdateDate)
+		if err != nil {
+			m.db.SetError(err)
+			return nil, err
+		}
+
+		result.CreateDate = orm.MsSQLTimeParse(CreateDate)
+		result.UpdateDate = orm.MsSQLTimeParse(UpdateDate)
+
+		results = append(results, &result)
+	}
+	if err = rows.Err(); err != nil {
+		m.db.SetError(err)
+		return nil, fmt.Errorf("Office fetch result error: %v", err)
+	}
+	return
+}
+
+func (m *_OfficeDBMgr) FetchBySQLContext(ctx context.Context, q string, args ...interface{}) (results []*Office, err error) {
+	rows, err := m.db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("Office fetch error: %v", err)
 	}
@@ -427,6 +492,23 @@ func (m *_OfficeDBMgr) FetchByPrimaryKey(officeId int32) (*Office, error) {
 	return nil, fmt.Errorf("Office fetch record not found")
 }
 
+func (m *_OfficeDBMgr) FetchByPrimaryKeyContext(ctx context.Context, officeId int32) (*Office, error) {
+	obj := OfficeMgr.NewOffice()
+	pk := &OfficeIdOfOfficePK{
+		OfficeId: officeId,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	objs, err := m.FetchBySQLContext(ctx, query, pk.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0], nil
+	}
+	return nil, fmt.Errorf("Office fetch record not found")
+}
+
 func (m *_OfficeDBMgr) FetchByPrimaryKeys(officeIds []int32) ([]*Office, error) {
 	size := len(officeIds)
 	if size == 0 {
@@ -442,12 +524,38 @@ func (m *_OfficeDBMgr) FetchByPrimaryKeys(officeIds []int32) ([]*Office, error) 
 	return m.FetchBySQL(query, params...)
 }
 
+func (m *_OfficeDBMgr) FetchByPrimaryKeysContext(ctx context.Context, officeIds []int32) ([]*Office, error) {
+	size := len(officeIds)
+	if size == 0 {
+		return nil, nil
+	}
+	params := make([]interface{}, 0, size)
+	for _, pk := range officeIds {
+		params = append(params, pk)
+	}
+	obj := OfficeMgr.NewOffice()
+	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] WHERE office_id IN (?%s)", strings.Join(obj.GetColumns(), ","),
+		strings.Repeat(",?", size-1))
+	return m.FetchBySQLContext(ctx, query, params...)
+}
+
 // indexes
 
 // uniques
 
 func (m *_OfficeDBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	objs, err := m.queryLimit(unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0], nil
+	}
+	return nil, fmt.Errorf("Office find record not found")
+}
+
+func (m *_OfficeDBMgr) FindOneContext(ctx context.Context, unique Unique) (PrimaryKey, error) {
+	objs, err := m.queryLimitContext(ctx, unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
 	if err != nil {
 		return nil, err
 	}
@@ -496,12 +604,36 @@ func (m *_OfficeDBMgr) FindFetch(index Index) (int64, []*Office, error) {
 	return total, results, nil
 }
 
+func (m *_OfficeDBMgr) FindFetchContext(ctx context.Context, index Index) (int64, []*Office, error) {
+	total, err := m.queryCountContext(ctx, index.SQLFormat(false), index.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+
+	obj := OfficeMgr.NewOffice()
+	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
+	results, err := m.FetchBySQL(query, index.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+	return total, results, nil
+}
+
 func (m *_OfficeDBMgr) Range(scope Range) (int64, []PrimaryKey, error) {
 	total, err := m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
 	if err != nil {
 		return total, nil, err
 	}
 	pks, err := m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
+	return total, pks, err
+}
+
+func (m *_OfficeDBMgr) RangeContext(ctx context.Context, scope Range) (int64, []PrimaryKey, error) {
+	total, err := m.queryCountContext(ctx, scope.SQLFormat(false), scope.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+	pks, err := m.queryLimitContext(ctx, scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 	return total, pks, err
 }
 
@@ -519,9 +651,28 @@ func (m *_OfficeDBMgr) RangeFetch(scope Range) (int64, []*Office, error) {
 	return total, results, nil
 }
 
+func (m *_OfficeDBMgr) RangeFetchContext(ctx context.Context, scope Range) (int64, []*Office, error) {
+	total, err := m.queryCountContext(ctx, scope.SQLFormat(false), scope.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+	obj := OfficeMgr.NewOffice()
+	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
+	results, err := m.FetchBySQLContext(ctx, query, scope.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+	return total, results, nil
+}
+
 func (m *_OfficeDBMgr) RangeRevert(scope Range) (int64, []PrimaryKey, error) {
 	scope.Revert(true)
 	return m.Range(scope)
+}
+
+func (m *_OfficeDBMgr) RangeRevertContext(ctx context.Context, scope Range) (int64, []PrimaryKey, error) {
+	scope.Revert(true)
+	return m.RangeContext(ctx, scope)
 }
 
 func (m *_OfficeDBMgr) RangeRevertFetch(scope Range) (int64, []*Office, error) {
@@ -529,10 +680,48 @@ func (m *_OfficeDBMgr) RangeRevertFetch(scope Range) (int64, []*Office, error) {
 	return m.RangeFetch(scope)
 }
 
+func (m *_OfficeDBMgr) RangeRevertFetchContext(ctx context.Context, scope Range) (int64, []*Office, error) {
+	scope.Revert(true)
+	return m.RangeFetchContext(ctx, scope)
+}
+
 func (m *_OfficeDBMgr) queryLimit(where string, limit int, args ...interface{}) (results []PrimaryKey, err error) {
 	pk := OfficeMgr.NewPrimaryKey()
 	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] %s", strings.Join(pk.Columns(), ","), where)
 	rows, err := m.db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("Office query limit error: %v", err)
+	}
+	defer rows.Close()
+
+	offset := 0
+
+	for rows.Next() {
+		if limit >= 0 && offset >= limit {
+			break
+		}
+		offset++
+
+		result := OfficeMgr.NewPrimaryKey()
+		err = rows.Scan(&(result.OfficeId))
+		if err != nil {
+			m.db.SetError(err)
+			return nil, err
+		}
+
+		results = append(results, result)
+	}
+	if err := rows.Err(); err != nil {
+		m.db.SetError(err)
+		return nil, fmt.Errorf("Office query limit result error: %v", err)
+	}
+	return
+}
+
+func (m *_OfficeDBMgr) queryLimitContext(ctx context.Context, where string, limit int, args ...interface{}) (results []PrimaryKey, err error) {
+	pk := OfficeMgr.NewPrimaryKey()
+	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] %s", strings.Join(pk.Columns(), ","), where)
+	rows, err := m.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("Office query limit error: %v", err)
 	}
@@ -581,6 +770,25 @@ func (m *_OfficeDBMgr) queryCount(where string, args ...interface{}) (int64, err
 	return count, nil
 }
 
+func (m *_OfficeDBMgr) queryCountContext(ctx context.Context, where string, args ...interface{}) (int64, error) {
+	query := fmt.Sprintf("SELECT count(office_id) FROM [dbo].[testCRUD] %s", where)
+	rows, err := m.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("Office query count error: %v", err)
+	}
+	defer rows.Close()
+
+	var count int64
+	for rows.Next() {
+		if err = rows.Scan(&count); err != nil {
+			m.db.SetError(err)
+			return 0, err
+		}
+		break
+	}
+	return count, nil
+}
+
 func (m *_OfficeDBMgr) BatchCreate(objs []*Office) (int64, error) {
 	if len(objs) == 0 {
 		return 0, nil
@@ -607,6 +815,32 @@ func (m *_OfficeDBMgr) BatchCreate(objs []*Office) (int64, error) {
 	return result.RowsAffected()
 }
 
+func (m *_OfficeDBMgr) BatchCreateContext(ctx context.Context, objs []*Office) (int64, error) {
+	if len(objs) == 0 {
+		return 0, nil
+	}
+
+	params := make([]string, 0, len(objs))
+	values := make([]interface{}, 0, len(objs)*8)
+	for _, obj := range objs {
+		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice(8, "?"), ",")))
+		values = append(values, obj.OfficeArea)
+		values = append(values, obj.OfficeName)
+		values = append(values, obj.SearchOriginCode)
+		values = append(values, obj.ProcessingOriginCode)
+		values = append(values, obj.CreateBy)
+		values = append(values, obj.UpdateBy)
+		values = append(values, orm.MsSQLTimeFormat(obj.CreateDate))
+		values = append(values, orm.MsSQLTimeFormat(obj.UpdateDate))
+	}
+	query := fmt.Sprintf("INSERT INTO [dbo].[testCRUD](%s) VALUES %s", strings.Join(objs[0].GetNoneIncrementColumns(), ","), strings.Join(params, ","))
+	result, err := m.db.ExecContext(ctx, query, values...)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 // argument example:
 // set:"a=?, b=?"
 // where:"c=? and d=?"
@@ -617,6 +851,22 @@ func (m *_OfficeDBMgr) UpdateBySQL(set, where string, args ...interface{}) (int6
 		query = fmt.Sprintf("UPDATE [dbo].[testCRUD] SET %s WHERE %s", set, where)
 	}
 	result, err := m.db.Exec(query, args...)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+// argument example:
+// set:"a=?, b=?"
+// where:"c=? and d=?"
+// params:[]interface{}{"a", "b", "c", "d"}...
+func (m *_OfficeDBMgr) UpdateBySQLContext(ctx context.Context, set, where string, args ...interface{}) (int64, error) {
+	query := fmt.Sprintf("UPDATE [dbo].[testCRUD] SET %s", set)
+	if where != "" {
+		query = fmt.Sprintf("UPDATE [dbo].[testCRUD] SET %s WHERE %s", set, where)
+	}
+	result, err := m.db.ExecContext(ctx, query, args...)
 	if err != nil {
 		return 0, err
 	}
@@ -639,6 +889,33 @@ func (m *_OfficeDBMgr) Create(obj *Office) (int64, error) {
 	values = append(values, orm.MsSQLTimeFormat(obj.CreateDate))
 	values = append(values, orm.MsSQLTimeFormat(obj.UpdateDate))
 	result, err := m.db.Exec(q, values...)
+	if err != nil {
+		return 0, err
+	}
+	lastInsertId, err := result.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	obj.OfficeId = int32(lastInsertId)
+	return result.RowsAffected()
+}
+
+func (m *_OfficeDBMgr) CreateContext(ctx context.Context, obj *Office) (int64, error) {
+	params := orm.NewStringSlice(8, "?")
+	q := fmt.Sprintf("INSERT INTO [dbo].[testCRUD](%s) VALUES(%s)",
+		strings.Join(obj.GetNoneIncrementColumns(), ","),
+		strings.Join(params, ","))
+
+	values := make([]interface{}, 0, 9)
+	values = append(values, obj.OfficeArea)
+	values = append(values, obj.OfficeName)
+	values = append(values, obj.SearchOriginCode)
+	values = append(values, obj.ProcessingOriginCode)
+	values = append(values, obj.CreateBy)
+	values = append(values, obj.UpdateBy)
+	values = append(values, orm.MsSQLTimeFormat(obj.CreateDate))
+	values = append(values, orm.MsSQLTimeFormat(obj.UpdateDate))
+	result, err := m.db.ExecContext(ctx, q, values...)
 	if err != nil {
 		return 0, err
 	}
@@ -682,6 +959,38 @@ func (m *_OfficeDBMgr) Update(obj *Office) (int64, error) {
 	return result.RowsAffected()
 }
 
+func (m *_OfficeDBMgr) UpdateContext(ctx context.Context, obj *Office) (int64, error) {
+	columns := []string{
+		"office_area = ?",
+		"office_name = ?",
+		"search_origin_code = ?",
+		"processing_origin_code = ?",
+		"create_by = ?",
+		"update_by = ?",
+		"create_date = ?",
+		"update_date = ?",
+	}
+
+	pk := obj.GetPrimaryKey()
+	q := fmt.Sprintf("UPDATE [dbo].[testCRUD] SET %s %s", strings.Join(columns, ","), pk.SQLFormat())
+	values := make([]interface{}, 0, 9-1)
+	values = append(values, obj.OfficeArea)
+	values = append(values, obj.OfficeName)
+	values = append(values, obj.SearchOriginCode)
+	values = append(values, obj.ProcessingOriginCode)
+	values = append(values, obj.CreateBy)
+	values = append(values, obj.UpdateBy)
+	values = append(values, orm.MsSQLTimeFormat(obj.CreateDate))
+	values = append(values, orm.MsSQLTimeFormat(obj.UpdateDate))
+	values = append(values, pk.SQLParams()...)
+
+	result, err := m.db.ExecContext(ctx, q, values...)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 func (m *_OfficeDBMgr) Save(obj *Office) (int64, error) {
 	affected, err := m.Update(obj)
 	if err != nil {
@@ -693,8 +1002,23 @@ func (m *_OfficeDBMgr) Save(obj *Office) (int64, error) {
 	return affected, err
 }
 
+func (m *_OfficeDBMgr) SaveContext(ctx context.Context, obj *Office) (int64, error) {
+	affected, err := m.UpdateContext(ctx, obj)
+	if err != nil {
+		return affected, err
+	}
+	if affected == 0 {
+		return m.CreateContext(ctx, obj)
+	}
+	return affected, err
+}
+
 func (m *_OfficeDBMgr) Delete(obj *Office) (int64, error) {
 	return m.DeleteByPrimaryKey(obj.OfficeId)
+}
+
+func (m *_OfficeDBMgr) DeleteContext(ctx context.Context, obj *Office) (int64, error) {
+	return m.DeleteByPrimaryKeyContext(ctx, obj.OfficeId)
 }
 
 func (m *_OfficeDBMgr) DeleteByPrimaryKey(officeId int32) (int64, error) {
@@ -709,12 +1033,36 @@ func (m *_OfficeDBMgr) DeleteByPrimaryKey(officeId int32) (int64, error) {
 	return result.RowsAffected()
 }
 
+func (m *_OfficeDBMgr) DeleteByPrimaryKeyContext(ctx context.Context, officeId int32) (int64, error) {
+	pk := &OfficeIdOfOfficePK{
+		OfficeId: officeId,
+	}
+	q := fmt.Sprintf("DELETE FROM [dbo].[testCRUD] %s", pk.SQLFormat())
+	result, err := m.db.ExecContext(ctx, q, pk.SQLParams()...)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 func (m *_OfficeDBMgr) DeleteBySQL(where string, args ...interface{}) (int64, error) {
 	query := fmt.Sprintf("DELETE FROM [dbo].[testCRUD]")
 	if where != "" {
 		query = fmt.Sprintf("DELETE FROM [dbo].[testCRUD] WHERE %s", where)
 	}
 	result, err := m.db.Exec(query, args...)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+func (m *_OfficeDBMgr) DeleteBySQLContext(ctx context.Context, where string, args ...interface{}) (int64, error) {
+	query := fmt.Sprintf("DELETE FROM [dbo].[testCRUD]")
+	if where != "" {
+		query = fmt.Sprintf("DELETE FROM [dbo].[testCRUD] WHERE %s", where)
+	}
+	result, err := m.db.ExecContext(ctx, query, args...)
 	if err != nil {
 		return 0, err
 	}

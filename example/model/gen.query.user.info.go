@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"github.com/ezbuy/redis-orm/orm"
@@ -50,6 +51,30 @@ func UserInfoDBMgr(db orm.DB) *_UserInfoDBMgr {
 
 func (m *_UserInfoDBMgr) QueryBySQL(q string, args ...interface{}) (results []*UserInfo, err error) {
 	rows, err := m.db.Query(q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("UserInfo fetch error: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var result UserInfo
+		err = rows.Scan(&(result.Id), &(result.Name), &(result.Mailbox), &(result.Password), &(result.Sex))
+		if err != nil {
+			m.db.SetError(err)
+			return nil, err
+		}
+
+		results = append(results, &result)
+	}
+	if err = rows.Err(); err != nil {
+		m.db.SetError(err)
+		return nil, fmt.Errorf("UserInfo fetch result error: %v", err)
+	}
+	return
+}
+
+func (m *_UserInfoDBMgr) QueryBySQLContext(ctx context.Context, q string, args ...interface{}) (results []*UserInfo, err error) {
+	rows, err := m.db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("UserInfo fetch error: %v", err)
 	}

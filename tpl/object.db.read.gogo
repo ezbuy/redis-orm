@@ -31,6 +31,18 @@ func (m *_{{$obj.Name}}DBMgr) Search(where string, orderby string, limit string,
 	return m.FetchBySQL(query, args...)
 }
 
+func (m *_{{$obj.Name}}DBMgr) SearchContext (ctx context.Context, where string, orderby string, limit string, args ...interface{}) ([]*{{$obj.Name}}, error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+
+    if limit = strings.ToUpper(strings.TrimSpace(limit)); limit !="" && !strings.HasPrefix(limit, "LIMIT") {
+	    limit = "LIMIT " + limit
+	}
+
+	conditions := []string{where, orderby, limit}
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), strings.Join(conditions, " "))
+	return m.FetchBySQLContext(ctx, query, args...)
+}
+
 func (m *_{{$obj.Name}}DBMgr) SearchConditions(conditions []string, orderby string, offset int, limit int, args ...interface{}) ([]*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	{{- if $obj.DbContains "mssql"}}
@@ -51,16 +63,114 @@ func (m *_{{$obj.Name}}DBMgr) SearchConditions(conditions []string, orderby stri
 	return m.FetchBySQL(q, args...)
 }
 
+func (m *_{{$obj.Name}}DBMgr) SearchConditionsContext(ctx context.Context,conditions []string, orderby string, offset int, limit int, args ...interface{}) ([]*{{$obj.Name}}, error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	{{- if $obj.DbContains "mssql"}}
+	if orderby == "" {
+		orderby = orm.SQLOrderBy("{{$primaryField.FieldName}}", false)
+	}
+	{{- end}}
+	q := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s %s %s",
+			strings.Join(obj.GetColumns(), ","),
+			orm.SQLWhere(conditions),
+			orderby,
+			{{- if $obj.DbContains "mssql"}}
+			orm.MsSQLOffsetLimit(offset, limit))
+			{{- else}}
+			orm.SQLOffsetLimit(offset, limit))
+			{{- end}}
+
+	return m.FetchBySQLContext(ctx,q, args...)
+}
+
 func (m *_{{$obj.Name}}DBMgr) SearchCount(where string, args ...interface{}) (int64, error){
 	return m.queryCount(where, args...)
+}
+
+
+func (m *_{{$obj.Name}}DBMgr) SearchCountContext(ctx context.Context,where string, args ...interface{}) (int64, error){
+	return m.queryCountContext(ctx,where, args...)
 }
 
 func (m *_{{$obj.Name}}DBMgr) SearchConditionsCount(conditions []string, args ...interface{}) (int64, error){
 	return m.queryCount(orm.SQLWhere(conditions), args...)
 }
 
+func (m *_{{$obj.Name}}DBMgr) SearchConditionsCountContext(ctx context.Context,conditions []string, args ...interface{}) (int64, error){
+	return m.queryCountContext(ctx,orm.SQLWhere(conditions), args...)
+}
+
 func (m *_{{$obj.Name}}DBMgr) FetchBySQL(q string, args ... interface{}) (results []*{{$obj.Name}}, err error) {
 	rows, err := m.db.Query(q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("{{$obj.Name}} fetch error: %v", err)
+	}
+	defer rows.Close()
+
+	{{range $index, $field := $obj.Fields}}
+		{{- if $field.IsNullable }}
+			var {{$field.Name}} sql.{{$field.GetNullSQLType}}
+		{{- else if $field.IsNeedTransform }}
+			var {{$field.Name}} {{$field.GetTransform.TypeOrigin}}
+		{{- end -}}
+	{{- end }}
+
+	for rows.Next() {
+		var result {{$obj.Name}}
+		err = rows.Scan(
+		{{- range $index, $field := $obj.Fields -}}
+		{{- if or $field.IsNullable $field.IsNeedTransform -}}
+			&{{$field.Name}},
+		{{- else -}}
+			&(result.{{$field.Name}}),
+		{{- end }}
+		{{- end -}}
+		)
+		if err != nil {
+			m.db.SetError(err)
+			return nil, err
+		}
+
+		{{range $index, $field := $obj.Fields}}
+			{{- if $field.IsNeedTransform }}
+				{{- if $field.IsNullable -}}
+					if {{$field.Name}}.Valid {
+						{{- with $v := (printf "%sValue" $field.Name)}}
+						{{$field.Name}}Value := {{$field.Name}}.{{$field.NullSQLTypeValue}}
+						{{$field.Name}}Point := {{- printf $field.GetTransform.ConvertTo $v}}
+						result.{{$field.Name}} = &{{$field.Name}}Point
+						{{- end}}
+					} else {
+						result.{{$field.Name}} = nil
+					}
+				{{- else -}}
+				result.{{$field.Name}} = {{- printf $field.GetTransform.ConvertTo $field.Name}}
+				{{- end -}}
+			{{- else }}
+				{{- if $field.IsNullable -}}
+					result.{{$field.Name}} =
+					{{- if $field.NullSQLTypeNeedCast -}}
+					{{$field.GetType}}({{$field.Name}}.{{$field.NullSQLTypeValue}})
+					{{- else -}}
+					{{$field.Name}}.{{$field.NullSQLTypeValue}}
+					{{- end -}}
+				{{- end -}}
+			{{- end}}
+			{{- if $field.IsEncode}}
+			result.{{$field.Name}} = orm.Decode(result.{{$field.Name}})
+			{{- end}}
+		{{end}}
+		results = append(results, &result)
+	}
+	if err = rows.Err() ;err != nil {
+		m.db.SetError(err)
+		return nil, fmt.Errorf("{{$obj.Name}} fetch result error: %v", err)
+	}
+	return
+}
+
+func (m *_{{$obj.Name}}DBMgr) FetchBySQLContext(ctx context.Context,q string, args ... interface{}) (results []*{{$obj.Name}}, err error) {
+	rows, err := m.db.QueryContext(ctx,q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("{{$obj.Name}} fetch error: %v", err)
 	}
@@ -174,6 +284,23 @@ func (m *_{{$obj.Name}}DBMgr) FetchByPrimaryKey({{$primary.GetFuncParam}}) (*{{$
 	return nil, fmt.Errorf("{{$obj.Name}} fetch record not found")
 }
 
+func (m *_{{$obj.Name}}DBMgr) FetchByPrimaryKeyContext(ctx context.Context,{{$primary.GetFuncParam}}) (*{{$obj.Name}}, error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	pk := &{{$primary.Name}}{
+	{{$primary.GetConstructor}}
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	objs, err := m.FetchBySQLContext(ctx,query, pk.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0], nil
+	}
+	return nil, fmt.Errorf("{{$obj.Name}} fetch record not found")
+}
+
 {{- if $primary.IsSingleField}}
 
 func (m *_{{$obj.Name}}DBMgr) FetchByPrimaryKeys({{$primaryField.GetNames}} []{{$primaryField.GetType}}) ([]*{{$obj.Name}}, error) {
@@ -189,6 +316,21 @@ func (m *_{{$obj.Name}}DBMgr) FetchByPrimaryKeys({{$primaryField.GetNames}} []{{
 	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} WHERE {{$primaryField.FieldName}} IN (?%s)", strings.Join(obj.GetColumns(), ","),
 		strings.Repeat(",?", size -1))
 	return m.FetchBySQL(query, params...)
+}
+
+func (m *_{{$obj.Name}}DBMgr) FetchByPrimaryKeysContext(ctx context.Context,{{$primaryField.GetNames}} []{{$primaryField.GetType}}) ([]*{{$obj.Name}}, error) {
+	size := len({{$primaryField.GetNames}})
+	if size == 0 {
+		return nil, nil
+	}
+	params := make([]interface{}, 0, size)
+	for _, pk := range {{$primaryField.GetNames}} {
+		params = append(params, pk)
+	}
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} WHERE {{$primaryField.FieldName}} IN (?%s)", strings.Join(obj.GetColumns(), ","),
+		strings.Repeat(",?", size -1))
+	return m.FetchBySQLContext(ctx,query, params...)
 }
 {{- end}}
 
@@ -206,6 +348,16 @@ func (m *_{{$obj.Name}}DBMgr) FindBy{{$index.GetFuncName}}({{$index.GetFuncParam
 	return m.FetchBySQL(query, idx.SQLParams()...)
 }
 
+func (m *_{{$obj.Name}}DBMgr) FindBy{{$index.GetFuncName}}Context(ctx context.Context,{{$index.GetFuncParam}}, limit int, offset int) ([]*{{$obj.Name}}, error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	idx := &{{$index.Name}}{
+		{{$index.GetConstructor}}limit:   limit,
+		offset:  offset,
+	}
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
+	return m.FetchBySQLContext(ctx,query, idx.SQLParams()...)
+}
+
 func (m *_{{$obj.Name}}DBMgr) FindAllBy{{$index.GetFuncName}}({{$index.GetFuncParam}}) ([]*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 	idx := &{{$index.Name}}{
@@ -214,6 +366,16 @@ func (m *_{{$obj.Name}}DBMgr) FindAllBy{{$index.GetFuncName}}({{$index.GetFuncPa
 
 	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
 	return m.FetchBySQL(query, idx.SQLParams()...)
+}
+
+func (m *_{{$obj.Name}}DBMgr) FindAllBy{{$index.GetFuncName}}Context(ctx context.Context,{{$index.GetFuncParam}}) ([]*{{$obj.Name}}, error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	idx := &{{$index.Name}}{
+		{{$index.GetConstructor}}
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
+	return m.FetchBySQLContext(ctx,query, idx.SQLParams()...)
 }
 
 {{- if $index.IsSingleField}}
@@ -232,6 +394,19 @@ func (m *_{{$obj.Name}}DBMgr) FindBy{{$index.FirstField.Name}}Group(items []{{$i
 	return m.FetchBySQL(query, params...)
 }
 
+func (m *_{{$obj.Name}}DBMgr) FindBy{{$index.FirstField.Name}}GroupContext(ctx context.Context,items []{{$index.FirstField.Type}}) ([]*{{$obj.Name}}, error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	if len(items) == 0 {
+		return nil, nil
+	}
+	params := make([]interface{}, 0, len(items))
+	for _, item := range items {
+		params = append(params, item)
+	}
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} where {{$index.FirstField.FieldName}} in (?", strings.Join(obj.GetColumns(), ",")) +
+		strings.Repeat(",?", len(items) - 1) + ")"
+	return m.FetchBySQLContext(ctx,query, params...)
+}
 {{- end}}
 {{- end}}
 
@@ -254,6 +429,23 @@ func (m *_{{$obj.Name}}DBMgr) FetchBy{{$unique.GetFuncName}}({{$unique.GetFuncPa
 	}
 	return nil, fmt.Errorf("{{$obj.Name}} fetch record not found")
 }
+
+func (m *_{{$obj.Name}}DBMgr) FetchBy{{$unique.GetFuncName}}Context(ctx context.Context,{{$unique.GetFuncParam}}) (*{{$obj.Name}}, error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	uniq := &{{$unique.Name}}{
+	{{$unique.GetConstructor}}
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), uniq.SQLFormat(true))
+	objs, err := m.FetchBySQLContext(ctx,query, uniq.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0], nil
+	}
+	return nil, fmt.Errorf("{{$obj.Name}} fetch record not found")
+}
 {{- end}}
 
 func (m *_{{$obj.Name}}DBMgr) FindOne(unique Unique) (PrimaryKey, error) {
@@ -267,6 +459,16 @@ func (m *_{{$obj.Name}}DBMgr) FindOne(unique Unique) (PrimaryKey, error) {
 	return nil, fmt.Errorf("{{$obj.Name}} find record not found")
 }
 
+func (m *_{{$obj.Name}}DBMgr) FindOneContext(ctx context.Context,unique Unique) (PrimaryKey, error) {
+	objs, err := m.queryLimitContext(ctx,unique.SQLFormat(true), unique.SQLLimit(), unique.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0], nil
+	}
+	return nil, fmt.Errorf("{{$obj.Name}} find record not found")
+}
 // Deprecated: Use FetchByXXXUnique instead.
 func (m *_{{$obj.Name}}DBMgr) FindOneFetch(unique Unique) (*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
@@ -306,12 +508,36 @@ func (m *_{{$obj.Name}}DBMgr) FindFetch(index Index) (int64, []*{{$obj.Name}}, e
 	return total, results, nil
 }
 
+func (m *_{{$obj.Name}}DBMgr) FindFetchContext(ctx context.Context,index Index) (int64, []*{{$obj.Name}}, error) {
+	total, err := m.queryCountContext(ctx,index.SQLFormat(false), index.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), index.SQLFormat(true))
+	results, err := m.FetchBySQL(query, index.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+	return total, results, nil
+}
+
 func (m *_{{$obj.Name}}DBMgr) Range(scope Range) (int64, []PrimaryKey, error) {
 	total, err := m.queryCount(scope.SQLFormat(false), scope.SQLParams()...)
 	if err != nil {
 		return total, nil, err
 	}
 	pks, err := m.queryLimit(scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
+	return total, pks, err
+}
+
+func (m *_{{$obj.Name}}DBMgr) RangeContext(ctx context.Context,scope Range) (int64, []PrimaryKey, error) {
+	total, err := m.queryCountContext(ctx,scope.SQLFormat(false), scope.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+	pks, err := m.queryLimitContext(ctx,scope.SQLFormat(true), scope.SQLLimit(), scope.SQLParams()...)
 	return total, pks, err
 }
 
@@ -329,14 +555,38 @@ func (m *_{{$obj.Name}}DBMgr) RangeFetch(scope Range) (int64, []*{{$obj.Name}}, 
 	return total, results, nil
 }
 
+func (m *_{{$obj.Name}}DBMgr) RangeFetchContext(ctx context.Context,scope Range) (int64, []*{{$obj.Name}}, error) {
+	total, err := m.queryCountContext(ctx,scope.SQLFormat(false), scope.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), scope.SQLFormat(true))
+	results, err := m.FetchBySQLContext(ctx,query, scope.SQLParams()...)
+	if err != nil {
+		return total, nil, err
+	}
+	return total, results, nil
+}
+
 func (m *_{{$obj.Name}}DBMgr) RangeRevert(scope Range) (int64, []PrimaryKey, error) {
 	scope.Revert(true)
 	return m.Range(scope)
 }
 
+func (m *_{{$obj.Name}}DBMgr) RangeRevertContext(ctx context.Context,scope Range) (int64, []PrimaryKey, error) {
+	scope.Revert(true)
+	return m.RangeContext(ctx,scope)
+}
+
 func (m *_{{$obj.Name}}DBMgr) RangeRevertFetch(scope Range) (int64, []*{{$obj.Name}}, error) {
 	scope.Revert(true)
 	return m.RangeFetch(scope)
+}
+
+func (m *_{{$obj.Name}}DBMgr) RangeRevertFetchContext(ctx context.Context,scope Range) (int64, []*{{$obj.Name}}, error) {
+	scope.Revert(true)
+	return m.RangeFetchContext(ctx,scope)
 }
 
 func (m *_{{$obj.Name}}DBMgr) queryLimit(where string, limit int, args ...interface{}) (results []PrimaryKey, err error){
@@ -416,9 +666,106 @@ func (m *_{{$obj.Name}}DBMgr) queryLimit(where string, limit int, args ...interf
 	return
 }
 
+func (m *_{{$obj.Name}}DBMgr) queryLimitContext(ctx context.Context,where string, limit int, args ...interface{}) (results []PrimaryKey, err error){
+	pk := {{$obj.Name}}Mgr.NewPrimaryKey()
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(pk.Columns(), ","), where)
+	rows, err := m.db.QueryContext(ctx,query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("{{$obj.Name}} query limit error: %v", err)
+	}
+	defer rows.Close()
+
+	offset :=0
+	{{- range $index, $field := $primary.Fields}}
+		{{- if $field.IsNullable }}
+			var {{$field.Name}} sql.{{$field.GetNullSQLType}}
+		{{- else if $field.IsNeedTransform }}
+			var {{$field.Name}} {{$field.GetTransform.TypeOrigin}}
+		{{- end -}}
+	{{- end }}
+
+	for rows.Next() {
+		if limit >= 0 && offset >= limit {
+			break
+		}
+		offset++
+
+		result := {{$obj.Name}}Mgr.NewPrimaryKey()
+		err = rows.Scan(
+		{{- range $index, $field := $primary.Fields -}}
+		{{- if or $field.IsNullable $field.IsNeedTransform -}}
+			&{{$field.Name}},
+		{{- else -}}
+			&(result.{{$field.Name}}),
+		{{- end }}
+		{{- end -}}
+		)
+		if err != nil {
+			m.db.SetError(err)
+			return nil, err
+		}
+
+		{{range $index, $field := $primary.Fields}}
+			{{- if $field.IsNeedTransform }}
+				{{- if $field.IsNullable -}}
+					if {{$field.Name}}.Valid {
+						{{- with $v := (printf "%sValue" $field.Name)}}
+						{{$field.Name}}Value := {{$field.Name}}.{{$field.NullSQLTypeValue}}
+						{{$field.Name}}Point := {{- printf $field.GetTransform.ConvertTo $v}}
+						result.{{$field.Name}} = &{{$field.Name}}Point
+						{{- end}}
+					} else {
+						result.{{$field.Name}} = nil
+					}
+				{{- else -}}
+				result.{{$field.Name}} = {{- printf $field.GetTransform.ConvertTo $field.Name}}
+				{{- end -}}
+			{{- else }}
+				{{- if $field.IsNullable -}}
+					result.{{$field.Name}} =
+					{{- if $field.NullSQLTypeNeedCast -}}
+					{{$field.GetType}}({{$field.Name}}.{{$field.NullSQLTypeValue}})
+					{{- else -}}
+					{{$field.Name}}.{{$field.NullSQLTypeValue}}
+					{{- end -}}
+				{{- end -}}
+			{{- end}}
+			{{- if $field.IsEncode}}
+			result.{{$field.Name}} = orm.Decode(result.{{$field.Name}})
+			{{- end}}
+		{{end}}
+		results = append(results, result)
+	}
+	if err := rows.Err() ;err != nil {
+		m.db.SetError(err)
+		return nil, fmt.Errorf("{{$obj.Name}} query limit result error: %v", err)
+	}
+	return
+}
+
 func (m *_{{$obj.Name}}DBMgr) queryCount(where string, args ...interface{}) (int64, error){
 	query := fmt.Sprintf("SELECT count({{$primaryField.FieldName}}) FROM {{$obj.FromDB}} %s", where)
 	rows, err := m.db.Query(query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("{{$obj.Name}} query count error: %v", err)
+	}
+	defer rows.Close()
+
+	var count int64
+	for rows.Next() {
+		if err = rows.Scan(&count); err != nil {
+			m.db.SetError(err)
+			return 0, err
+		}
+		break
+	}
+	return count, nil
+}
+
+
+func (m *_{{$obj.Name}}DBMgr) queryCountContext(ctx context.Context,where string, args ...interface{}) (int64, error){
+	query := fmt.Sprintf("SELECT count({{$primaryField.FieldName}}) FROM {{$obj.FromDB}} %s", where)
+	rows, err := m.db.QueryContext(ctx,query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("{{$obj.Name}} query count error: %v", err)
 	}
