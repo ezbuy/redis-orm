@@ -20,6 +20,7 @@ var (
 	_ strings.Reader
 	_ orm.VSet
 	_ validator.Validate
+	_ context.Context
 )
 
 type Blog struct {
