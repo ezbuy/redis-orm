@@ -214,7 +214,7 @@ func (tx *DBTx) Query(sql string, args ...interface{}) (*sql.Rows, error) {
 	return tx.QueryContext(context.Background(), sql, args...)
 }
 
-func (tx *DBTx) QueryContext(ctx context.Context, sql string, args ...interface{}) (*sql.Rows, error) {
+func (tx *DBTx) queryContext(ctx context.Context, sql string, args ...interface{}) (*sql.Rows, error) {
 	t1 := time.Now()
 	if tx.slowlog > 0 {
 		defer func(t time.Time) {
@@ -238,7 +238,7 @@ func (tx *DBTx) Exec(sql string, args ...interface{}) (sql.Result, error) {
 	return tx.ExecContext(context.Background(), sql, args...)
 }
 
-func (tx *DBTx) ExecContext(ctx context.Context, sql string, args ...interface{}) (sql.Result, error) {
+func (tx *DBTx) execContext(ctx context.Context, sql string, args ...interface{}) (sql.Result, error) {
 	t1 := time.Now()
 	if tx.slowlog > 0 {
 		defer func(t time.Time) {
@@ -261,7 +261,7 @@ func (tx *DBTx) ExecContext(ctx context.Context, sql string, args ...interface{}
 func (tx *DBTx) QueryContext(ctx context.Context, query string,
 	args ...interface{}) (*sql.Rows, error) {
 	fn := func(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
-		return tx.tx.QueryContext(ctx, query, args...)
+		return tx.queryContext(ctx, query, args...)
 	}
 	for _, wp := range tx.wrappers {
 		fn = wp.WrapQueryContext(fn, query, args...)
@@ -272,7 +272,7 @@ func (tx *DBTx) QueryContext(ctx context.Context, query string,
 func (tx *DBTx) ExecContext(ctx context.Context, query string,
 	args ...interface{}) (sql.Result, error) {
 	fn := func(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
-		return tx.tx.ExecContext(ctx, query, args...)
+		return tx.execContext(ctx, query, args...)
 	}
 	for _, wp := range tx.wrappers {
 		fn = wp.WrapExecContext(fn, query, args...)
