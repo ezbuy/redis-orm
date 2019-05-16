@@ -25,6 +25,7 @@
 // tpl/object.redis.write.gogo
 // tpl/object.relation.gogo
 // tpl/object.unqiue.gogo
+// tpl/pb.db.converter.gogo
 // tpl/query.gogo
 // tpl/relation.db.read.gogo
 // tpl/relation.functions.gogo
@@ -610,6 +611,26 @@ func tplObjectUnqiueGogo() (*asset, error) {
 	return a, nil
 }
 
+var _tplPbDbConverterGogo = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\xb4\x93\xcd\x6e\xdb\x30\x10\x84\xcf\xe5\x53\x4c\x0d\x1f\xe4\xa0\x61\xee\x05\x72\x71\xd3\x16\x3e\x24\x11\x10\xbf\x80\x24\xae\x5d\xb5\xe6\x0f\x28\xba\x6d\x40\xec\xbb\x17\xa4\x64\x59\x89\x1d\x04\x41\x91\x93\x40\x72\x67\x67\x77\x3e\x28\x46\x45\x9b\xd6\x10\x66\x8d\x35\xbf\xc9\x87\x19\xb3\xb8\xba\xc2\x17\xab\x08\x5b\x32\xe4\xab\x40\x0a\xf5\x23\x3c\xa9\xb6\xbb\xb4\x5e\x4b\xdc\xdc\xe3\xee\x7e\x8d\xaf\x37\xab\x35\x3e\x0a\x57\x35\xbf\xaa\x2d\x21\x46\xf9\xdd\x96\xfd\x81\x59\xc4\x38\xb7\xf5\x4f\x7c\xbe\x86\x64\x16\xa2\xd5\xce\xfa\x80\x42\x00\xc0\xac\x7f\x94\xe5\x52\xae\xf2\x7d\x59\x85\x1f\xcc\x33\xb1\x10\x22\x46\x5f\x99\x2d\x61\xde\x1a\x45\x7f\x3f\xcd\xbb\xe0\xf7\x4d\x48\x7d\x0e\x92\x87\x7c\xd3\xa5\xae\x79\xd2\x3c\xf7\xd0\xf1\xae\xd2\xc4\x7c\x6b\x15\xed\xd6\xf6\xe8\x32\x8e\x15\xe3\xd0\x90\xb9\x5c\x62\xd8\xb9\x83\x4e\x02\x04\x8b\x3e\x0d\x05\x57\xa3\xb1\xbb\xbd\x36\x9d\x14\x9b\xbd\x69\xfe\xc7\xa6\xd0\x0a\x17\x4f\x84\x8b\x8b\x33\x1a\x39\x11\xc5\x1c\x93\xab\xd3\xda\x86\xfe\x14\xaf\x94\x2f\xc4\x87\x18\x2f\xf1\x24\x38\xcc\x37\x2d\xed\xd4\x18\xdc\xb7\x74\xea\xc0\x9c\x5b\xa7\xf2\x76\x33\xd4\xc8\x55\xf7\x40\xa1\x5c\xde\x56\xce\xb5\x66\x7b\xa8\x71\x75\xf2\xe8\x2b\xca\x65\xd6\x0f\xf3\xe3\x1a\x27\x2f\xeb\x47\x47\xcc\x85\x56\x47\xd1\xb0\xec\x68\x48\x46\x4d\xfd\x27\x47\x4f\x61\xef\x0d\x5c\x2d\xce\x41\x7d\x31\xd9\x31\xfb\x09\x8f\x23\xd4\x53\x96\x89\x70\x46\x7d\x16\xea\x9b\x6c\x0a\x57\xe3\x35\x8a\x8b\xe2\x19\xf6\x1e\xab\x56\xcf\xb0\x1e\x72\x7a\x0f\x88\xa7\x3c\xa6\xf0\x06\x68\x2f\x93\x7e\x03\x3c\xad\x12\xbc\x18\xc9\xa8\xfc\xfb\xf7\xdf\x7f\x01\x00\x00\xff\xff\x3f\xe6\xc1\x38\x61\x04\x00\x00")
+
+func tplPbDbConverterGogoBytes() ([]byte, error) {
+	return bindataRead(
+		_tplPbDbConverterGogo,
+		"tpl/pb.db.converter.gogo",
+	)
+}
+
+func tplPbDbConverterGogo() (*asset, error) {
+	bytes, err := tplPbDbConverterGogoBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "tpl/pb.db.converter.gogo", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _tplQueryGogo = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x6c\x52\x4d\x6b\xe3\x30\x10\x3d\x5b\xbf\x62\x30\x61\x49\x02\x91\xef\x0b\x7b\x59\x4a\x72\x6a\x28\x6d\xe8\x35\xc8\xf6\xd8\x55\x6a\x59\x8e\x3c\x6e\xeb\x0a\xfd\xf7\x32\x56\x52\x6a\xd2\x93\xde\xbc\x79\xf3\xf1\xc4\x78\x5f\x62\xa5\x5b\x84\xf4\x3c\xa0\x1b\xd3\x10\x3a\x55\xbc\xaa\x1a\xc1\x7b\xb9\xb3\x0f\x31\x08\x41\x78\xbf\xb0\xf9\x09\xfe\xfe\x03\x19\x82\x10\xda\x74\xd6\x11\x2c\x45\x92\x56\x86\x52\x91\xa4\xa4\x0d\xf2\xdb\x93\xd3\x6d\xdd\x33\x2c\x15\xa9\x5c\xf5\x98\xf5\xe7\x86\xe3\xc2\xb6\x84\x1f\x93\xba\xd6\xf4\x32\xe4\xb2\xb0\x26\xc3\xcf\x7c\x18\x33\x87\xa5\xee\x37\xd6\x99\xcc\x3a\x93\x8a\x95\x10\x6f\xca\x71\xff\x23\xf4\xe7\x46\xde\xfd\x67\xc4\x33\xe4\x41\x1b\xe4\xa0\x32\x24\xb7\xd6\x19\x45\x84\x6e\xd2\xc5\xc9\xf2\x11\x55\x19\x19\xeb\x8c\x7c\x7e\x42\xe2\x76\x09\x8d\xdd\xe4\x6a\xaf\x0c\x86\xc0\xea\xa1\x20\xf0\x22\x49\xbc\xdf\x80\x53\x6d\x8d\xb0\xa8\x34\x36\xe5\xe4\x72\xcb\xa8\x0f\x61\xca\x47\xfe\x5a\x0a\xdf\xc4\x0e\xe9\x30\x76\xcc\xcd\x28\x55\x5f\xea\x36\x80\x6d\xc9\x38\x5c\x17\x38\xc6\x8f\xbc\xb4\xba\xaf\xdd\x8f\x45\x82\x48\xd8\xf4\x8d\x62\x7d\x53\x24\x44\x52\x0d\x6d\x01\x4b\xf3\x4b\x72\x05\x7b\x7c\x9f\x91\xcb\x15\xac\x67\xc4\x64\xdb\x21\x0d\xae\x85\x3f\xb3\x8c\xbf\x2c\xeb\x3d\xa1\xe9\x1a\x45\x08\xa9\xcd\x4f\x58\x90\x2c\x73\x19\x8f\x04\x58\xcf\x57\xe0\x7d\xb4\xf7\x15\x00\x00\xff\xff\xc9\x6f\xf6\xda\x46\x02\x00\x00")
 
 func tplQueryGogoBytes() ([]byte, error) {
@@ -1022,49 +1043,50 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"tpl/conf.elastic.gogo":          tplConfElasticGogo,
-	"tpl/conf.mongo.gogo":            tplConfMongoGogo,
-	"tpl/conf.mssql.gogo":            tplConfMssqlGogo,
-	"tpl/conf.mysql.gogo":            tplConfMysqlGogo,
-	"tpl/conf.orm.gogo":              tplConfOrmGogo,
-	"tpl/conf.redis.gogo":            tplConfRedisGogo,
-	"tpl/object.db.gogo":             tplObjectDbGogo,
-	"tpl/object.db.query.gogo":       tplObjectDbQueryGogo,
-	"tpl/object.db.read.gogo":        tplObjectDbReadGogo,
-	"tpl/object.db.write.gogo":       tplObjectDbWriteGogo,
-	"tpl/object.elastic.gogo":        tplObjectElasticGogo,
-	"tpl/object.functions.gogo":      tplObjectFunctionsGogo,
-	"tpl/object.gogo":                tplObjectGogo,
-	"tpl/object.index.gogo":          tplObjectIndexGogo,
-	"tpl/object.mongo.gogo":          tplObjectMongoGogo,
-	"tpl/object.primary.key.gogo":    tplObjectPrimaryKeyGogo,
-	"tpl/object.range.gogo":          tplObjectRangeGogo,
-	"tpl/object.redis.gogo":          tplObjectRedisGogo,
-	"tpl/object.redis.manager.gogo":  tplObjectRedisManagerGogo,
+	"tpl/conf.elastic.gogo": tplConfElasticGogo,
+	"tpl/conf.mongo.gogo": tplConfMongoGogo,
+	"tpl/conf.mssql.gogo": tplConfMssqlGogo,
+	"tpl/conf.mysql.gogo": tplConfMysqlGogo,
+	"tpl/conf.orm.gogo": tplConfOrmGogo,
+	"tpl/conf.redis.gogo": tplConfRedisGogo,
+	"tpl/object.db.gogo": tplObjectDbGogo,
+	"tpl/object.db.query.gogo": tplObjectDbQueryGogo,
+	"tpl/object.db.read.gogo": tplObjectDbReadGogo,
+	"tpl/object.db.write.gogo": tplObjectDbWriteGogo,
+	"tpl/object.elastic.gogo": tplObjectElasticGogo,
+	"tpl/object.functions.gogo": tplObjectFunctionsGogo,
+	"tpl/object.gogo": tplObjectGogo,
+	"tpl/object.index.gogo": tplObjectIndexGogo,
+	"tpl/object.mongo.gogo": tplObjectMongoGogo,
+	"tpl/object.primary.key.gogo": tplObjectPrimaryKeyGogo,
+	"tpl/object.range.gogo": tplObjectRangeGogo,
+	"tpl/object.redis.gogo": tplObjectRedisGogo,
+	"tpl/object.redis.manager.gogo": tplObjectRedisManagerGogo,
 	"tpl/object.redis.pipeline.gogo": tplObjectRedisPipelineGogo,
-	"tpl/object.redis.read.gogo":     tplObjectRedisReadGogo,
-	"tpl/object.redis.sync.gogo":     tplObjectRedisSyncGogo,
-	"tpl/object.redis.write.gogo":    tplObjectRedisWriteGogo,
-	"tpl/object.relation.gogo":       tplObjectRelationGogo,
-	"tpl/object.unqiue.gogo":         tplObjectUnqiueGogo,
-	"tpl/query.gogo":                 tplQueryGogo,
-	"tpl/relation.db.read.gogo":      tplRelationDbReadGogo,
-	"tpl/relation.functions.gogo":    tplRelationFunctionsGogo,
-	"tpl/relation.geo.gogo":          tplRelationGeoGogo,
-	"tpl/relation.geo.sync.gogo":     tplRelationGeoSyncGogo,
-	"tpl/relation.gogo":              tplRelationGogo,
-	"tpl/relation.list.gogo":         tplRelationListGogo,
-	"tpl/relation.list.sync.gogo":    tplRelationListSyncGogo,
-	"tpl/relation.manager.gogo":      tplRelationManagerGogo,
-	"tpl/relation.pair.gogo":         tplRelationPairGogo,
-	"tpl/relation.pair.sync.gogo":    tplRelationPairSyncGogo,
-	"tpl/relation.pipeline.gogo":     tplRelationPipelineGogo,
-	"tpl/relation.set.gogo":          tplRelationSetGogo,
-	"tpl/relation.set.sync.gogo":     tplRelationSetSyncGogo,
-	"tpl/relation.zset.gogo":         tplRelationZsetGogo,
-	"tpl/relation.zset.sync.gogo":    tplRelationZsetSyncGogo,
-	"tpl/script.mysql.sql":           tplScriptMysqlSql,
-	"tpl/view.gogo":                  tplViewGogo,
+	"tpl/object.redis.read.gogo": tplObjectRedisReadGogo,
+	"tpl/object.redis.sync.gogo": tplObjectRedisSyncGogo,
+	"tpl/object.redis.write.gogo": tplObjectRedisWriteGogo,
+	"tpl/object.relation.gogo": tplObjectRelationGogo,
+	"tpl/object.unqiue.gogo": tplObjectUnqiueGogo,
+	"tpl/pb.db.converter.gogo": tplPbDbConverterGogo,
+	"tpl/query.gogo": tplQueryGogo,
+	"tpl/relation.db.read.gogo": tplRelationDbReadGogo,
+	"tpl/relation.functions.gogo": tplRelationFunctionsGogo,
+	"tpl/relation.geo.gogo": tplRelationGeoGogo,
+	"tpl/relation.geo.sync.gogo": tplRelationGeoSyncGogo,
+	"tpl/relation.gogo": tplRelationGogo,
+	"tpl/relation.list.gogo": tplRelationListGogo,
+	"tpl/relation.list.sync.gogo": tplRelationListSyncGogo,
+	"tpl/relation.manager.gogo": tplRelationManagerGogo,
+	"tpl/relation.pair.gogo": tplRelationPairGogo,
+	"tpl/relation.pair.sync.gogo": tplRelationPairSyncGogo,
+	"tpl/relation.pipeline.gogo": tplRelationPipelineGogo,
+	"tpl/relation.set.gogo": tplRelationSetGogo,
+	"tpl/relation.set.sync.gogo": tplRelationSetSyncGogo,
+	"tpl/relation.zset.gogo": tplRelationZsetGogo,
+	"tpl/relation.zset.sync.gogo": tplRelationZsetSyncGogo,
+	"tpl/script.mysql.sql": tplScriptMysqlSql,
+	"tpl/view.gogo": tplViewGogo,
 }
 
 // AssetDir returns the file names below a certain
@@ -1106,52 +1128,52 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
-
 var _bintree = &bintree{nil, map[string]*bintree{
 	"tpl": &bintree{nil, map[string]*bintree{
-		"conf.elastic.gogo":          &bintree{tplConfElasticGogo, map[string]*bintree{}},
-		"conf.mongo.gogo":            &bintree{tplConfMongoGogo, map[string]*bintree{}},
-		"conf.mssql.gogo":            &bintree{tplConfMssqlGogo, map[string]*bintree{}},
-		"conf.mysql.gogo":            &bintree{tplConfMysqlGogo, map[string]*bintree{}},
-		"conf.orm.gogo":              &bintree{tplConfOrmGogo, map[string]*bintree{}},
-		"conf.redis.gogo":            &bintree{tplConfRedisGogo, map[string]*bintree{}},
-		"object.db.gogo":             &bintree{tplObjectDbGogo, map[string]*bintree{}},
-		"object.db.query.gogo":       &bintree{tplObjectDbQueryGogo, map[string]*bintree{}},
-		"object.db.read.gogo":        &bintree{tplObjectDbReadGogo, map[string]*bintree{}},
-		"object.db.write.gogo":       &bintree{tplObjectDbWriteGogo, map[string]*bintree{}},
-		"object.elastic.gogo":        &bintree{tplObjectElasticGogo, map[string]*bintree{}},
-		"object.functions.gogo":      &bintree{tplObjectFunctionsGogo, map[string]*bintree{}},
-		"object.gogo":                &bintree{tplObjectGogo, map[string]*bintree{}},
-		"object.index.gogo":          &bintree{tplObjectIndexGogo, map[string]*bintree{}},
-		"object.mongo.gogo":          &bintree{tplObjectMongoGogo, map[string]*bintree{}},
-		"object.primary.key.gogo":    &bintree{tplObjectPrimaryKeyGogo, map[string]*bintree{}},
-		"object.range.gogo":          &bintree{tplObjectRangeGogo, map[string]*bintree{}},
-		"object.redis.gogo":          &bintree{tplObjectRedisGogo, map[string]*bintree{}},
-		"object.redis.manager.gogo":  &bintree{tplObjectRedisManagerGogo, map[string]*bintree{}},
+		"conf.elastic.gogo": &bintree{tplConfElasticGogo, map[string]*bintree{}},
+		"conf.mongo.gogo": &bintree{tplConfMongoGogo, map[string]*bintree{}},
+		"conf.mssql.gogo": &bintree{tplConfMssqlGogo, map[string]*bintree{}},
+		"conf.mysql.gogo": &bintree{tplConfMysqlGogo, map[string]*bintree{}},
+		"conf.orm.gogo": &bintree{tplConfOrmGogo, map[string]*bintree{}},
+		"conf.redis.gogo": &bintree{tplConfRedisGogo, map[string]*bintree{}},
+		"object.db.gogo": &bintree{tplObjectDbGogo, map[string]*bintree{}},
+		"object.db.query.gogo": &bintree{tplObjectDbQueryGogo, map[string]*bintree{}},
+		"object.db.read.gogo": &bintree{tplObjectDbReadGogo, map[string]*bintree{}},
+		"object.db.write.gogo": &bintree{tplObjectDbWriteGogo, map[string]*bintree{}},
+		"object.elastic.gogo": &bintree{tplObjectElasticGogo, map[string]*bintree{}},
+		"object.functions.gogo": &bintree{tplObjectFunctionsGogo, map[string]*bintree{}},
+		"object.gogo": &bintree{tplObjectGogo, map[string]*bintree{}},
+		"object.index.gogo": &bintree{tplObjectIndexGogo, map[string]*bintree{}},
+		"object.mongo.gogo": &bintree{tplObjectMongoGogo, map[string]*bintree{}},
+		"object.primary.key.gogo": &bintree{tplObjectPrimaryKeyGogo, map[string]*bintree{}},
+		"object.range.gogo": &bintree{tplObjectRangeGogo, map[string]*bintree{}},
+		"object.redis.gogo": &bintree{tplObjectRedisGogo, map[string]*bintree{}},
+		"object.redis.manager.gogo": &bintree{tplObjectRedisManagerGogo, map[string]*bintree{}},
 		"object.redis.pipeline.gogo": &bintree{tplObjectRedisPipelineGogo, map[string]*bintree{}},
-		"object.redis.read.gogo":     &bintree{tplObjectRedisReadGogo, map[string]*bintree{}},
-		"object.redis.sync.gogo":     &bintree{tplObjectRedisSyncGogo, map[string]*bintree{}},
-		"object.redis.write.gogo":    &bintree{tplObjectRedisWriteGogo, map[string]*bintree{}},
-		"object.relation.gogo":       &bintree{tplObjectRelationGogo, map[string]*bintree{}},
-		"object.unqiue.gogo":         &bintree{tplObjectUnqiueGogo, map[string]*bintree{}},
-		"query.gogo":                 &bintree{tplQueryGogo, map[string]*bintree{}},
-		"relation.db.read.gogo":      &bintree{tplRelationDbReadGogo, map[string]*bintree{}},
-		"relation.functions.gogo":    &bintree{tplRelationFunctionsGogo, map[string]*bintree{}},
-		"relation.geo.gogo":          &bintree{tplRelationGeoGogo, map[string]*bintree{}},
-		"relation.geo.sync.gogo":     &bintree{tplRelationGeoSyncGogo, map[string]*bintree{}},
-		"relation.gogo":              &bintree{tplRelationGogo, map[string]*bintree{}},
-		"relation.list.gogo":         &bintree{tplRelationListGogo, map[string]*bintree{}},
-		"relation.list.sync.gogo":    &bintree{tplRelationListSyncGogo, map[string]*bintree{}},
-		"relation.manager.gogo":      &bintree{tplRelationManagerGogo, map[string]*bintree{}},
-		"relation.pair.gogo":         &bintree{tplRelationPairGogo, map[string]*bintree{}},
-		"relation.pair.sync.gogo":    &bintree{tplRelationPairSyncGogo, map[string]*bintree{}},
-		"relation.pipeline.gogo":     &bintree{tplRelationPipelineGogo, map[string]*bintree{}},
-		"relation.set.gogo":          &bintree{tplRelationSetGogo, map[string]*bintree{}},
-		"relation.set.sync.gogo":     &bintree{tplRelationSetSyncGogo, map[string]*bintree{}},
-		"relation.zset.gogo":         &bintree{tplRelationZsetGogo, map[string]*bintree{}},
-		"relation.zset.sync.gogo":    &bintree{tplRelationZsetSyncGogo, map[string]*bintree{}},
-		"script.mysql.sql":           &bintree{tplScriptMysqlSql, map[string]*bintree{}},
-		"view.gogo":                  &bintree{tplViewGogo, map[string]*bintree{}},
+		"object.redis.read.gogo": &bintree{tplObjectRedisReadGogo, map[string]*bintree{}},
+		"object.redis.sync.gogo": &bintree{tplObjectRedisSyncGogo, map[string]*bintree{}},
+		"object.redis.write.gogo": &bintree{tplObjectRedisWriteGogo, map[string]*bintree{}},
+		"object.relation.gogo": &bintree{tplObjectRelationGogo, map[string]*bintree{}},
+		"object.unqiue.gogo": &bintree{tplObjectUnqiueGogo, map[string]*bintree{}},
+		"pb.db.converter.gogo": &bintree{tplPbDbConverterGogo, map[string]*bintree{}},
+		"query.gogo": &bintree{tplQueryGogo, map[string]*bintree{}},
+		"relation.db.read.gogo": &bintree{tplRelationDbReadGogo, map[string]*bintree{}},
+		"relation.functions.gogo": &bintree{tplRelationFunctionsGogo, map[string]*bintree{}},
+		"relation.geo.gogo": &bintree{tplRelationGeoGogo, map[string]*bintree{}},
+		"relation.geo.sync.gogo": &bintree{tplRelationGeoSyncGogo, map[string]*bintree{}},
+		"relation.gogo": &bintree{tplRelationGogo, map[string]*bintree{}},
+		"relation.list.gogo": &bintree{tplRelationListGogo, map[string]*bintree{}},
+		"relation.list.sync.gogo": &bintree{tplRelationListSyncGogo, map[string]*bintree{}},
+		"relation.manager.gogo": &bintree{tplRelationManagerGogo, map[string]*bintree{}},
+		"relation.pair.gogo": &bintree{tplRelationPairGogo, map[string]*bintree{}},
+		"relation.pair.sync.gogo": &bintree{tplRelationPairSyncGogo, map[string]*bintree{}},
+		"relation.pipeline.gogo": &bintree{tplRelationPipelineGogo, map[string]*bintree{}},
+		"relation.set.gogo": &bintree{tplRelationSetGogo, map[string]*bintree{}},
+		"relation.set.sync.gogo": &bintree{tplRelationSetSyncGogo, map[string]*bintree{}},
+		"relation.zset.gogo": &bintree{tplRelationZsetGogo, map[string]*bintree{}},
+		"relation.zset.sync.gogo": &bintree{tplRelationZsetSyncGogo, map[string]*bintree{}},
+		"script.mysql.sql": &bintree{tplScriptMysqlSql, map[string]*bintree{}},
+		"view.gogo": &bintree{tplViewGogo, map[string]*bintree{}},
 	}},
 }}
 
@@ -1201,3 +1223,4 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
+

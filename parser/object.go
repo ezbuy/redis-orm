@@ -36,6 +36,14 @@ type MetaObject struct {
 	ImportSQL string
 	//! elastic
 	ElasticIndexAll bool
+	// PB defines extra pb plugin
+	PB *PBPlugin
+}
+
+type PBPlugin struct {
+	ImportPath string
+	Package    string
+	Structs    []string
 }
 
 func NewMetaObject(packageName string) *MetaObject {
@@ -46,6 +54,7 @@ func NewMetaObject(packageName string) *MetaObject {
 		uniques:      []*Index{},
 		indexes:      []*Index{},
 		ranges:       []*Index{},
+		PB:           new(PBPlugin),
 	}
 }
 
@@ -228,6 +237,13 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 
 		case "es_index_all":
 			o.ElasticIndexAll = val.(bool)
+
+		case "pbPackage":
+			o.PB.Package = val.(string)
+		case "pbStructs":
+			o.PB.Structs = toStringSlice(val.([]interface{}))
+		case "pbImportPath":
+			o.PB.ImportPath = val.(string)
 		}
 	}
 
@@ -262,6 +278,10 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 		}
 	}
 
+	if ok := o.IsPBValid(); !ok {
+		return fmt.Errorf("pb plugin: bad defination")
+	}
+
 	for _, unique := range o.uniques {
 		if err := unique.buildUnique(); err != nil {
 			return fmt.Errorf("object (%s) %s", o.Name, err.Error())
@@ -278,6 +298,16 @@ func (o *MetaObject) Read(name string, data map[string]interface{}) error {
 		}
 	}
 	return nil
+}
+
+func (m *MetaObject) IsPBValid() bool {
+	if m.PB == nil {
+		return true
+	}
+	if (m.PB.ImportPath == "") == (len(m.PB.Structs) > 0) {
+		return false
+	}
+	return true
 }
 
 func (m *MetaObject) ElasticIndexTypeName() string {

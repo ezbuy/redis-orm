@@ -3,6 +3,7 @@ package parser
 import (
 	"errors"
 	"fmt"
+	"log"
 	"sort"
 	"strings"
 
@@ -39,6 +40,12 @@ type Field struct {
 	Obj       *MetaObject
 	ESIndex   ESIndex
 	Default   interface{}
+	PBField   *PBField
+}
+
+type PBField struct {
+	Name string
+	Type string
 }
 
 func NewField() *Field {
@@ -127,6 +134,10 @@ func (f *Field) IsIndex() bool {
 
 func (f *Field) IsFullText() bool {
 	return f.Flags.Contains("fulltext")
+}
+
+func (f *Field) IsSetPBMapping() bool {
+	return f.PBField != nil
 }
 
 func (f *Field) IsEncode() bool {
@@ -430,10 +441,10 @@ func (f *Field) Read(data map[interface{}]interface{}) error {
 
 		case "es_date_format":
 			f.ESIndex.DateFormat = v.(string)
-
 		case "default":
 			f.Default = v
-
+		case "pb":
+			f.extractPBFields(v)
 		default:
 			return errors.New("invalid field name: " + key)
 		}
@@ -462,6 +473,26 @@ func (f *Field) Read(data map[interface{}]interface{}) error {
 		f.Obj.ranges = append(f.Obj.ranges, index)
 	}
 	return nil
+}
+
+func (f *Field) extractPBFields(v interface{}) {
+	fds, ok := v.(map[interface{}]interface{})
+	if !ok {
+		log.Printf("pb plugin: field %s has defined pb but not defined any pb mapping", f.Name)
+		return
+	}
+	if len(fds) != 1 {
+		log.Printf("pb plugin: field %s has defined multi pb mapping,but only support one", f.Name)
+		return
+	}
+
+	f.PBField = new(PBField)
+	for n, t := range fds {
+		f.PBField.Name = n.(string)
+		f.PBField.Type = t.(string)
+	}
+
+	return
 }
 
 //! field SQL script functions
