@@ -148,23 +148,24 @@ func (m *_{{$obj.Name}}RedisMgr) SaveWithExpire(obj *{{$obj.Name}}, expire time.
 
 func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipeline, obj *{{$obj.Name}}, expire time.Duration) error {
 	pk := obj.GetPrimaryKey()
+	key := pk.Key()
 	//! fields
 	{{- range $i, $field := $obj.Fields}}
 		{{- if and $field.IsNullable $field.IsNeedTransform}}
 			if obj.{{$field.Name}} != nil {
 				{{- if $field.IsEncode}}
-				pipe.HSet(keyOfObject(obj, pk.Key()), "{{$field.Name}}", orm.Encode(fmt.Sprint({{$field.GetTransformValue "obj."}})))
+				pipe.HSet(keyOfObject(obj, key), "{{$field.Name}}", orm.Encode(fmt.Sprint({{$field.GetTransformValue "obj."}})))
 				{{- else}}
-				pipe.HSet(keyOfObject(obj, pk.Key()), "{{$field.Name}}", fmt.Sprint({{$field.GetTransformValue "obj."}}))
+				pipe.HSet(keyOfObject(obj, key), "{{$field.Name}}", fmt.Sprint({{$field.GetTransformValue "obj."}}))
 				{{- end}}
 			} else {
-				pipe.HSet(keyOfObject(obj, pk.Key()), "{{$field.Name}}", "nil")
+				pipe.HSet(keyOfObject(obj, key), "{{$field.Name}}", "nil")
 			}
 		{{- else}}
 			{{- if $field.IsEncode}}
-			pipe.HSet(keyOfObject(obj, pk.Key()), "{{$field.Name}}", orm.Encode(fmt.Sprint({{$field.GetTransformValue "obj."}})))
+			pipe.HSet(keyOfObject(obj, key), "{{$field.Name}}", orm.Encode(fmt.Sprint({{$field.GetTransformValue "obj."}})))
 			{{- else}}
-			pipe.HSet(keyOfObject(obj, pk.Key()), "{{$field.Name}}", fmt.Sprint({{$field.GetTransformValue "obj."}}))
+			pipe.HSet(keyOfObject(obj, key), "{{$field.Name}}", fmt.Sprint({{$field.GetTransformValue "obj."}}))
 			{{- end}}
 		{{- end}}
 	{{- end}}
@@ -184,7 +185,7 @@ func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipelin
 	}
 	uk_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline)
 	uk_rel_{{$i}} := {{$relation.Name}}RedisMgr().New{{$relation.Name}}(strings.Join(uk_key_{{$i}}, ":"))
-	uk_rel_{{$i}}.Value = pk.Key()
+	uk_rel_{{$i}}.Value = key
 	if err := uk_pip_{{$i}}.PairAdd(uk_rel_{{$i}}); err != nil {
 		return err
 	}
@@ -205,7 +206,7 @@ func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipelin
 	}
 	idx_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline)
 	idx_rel_{{$i}} := {{$relation.Name}}RedisMgr().New{{$relation.Name}}(strings.Join(idx_key_{{$i}}, ":"))
-	idx_rel_{{$i}}.Value = pk.Key()
+	idx_rel_{{$i}}.Value = key
 	if err := idx_pip_{{$i}}.SetAdd(idx_rel_{{$i}}); err != nil {
 		return err
 	}
@@ -235,13 +236,13 @@ func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipelin
 		return err
 	}
 	rg_rel_{{$i}}.Score = score_rg_{{$i}}
-	rg_rel_{{$i}}.Value = pk.Key()
+	rg_rel_{{$i}}.Value = key
 	if err := rg_pip_{{$i}}.ZSetAdd(rg_rel_{{$i}}); err != nil {
 		return err
 	}
 	{{- end}}
 	if expire > 0 {
-	    pipe.Expire(keyOfObject(obj, pk.Key()), expire)
+	    pipe.Expire(keyOfObject(obj, key), expire)
 	}
 
 	return nil
