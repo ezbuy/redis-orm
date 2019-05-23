@@ -587,45 +587,45 @@ func (m *_BlogDBMgr) FetchByPrimaryKeyContext(ctx context.Context, id int32, use
 
 func (m *_BlogDBMgr) FindByStatus(status int32, limit int, offset int) ([]*Blog, error) {
 	obj := BlogMgr.NewBlog()
-	idx := &StatusOfBlogIDX{
+	idx_ := &StatusOfBlogIDX{
 		Status: status,
 		limit:  limit,
 		offset: offset,
 	}
 
-	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
-	return m.FetchBySQL(query, idx.SQLParams()...)
+	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), idx_.SQLFormat(true))
+	return m.FetchBySQL(query, idx_.SQLParams()...)
 }
 
 func (m *_BlogDBMgr) FindByStatusContext(ctx context.Context, status int32, limit int, offset int) ([]*Blog, error) {
 	obj := BlogMgr.NewBlog()
-	idx := &StatusOfBlogIDX{
+	idx_ := &StatusOfBlogIDX{
 		Status: status,
 		limit:  limit,
 		offset: offset,
 	}
-	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
-	return m.FetchBySQLContext(ctx, query, idx.SQLParams()...)
+	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), idx_.SQLFormat(true))
+	return m.FetchBySQLContext(ctx, query, idx_.SQLParams()...)
 }
 
 func (m *_BlogDBMgr) FindAllByStatus(status int32) ([]*Blog, error) {
 	obj := BlogMgr.NewBlog()
-	idx := &StatusOfBlogIDX{
+	idx_ := &StatusOfBlogIDX{
 		Status: status,
 	}
 
-	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
-	return m.FetchBySQL(query, idx.SQLParams()...)
+	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), idx_.SQLFormat(true))
+	return m.FetchBySQL(query, idx_.SQLParams()...)
 }
 
 func (m *_BlogDBMgr) FindAllByStatusContext(ctx context.Context, status int32) ([]*Blog, error) {
 	obj := BlogMgr.NewBlog()
-	idx := &StatusOfBlogIDX{
+	idx_ := &StatusOfBlogIDX{
 		Status: status,
 	}
 
-	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
-	return m.FetchBySQLContext(ctx, query, idx.SQLParams()...)
+	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), idx_.SQLFormat(true))
+	return m.FetchBySQLContext(ctx, query, idx_.SQLParams()...)
 }
 
 func (m *_BlogDBMgr) FindByStatusGroup(items []int32) ([]*Blog, error) {
