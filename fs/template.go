@@ -32,7 +32,9 @@ func generate_templates(obj *parser.MetaObject) []string {
 		if obj.DbSource() == "" {
 			tpls = append(tpls, "query")
 		}
-
+	}
+	if obj.PB != nil && obj.PB.ImportPath != "" {
+		tpls = append(tpls, "convert")
 	}
 	return tpls
 }
@@ -141,6 +143,7 @@ func init() {
 		"tpl/relation.zset.sync.gogo",
 		"tpl/script.mysql.sql",
 		"tpl/view.gogo",
+		"tpl/pb.db.converter.gogo",
 	}
 	for _, fname := range files {
 		data, err := tpl.Asset(fname)

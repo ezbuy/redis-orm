@@ -5,7 +5,11 @@ Blog:
   fields:
     - Id: int32
     - UserId: int32
+      pb:
+        UserID: int64
     - Title: string
+      pb:
+        Title: string
       es_do_index: true
     - Content: string
       es_analyzer: standard
@@ -17,3 +21,6 @@ Blog:
     - UpdatedAt: timestamp
   primary: [Id, UserId]
   importSQL: "SELECT `id`,`user_id`,`title`,`content`,`status`,`readed`, `created_at`, `updated_at` FROM blogs"
+  pbPackage: blog
+  pbStructs: [RPC1, RPC2]
+  pbImportPath: "github.com/ezbuy/redis-orm/example/rpc/blog"
