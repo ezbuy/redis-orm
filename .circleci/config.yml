@@ -6,13 +6,15 @@ jobs:
       - image: circleci/golang:1.12
         environment:
           GO111MODULE: "on"
-    working_directory: /go/src/github.com/ezbuy/redis-orm
+    working_directory: /tmp/go/src/github.com/ezbuy/redis-orm
     steps:
       - checkout
-      - run: go get -v -t -d ./...
-      - install
-      - run: make buildTpl
-      - run: make install
-      - test
+      - run: go get -v github.com/ezbuy/redis-orm
+      - run:
+          name: gen tpl
+          command: |
+           go get -u github.com/jteeuwen/go-bindata/go-bindata@master
+           make buildTpl
+      - run: go install
       - run: redis-orm code -i ./example/yaml/ -o ./example/model/
       - run: go test -v ./orm/sqlbuilder
