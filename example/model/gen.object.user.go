@@ -1156,7 +1156,7 @@ func (m *_UserDBMgr) queryLimitContext(ctx context.Context, where string, limit 
 }
 
 func (m *_UserDBMgr) queryCount(where string, args ...interface{}) (int64, error) {
-	query := fmt.Sprintf("SELECT count(`id`) FROM users %s", where)
+	query := fmt.Sprintf("SELECT count(0) FROM users %s", where)
 	rows, err := m.db.Query(query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("User query count error: %v", err)
@@ -1175,7 +1175,7 @@ func (m *_UserDBMgr) queryCount(where string, args ...interface{}) (int64, error
 }
 
 func (m *_UserDBMgr) queryCountContext(ctx context.Context, where string, args ...interface{}) (int64, error) {
-	query := fmt.Sprintf("SELECT count(`id`) FROM users %s", where)
+	query := fmt.Sprintf("SELECT count(0) FROM users %s", where)
 	rows, err := m.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("User query count error: %v", err)

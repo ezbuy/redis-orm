@@ -753,7 +753,7 @@ func (m *_OfficeDBMgr) queryLimitContext(ctx context.Context, where string, limi
 }
 
 func (m *_OfficeDBMgr) queryCount(where string, args ...interface{}) (int64, error) {
-	query := fmt.Sprintf("SELECT count(office_id) FROM [dbo].[testCRUD] %s", where)
+	query := fmt.Sprintf("SELECT count(0) FROM [dbo].[testCRUD] %s", where)
 	rows, err := m.db.Query(query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("Office query count error: %v", err)
@@ -772,7 +772,7 @@ func (m *_OfficeDBMgr) queryCount(where string, args ...interface{}) (int64, err
 }
 
 func (m *_OfficeDBMgr) queryCountContext(ctx context.Context, where string, args ...interface{}) (int64, error) {
-	query := fmt.Sprintf("SELECT count(office_id) FROM [dbo].[testCRUD] %s", where)
+	query := fmt.Sprintf("SELECT count(0) FROM [dbo].[testCRUD] %s", where)
 	rows, err := m.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("Office query count error: %v", err)
