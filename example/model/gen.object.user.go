@@ -840,45 +840,45 @@ func (m *_UserDBMgr) FetchByPrimaryKeysContext(ctx context.Context, ids []int32)
 
 func (m *_UserDBMgr) FindBySex(sex bool, limit int, offset int) ([]*User, error) {
 	obj := UserMgr.NewUser()
-	idx := &SexOfUserIDX{
+	idx_ := &SexOfUserIDX{
 		Sex:    sex,
 		limit:  limit,
 		offset: offset,
 	}
 
-	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
-	return m.FetchBySQL(query, idx.SQLParams()...)
+	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), idx_.SQLFormat(true))
+	return m.FetchBySQL(query, idx_.SQLParams()...)
 }
 
 func (m *_UserDBMgr) FindBySexContext(ctx context.Context, sex bool, limit int, offset int) ([]*User, error) {
 	obj := UserMgr.NewUser()
-	idx := &SexOfUserIDX{
+	idx_ := &SexOfUserIDX{
 		Sex:    sex,
 		limit:  limit,
 		offset: offset,
 	}
-	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
-	return m.FetchBySQLContext(ctx, query, idx.SQLParams()...)
+	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), idx_.SQLFormat(true))
+	return m.FetchBySQLContext(ctx, query, idx_.SQLParams()...)
 }
 
 func (m *_UserDBMgr) FindAllBySex(sex bool) ([]*User, error) {
 	obj := UserMgr.NewUser()
-	idx := &SexOfUserIDX{
+	idx_ := &SexOfUserIDX{
 		Sex: sex,
 	}
 
-	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
-	return m.FetchBySQL(query, idx.SQLParams()...)
+	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), idx_.SQLFormat(true))
+	return m.FetchBySQL(query, idx_.SQLParams()...)
 }
 
 func (m *_UserDBMgr) FindAllBySexContext(ctx context.Context, sex bool) ([]*User, error) {
 	obj := UserMgr.NewUser()
-	idx := &SexOfUserIDX{
+	idx_ := &SexOfUserIDX{
 		Sex: sex,
 	}
 
-	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
-	return m.FetchBySQLContext(ctx, query, idx.SQLParams()...)
+	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), idx_.SQLFormat(true))
+	return m.FetchBySQLContext(ctx, query, idx_.SQLParams()...)
 }
 
 func (m *_UserDBMgr) FindBySexGroup(items []bool) ([]*User, error) {
@@ -1881,8 +1881,9 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 	pipe := m.BeginPipeline()
 	obj := UserMgr.NewUser()
 	for _, pk := range pks {
-		pipe.Exists(keyOfObject(obj, pk.Key()))
-		pipe.HMGet(keyOfObject(obj, pk.Key()),
+		key := pk.Key()
+		pipe.Exists(keyOfObject(obj, key))
+		pipe.HMGet(keyOfObject(obj, key),
 			"Id",
 			"Name",
 			"Mailbox",
@@ -2221,24 +2222,25 @@ func (m *_UserRedisMgr) SaveWithExpire(obj *User, expire time.Duration) error {
 
 func (m *_UserRedisMgr) addToPipeline(pipe *_UserRedisPipeline, obj *User, expire time.Duration) error {
 	pk := obj.GetPrimaryKey()
+	key := pk.Key()
 	//! fields
-	pipe.HSet(keyOfObject(obj, pk.Key()), "Id", fmt.Sprint(obj.Id))
-	pipe.HSet(keyOfObject(obj, pk.Key()), "Name", fmt.Sprint(obj.Name))
-	pipe.HSet(keyOfObject(obj, pk.Key()), "Mailbox", fmt.Sprint(obj.Mailbox))
-	pipe.HSet(keyOfObject(obj, pk.Key()), "Sex", fmt.Sprint(obj.Sex))
-	pipe.HSet(keyOfObject(obj, pk.Key()), "Age", fmt.Sprint(obj.Age))
-	pipe.HSet(keyOfObject(obj, pk.Key()), "Longitude", fmt.Sprint(obj.Longitude))
-	pipe.HSet(keyOfObject(obj, pk.Key()), "Latitude", fmt.Sprint(obj.Latitude))
-	pipe.HSet(keyOfObject(obj, pk.Key()), "Description", fmt.Sprint(obj.Description))
-	pipe.HSet(keyOfObject(obj, pk.Key()), "Password", fmt.Sprint(obj.Password))
-	pipe.HSet(keyOfObject(obj, pk.Key()), "HeadUrl", orm.Encode(fmt.Sprint(obj.HeadUrl)))
-	pipe.HSet(keyOfObject(obj, pk.Key()), "Status", fmt.Sprint(obj.Status))
-	pipe.HSet(keyOfObject(obj, pk.Key()), "CreatedAt", fmt.Sprint(obj.CreatedAt.Unix()))
-	pipe.HSet(keyOfObject(obj, pk.Key()), "UpdatedAt", fmt.Sprint(obj.UpdatedAt.Unix()))
+	pipe.HSet(keyOfObject(obj, key), "Id", fmt.Sprint(obj.Id))
+	pipe.HSet(keyOfObject(obj, key), "Name", fmt.Sprint(obj.Name))
+	pipe.HSet(keyOfObject(obj, key), "Mailbox", fmt.Sprint(obj.Mailbox))
+	pipe.HSet(keyOfObject(obj, key), "Sex", fmt.Sprint(obj.Sex))
+	pipe.HSet(keyOfObject(obj, key), "Age", fmt.Sprint(obj.Age))
+	pipe.HSet(keyOfObject(obj, key), "Longitude", fmt.Sprint(obj.Longitude))
+	pipe.HSet(keyOfObject(obj, key), "Latitude", fmt.Sprint(obj.Latitude))
+	pipe.HSet(keyOfObject(obj, key), "Description", fmt.Sprint(obj.Description))
+	pipe.HSet(keyOfObject(obj, key), "Password", fmt.Sprint(obj.Password))
+	pipe.HSet(keyOfObject(obj, key), "HeadUrl", orm.Encode(fmt.Sprint(obj.HeadUrl)))
+	pipe.HSet(keyOfObject(obj, key), "Status", fmt.Sprint(obj.Status))
+	pipe.HSet(keyOfObject(obj, key), "CreatedAt", fmt.Sprint(obj.CreatedAt.Unix()))
+	pipe.HSet(keyOfObject(obj, key), "UpdatedAt", fmt.Sprint(obj.UpdatedAt.Unix()))
 	if obj.DeletedAt != nil {
-		pipe.HSet(keyOfObject(obj, pk.Key()), "DeletedAt", fmt.Sprint(obj.DeletedAt.Unix()))
+		pipe.HSet(keyOfObject(obj, key), "DeletedAt", fmt.Sprint(obj.DeletedAt.Unix()))
 	} else {
-		pipe.HSet(keyOfObject(obj, pk.Key()), "DeletedAt", "nil")
+		pipe.HSet(keyOfObject(obj, key), "DeletedAt", "nil")
 	}
 
 	//! uniques
@@ -2250,7 +2252,7 @@ func (m *_UserRedisMgr) addToPipeline(pipe *_UserRedisPipeline, obj *User, expir
 	}
 	uk_pip_0 := MailboxPasswordOfUserUKRelationRedisMgr().BeginPipeline(pipe.Pipeline)
 	uk_rel_0 := MailboxPasswordOfUserUKRelationRedisMgr().NewMailboxPasswordOfUserUKRelation(strings.Join(uk_key_0, ":"))
-	uk_rel_0.Value = pk.Key()
+	uk_rel_0.Value = key
 	if err := uk_pip_0.PairAdd(uk_rel_0); err != nil {
 		return err
 	}
@@ -2262,7 +2264,7 @@ func (m *_UserRedisMgr) addToPipeline(pipe *_UserRedisPipeline, obj *User, expir
 	}
 	idx_pip_0 := SexOfUserIDXRelationRedisMgr().BeginPipeline(pipe.Pipeline)
 	idx_rel_0 := SexOfUserIDXRelationRedisMgr().NewSexOfUserIDXRelation(strings.Join(idx_key_0, ":"))
-	idx_rel_0.Value = pk.Key()
+	idx_rel_0.Value = key
 	if err := idx_pip_0.SetAdd(idx_rel_0); err != nil {
 		return err
 	}
@@ -2278,7 +2280,7 @@ func (m *_UserRedisMgr) addToPipeline(pipe *_UserRedisPipeline, obj *User, expir
 		return err
 	}
 	rg_rel_0.Score = score_rg_0
-	rg_rel_0.Value = pk.Key()
+	rg_rel_0.Value = key
 	if err := rg_pip_0.ZSetAdd(rg_rel_0); err != nil {
 		return err
 	}
@@ -2292,12 +2294,12 @@ func (m *_UserRedisMgr) addToPipeline(pipe *_UserRedisPipeline, obj *User, expir
 		return err
 	}
 	rg_rel_1.Score = score_rg_1
-	rg_rel_1.Value = pk.Key()
+	rg_rel_1.Value = key
 	if err := rg_pip_1.ZSetAdd(rg_rel_1); err != nil {
 		return err
 	}
 	if expire > 0 {
-		pipe.Expire(keyOfObject(obj, pk.Key()), expire)
+		pipe.Expire(keyOfObject(obj, key), expire)
 	}
 
 	return nil

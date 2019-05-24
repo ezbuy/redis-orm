@@ -610,45 +610,45 @@ func (m *_UserBaseInfoDBMgr) FetchByPrimaryKeysContext(ctx context.Context, ids 
 
 func (m *_UserBaseInfoDBMgr) FindByName(name string, limit int, offset int) ([]*UserBaseInfo, error) {
 	obj := UserBaseInfoMgr.NewUserBaseInfo()
-	idx := &NameOfUserBaseInfoIDX{
+	idx_ := &NameOfUserBaseInfoIDX{
 		Name:   name,
 		limit:  limit,
 		offset: offset,
 	}
 
-	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
-	return m.FetchBySQL(query, idx.SQLParams()...)
+	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(obj.GetColumns(), ","), idx_.SQLFormat(true))
+	return m.FetchBySQL(query, idx_.SQLParams()...)
 }
 
 func (m *_UserBaseInfoDBMgr) FindByNameContext(ctx context.Context, name string, limit int, offset int) ([]*UserBaseInfo, error) {
 	obj := UserBaseInfoMgr.NewUserBaseInfo()
-	idx := &NameOfUserBaseInfoIDX{
+	idx_ := &NameOfUserBaseInfoIDX{
 		Name:   name,
 		limit:  limit,
 		offset: offset,
 	}
-	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
-	return m.FetchBySQLContext(ctx, query, idx.SQLParams()...)
+	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(obj.GetColumns(), ","), idx_.SQLFormat(true))
+	return m.FetchBySQLContext(ctx, query, idx_.SQLParams()...)
 }
 
 func (m *_UserBaseInfoDBMgr) FindAllByName(name string) ([]*UserBaseInfo, error) {
 	obj := UserBaseInfoMgr.NewUserBaseInfo()
-	idx := &NameOfUserBaseInfoIDX{
+	idx_ := &NameOfUserBaseInfoIDX{
 		Name: name,
 	}
 
-	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
-	return m.FetchBySQL(query, idx.SQLParams()...)
+	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(obj.GetColumns(), ","), idx_.SQLFormat(true))
+	return m.FetchBySQL(query, idx_.SQLParams()...)
 }
 
 func (m *_UserBaseInfoDBMgr) FindAllByNameContext(ctx context.Context, name string) ([]*UserBaseInfo, error) {
 	obj := UserBaseInfoMgr.NewUserBaseInfo()
-	idx := &NameOfUserBaseInfoIDX{
+	idx_ := &NameOfUserBaseInfoIDX{
 		Name: name,
 	}
 
-	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
-	return m.FetchBySQLContext(ctx, query, idx.SQLParams()...)
+	query := fmt.Sprintf("SELECT %s FROM user_base_info %s", strings.Join(obj.GetColumns(), ","), idx_.SQLFormat(true))
+	return m.FetchBySQLContext(ctx, query, idx_.SQLParams()...)
 }
 
 func (m *_UserBaseInfoDBMgr) FindByNameGroup(items []string) ([]*UserBaseInfo, error) {

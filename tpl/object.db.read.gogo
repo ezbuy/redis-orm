@@ -339,43 +339,43 @@ func (m *_{{$obj.Name}}DBMgr) FetchByPrimaryKeysContext(ctx context.Context,{{$p
 
 func (m *_{{$obj.Name}}DBMgr) FindBy{{$index.GetFuncName}}({{$index.GetFuncParam}}, limit int, offset int) ([]*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
-	idx := &{{$index.Name}}{
+	idx_ := &{{$index.Name}}{
 		{{$index.GetConstructor}}limit:   limit,
 		offset:  offset,
 	}
 
-	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
-	return m.FetchBySQL(query, idx.SQLParams()...)
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), idx_.SQLFormat(true))
+	return m.FetchBySQL(query, idx_.SQLParams()...)
 }
 
 func (m *_{{$obj.Name}}DBMgr) FindBy{{$index.GetFuncName}}Context(ctx context.Context,{{$index.GetFuncParam}}, limit int, offset int) ([]*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
-	idx := &{{$index.Name}}{
+	idx_ := &{{$index.Name}}{
 		{{$index.GetConstructor}}limit:   limit,
 		offset:  offset,
 	}
-	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
-	return m.FetchBySQLContext(ctx,query, idx.SQLParams()...)
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), idx_.SQLFormat(true))
+	return m.FetchBySQLContext(ctx,query, idx_.SQLParams()...)
 }
 
 func (m *_{{$obj.Name}}DBMgr) FindAllBy{{$index.GetFuncName}}({{$index.GetFuncParam}}) ([]*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
-	idx := &{{$index.Name}}{
+	idx_ := &{{$index.Name}}{
 		{{$index.GetConstructor}}
 	}
 
-	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
-	return m.FetchBySQL(query, idx.SQLParams()...)
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), idx_.SQLFormat(true))
+	return m.FetchBySQL(query, idx_.SQLParams()...)
 }
 
 func (m *_{{$obj.Name}}DBMgr) FindAllBy{{$index.GetFuncName}}Context(ctx context.Context,{{$index.GetFuncParam}}) ([]*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
-	idx := &{{$index.Name}}{
+	idx_ := &{{$index.Name}}{
 		{{$index.GetConstructor}}
 	}
 
-	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), idx.SQLFormat(true))
-	return m.FetchBySQLContext(ctx,query, idx.SQLParams()...)
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), idx_.SQLFormat(true))
+	return m.FetchBySQLContext(ctx,query, idx_.SQLParams()...)
 }
 
 {{- if $index.IsSingleField}}
