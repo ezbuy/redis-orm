@@ -744,7 +744,7 @@ func (m *_{{$obj.Name}}DBMgr) queryLimitContext(ctx context.Context,where string
 }
 
 func (m *_{{$obj.Name}}DBMgr) queryCount(where string, args ...interface{}) (int64, error){
-	query := fmt.Sprintf("SELECT count({{$primaryField.FieldName}}) FROM {{$obj.FromDB}} %s", where)
+	query := fmt.Sprintf("SELECT count(0) FROM {{$obj.FromDB}} %s", where)
 	rows, err := m.db.Query(query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("{{$obj.Name}} query count error: %v", err)
@@ -764,7 +764,7 @@ func (m *_{{$obj.Name}}DBMgr) queryCount(where string, args ...interface{}) (int
 
 
 func (m *_{{$obj.Name}}DBMgr) queryCountContext(ctx context.Context,where string, args ...interface{}) (int64, error){
-	query := fmt.Sprintf("SELECT count({{$primaryField.FieldName}}) FROM {{$obj.FromDB}} %s", where)
+	query := fmt.Sprintf("SELECT count(0) FROM {{$obj.FromDB}} %s", where)
 	rows, err := m.db.QueryContext(ctx,query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("{{$obj.Name}} query count error: %v", err)
