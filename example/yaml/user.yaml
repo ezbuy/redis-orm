@@ -5,7 +5,9 @@ User:
   comment: 用户表
   fields:
     - Id: int32
-      flags: [primary, autoinc]
+      flags: [autoinc,norange]
+    - SubID: int32
+      flags: [norange]
     - Name: string
       validator: required
     - Mailbox: string
@@ -29,6 +31,7 @@ User:
     - DeletedAt: timeint
       flags: [nullable]
   uniques: [[Mailbox, Password]]
+  primary: [Id,SubID]
 
 UserBaseInfo:
   dbs: [mysql]
