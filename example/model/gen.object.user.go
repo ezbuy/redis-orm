@@ -25,6 +25,7 @@ var (
 
 type User struct {
 	Id          int32      `db:"id" json:"id"`
+	SubID       int32      `db:"sub_id" json:"sub_id"`
 	Name        string     `db:"name" json:"name" validate:"required"`
 	Mailbox     string     `db:"mailbox" json:"mailbox" validate:"required"`
 	Sex         bool       `db:"sex" json:"sex"`
@@ -42,6 +43,7 @@ type User struct {
 
 var UserColumns = struct {
 	Id          string
+	SubID       string
 	Name        string
 	Mailbox     string
 	Sex         string
@@ -57,6 +59,7 @@ var UserColumns = struct {
 	DeletedAt   string
 }{
 	"id",
+	"sub_id",
 	"name",
 	"mailbox",
 	"sex",
@@ -98,6 +101,7 @@ func (obj *User) GetTableName() string {
 func (obj *User) GetColumns() []string {
 	columns := []string{
 		"users.`id`",
+		"users.`sub_id`",
 		"users.`name`",
 		"users.`mailbox`",
 		"users.`sex`",
@@ -117,6 +121,7 @@ func (obj *User) GetColumns() []string {
 
 func (obj *User) GetNoneIncrementColumns() []string {
 	columns := []string{
+		"`sub_id`",
 		"`name`",
 		"`mailbox`",
 		"`sex`",
@@ -137,6 +142,7 @@ func (obj *User) GetNoneIncrementColumns() []string {
 func (obj *User) GetPrimaryKey() PrimaryKey {
 	pk := UserMgr.NewPrimaryKey()
 	pk.Id = obj.Id
+	pk.SubID = obj.SubID
 	return pk
 }
 
@@ -163,23 +169,26 @@ func (obj *User) GetPrimaryName() string {
 
 //! primary key
 
-type IdOfUserPK struct {
-	Id int32
+type IdSubIDOfUserPK struct {
+	Id    int32
+	SubID int32
 }
 
-func (m *_UserMgr) NewPrimaryKey() *IdOfUserPK {
-	return &IdOfUserPK{}
+func (m *_UserMgr) NewPrimaryKey() *IdSubIDOfUserPK {
+	return &IdSubIDOfUserPK{}
 }
 
-func (u *IdOfUserPK) Key() string {
+func (u *IdSubIDOfUserPK) Key() string {
 	strs := []string{
 		"Id",
 		fmt.Sprint(u.Id),
+		"SubID",
+		fmt.Sprint(u.SubID),
 	}
 	return fmt.Sprintf("%s", strings.Join(strs, ":"))
 }
 
-func (u *IdOfUserPK) Parse(key string) error {
+func (u *IdSubIDOfUserPK) Parse(key string) error {
 	arr := strings.Split(key, ":")
 	if len(arr)%2 != 0 {
 		return fmt.Errorf("key (%s) format error", key)
@@ -195,25 +204,35 @@ func (u *IdOfUserPK) Parse(key string) error {
 	if err := orm.StringScan(vId, &(u.Id)); err != nil {
 		return err
 	}
+	vSubID, ok := kv["SubID"]
+	if !ok {
+		return fmt.Errorf("key (%s) without (SubID) field", key)
+	}
+	if err := orm.StringScan(vSubID, &(u.SubID)); err != nil {
+		return err
+	}
 	return nil
 }
 
-func (u *IdOfUserPK) SQLFormat() string {
+func (u *IdSubIDOfUserPK) SQLFormat() string {
 	conditions := []string{
 		"`id` = ?",
+		"`sub_id` = ?",
 	}
 	return orm.SQLWhere(conditions)
 }
 
-func (u *IdOfUserPK) SQLParams() []interface{} {
+func (u *IdSubIDOfUserPK) SQLParams() []interface{} {
 	return []interface{}{
 		u.Id,
+		u.SubID,
 	}
 }
 
-func (u *IdOfUserPK) Columns() []string {
+func (u *IdSubIDOfUserPK) Columns() []string {
 	return []string{
 		"`id`",
+		"`sub_id`",
 	}
 }
 
@@ -325,132 +344,6 @@ func (u *SexOfUserIDX) IDXRelation(store *orm.RedisStore) IndexRelation {
 }
 
 //! ranges
-
-type IdOfUserRNG struct {
-	IdBegin      int64
-	IdEnd        int64
-	offset       int
-	limit        int
-	includeBegin bool
-	includeEnd   bool
-	revert       bool
-}
-
-func (u *IdOfUserRNG) Key() string {
-	strs := []string{
-		"Id",
-	}
-	return fmt.Sprintf("%s", strings.Join(strs, ":"))
-}
-
-func (u *IdOfUserRNG) beginOp() string {
-	if u.includeBegin {
-		return ">="
-	}
-	return ">"
-}
-func (u *IdOfUserRNG) endOp() string {
-	if u.includeBegin {
-		return "<="
-	}
-	return "<"
-}
-
-func (u *IdOfUserRNG) SQLFormat(limit bool) string {
-	conditions := []string{}
-	if u.IdBegin != u.IdEnd {
-		if u.IdBegin != -1 {
-			conditions = append(conditions, fmt.Sprintf("`id` %s ?", u.beginOp()))
-		}
-		if u.IdEnd != -1 {
-			conditions = append(conditions, fmt.Sprintf("`id` %s ?", u.endOp()))
-		}
-	}
-	if limit {
-		return fmt.Sprintf("%s %s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("`id`", u.revert), orm.SQLOffsetLimit(u.offset, u.limit))
-	}
-	return fmt.Sprintf("%s %s", orm.SQLWhere(conditions), orm.SQLOrderBy("`id`", u.revert))
-}
-
-func (u *IdOfUserRNG) SQLParams() []interface{} {
-	params := []interface{}{}
-	if u.IdBegin != u.IdEnd {
-		if u.IdBegin != -1 {
-			params = append(params, u.IdBegin)
-		}
-		if u.IdEnd != -1 {
-			params = append(params, u.IdEnd)
-		}
-	}
-	return params
-}
-
-func (u *IdOfUserRNG) SQLLimit() int {
-	if u.limit > 0 {
-		return u.limit
-	}
-	return -1
-}
-
-func (u *IdOfUserRNG) Limit(n int) {
-	u.limit = n
-}
-
-func (u *IdOfUserRNG) Offset(n int) {
-	u.offset = n
-}
-
-func (u *IdOfUserRNG) PositionOffsetLimit(len int) (int, int) {
-	if u.limit <= 0 {
-		return 0, len
-	}
-	if u.offset+u.limit > len {
-		return u.offset, len
-	}
-	return u.offset, u.limit
-}
-
-func (u *IdOfUserRNG) Begin() int64 {
-	start := u.IdBegin
-	if start == -1 || start == 0 {
-		start = 0
-	}
-	if start > 0 {
-		if !u.includeBegin {
-			start = start + 1
-		}
-	}
-	return start
-}
-
-func (u *IdOfUserRNG) End() int64 {
-	stop := u.IdEnd
-	if stop == 0 || stop == -1 {
-		stop = -1
-	}
-	if stop > 0 {
-		if !u.includeBegin {
-			stop = stop - 1
-		}
-	}
-	return stop
-}
-
-func (u *IdOfUserRNG) Revert(b bool) {
-	u.revert = b
-}
-
-func (u *IdOfUserRNG) IncludeBegin(f bool) {
-	u.includeBegin = f
-}
-
-func (u *IdOfUserRNG) IncludeEnd(f bool) {
-	u.includeEnd = f
-}
-
-func (u *IdOfUserRNG) RNGRelation(store *orm.RedisStore) RangeRelation {
-	return IdOfUserRNGRelationRedisMgr(store)
-}
 
 type AgeOfUserRNG struct {
 	AgeBegin     int64
@@ -670,7 +563,7 @@ func (m *_UserDBMgr) FetchBySQL(q string, args ...interface{}) (results []*User,
 
 	for rows.Next() {
 		var result User
-		err = rows.Scan(&(result.Id), &(result.Name), &(result.Mailbox), &(result.Sex), &(result.Age), &(result.Longitude), &(result.Latitude), &Description, &(result.Password), &HeadUrl, &(result.Status), &CreatedAt, &UpdatedAt, &DeletedAt)
+		err = rows.Scan(&(result.Id), &(result.SubID), &(result.Name), &(result.Mailbox), &(result.Sex), &(result.Age), &(result.Longitude), &(result.Latitude), &Description, &(result.Password), &HeadUrl, &(result.Status), &CreatedAt, &UpdatedAt, &DeletedAt)
 		if err != nil {
 			m.db.SetError(err)
 			return nil, err
@@ -715,7 +608,7 @@ func (m *_UserDBMgr) FetchBySQLContext(ctx context.Context, q string, args ...in
 
 	for rows.Next() {
 		var result User
-		err = rows.Scan(&(result.Id), &(result.Name), &(result.Mailbox), &(result.Sex), &(result.Age), &(result.Longitude), &(result.Latitude), &Description, &(result.Password), &HeadUrl, &(result.Status), &CreatedAt, &UpdatedAt, &DeletedAt)
+		err = rows.Scan(&(result.Id), &(result.SubID), &(result.Name), &(result.Mailbox), &(result.Sex), &(result.Age), &(result.Longitude), &(result.Latitude), &Description, &(result.Password), &HeadUrl, &(result.Status), &CreatedAt, &UpdatedAt, &DeletedAt)
 		if err != nil {
 			m.db.SetError(err)
 			return nil, err
@@ -772,10 +665,11 @@ func (m *_UserDBMgr) IsErrNotFound(err error) bool {
 }
 
 // primary key
-func (m *_UserDBMgr) FetchByPrimaryKey(id int32) (*User, error) {
+func (m *_UserDBMgr) FetchByPrimaryKey(id int32, subID int32) (*User, error) {
 	obj := UserMgr.NewUser()
-	pk := &IdOfUserPK{
-		Id: id,
+	pk := &IdSubIDOfUserPK{
+		Id:    id,
+		SubID: subID,
 	}
 
 	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
@@ -789,10 +683,11 @@ func (m *_UserDBMgr) FetchByPrimaryKey(id int32) (*User, error) {
 	return nil, fmt.Errorf("User fetch record not found")
 }
 
-func (m *_UserDBMgr) FetchByPrimaryKeyContext(ctx context.Context, id int32) (*User, error) {
+func (m *_UserDBMgr) FetchByPrimaryKeyContext(ctx context.Context, id int32, subID int32) (*User, error) {
 	obj := UserMgr.NewUser()
-	pk := &IdOfUserPK{
-		Id: id,
+	pk := &IdSubIDOfUserPK{
+		Id:    id,
+		SubID: subID,
 	}
 
 	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
@@ -804,36 +699,6 @@ func (m *_UserDBMgr) FetchByPrimaryKeyContext(ctx context.Context, id int32) (*U
 		return objs[0], nil
 	}
 	return nil, fmt.Errorf("User fetch record not found")
-}
-
-func (m *_UserDBMgr) FetchByPrimaryKeys(ids []int32) ([]*User, error) {
-	size := len(ids)
-	if size == 0 {
-		return nil, nil
-	}
-	params := make([]interface{}, 0, size)
-	for _, pk := range ids {
-		params = append(params, pk)
-	}
-	obj := UserMgr.NewUser()
-	query := fmt.Sprintf("SELECT %s FROM users WHERE `id` IN (?%s)", strings.Join(obj.GetColumns(), ","),
-		strings.Repeat(",?", size-1))
-	return m.FetchBySQL(query, params...)
-}
-
-func (m *_UserDBMgr) FetchByPrimaryKeysContext(ctx context.Context, ids []int32) ([]*User, error) {
-	size := len(ids)
-	if size == 0 {
-		return nil, nil
-	}
-	params := make([]interface{}, 0, size)
-	for _, pk := range ids {
-		params = append(params, pk)
-	}
-	obj := UserMgr.NewUser()
-	query := fmt.Sprintf("SELECT %s FROM users WHERE `id` IN (?%s)", strings.Join(obj.GetColumns(), ","),
-		strings.Repeat(",?", size-1))
-	return m.FetchBySQLContext(ctx, query, params...)
 }
 
 // indexes
@@ -1107,7 +972,7 @@ func (m *_UserDBMgr) queryLimit(where string, limit int, args ...interface{}) (r
 		offset++
 
 		result := UserMgr.NewPrimaryKey()
-		err = rows.Scan(&(result.Id))
+		err = rows.Scan(&(result.Id), &(result.SubID))
 		if err != nil {
 			m.db.SetError(err)
 			return nil, err
@@ -1140,7 +1005,7 @@ func (m *_UserDBMgr) queryLimitContext(ctx context.Context, where string, limit 
 		offset++
 
 		result := UserMgr.NewPrimaryKey()
-		err = rows.Scan(&(result.Id))
+		err = rows.Scan(&(result.Id), &(result.SubID))
 		if err != nil {
 			m.db.SetError(err)
 			return nil, err
@@ -1199,9 +1064,10 @@ func (m *_UserDBMgr) BatchCreate(objs []*User) (int64, error) {
 	}
 
 	params := make([]string, 0, len(objs))
-	values := make([]interface{}, 0, len(objs)*13)
+	values := make([]interface{}, 0, len(objs)*14)
 	for _, obj := range objs {
-		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice(13, "?"), ",")))
+		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice(14, "?"), ",")))
+		values = append(values, obj.SubID)
 		values = append(values, obj.Name)
 		values = append(values, obj.Mailbox)
 		values = append(values, obj.Sex)
@@ -1234,9 +1100,10 @@ func (m *_UserDBMgr) BatchCreateContext(ctx context.Context, objs []*User) (int6
 	}
 
 	params := make([]string, 0, len(objs))
-	values := make([]interface{}, 0, len(objs)*13)
+	values := make([]interface{}, 0, len(objs)*14)
 	for _, obj := range objs {
-		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice(13, "?"), ",")))
+		params = append(params, fmt.Sprintf("(%s)", strings.Join(orm.NewStringSlice(14, "?"), ",")))
+		values = append(values, obj.SubID)
 		values = append(values, obj.Name)
 		values = append(values, obj.Mailbox)
 		values = append(values, obj.Sex)
@@ -1296,12 +1163,13 @@ func (m *_UserDBMgr) UpdateBySQLContext(ctx context.Context, set, where string, 
 }
 
 func (m *_UserDBMgr) Create(obj *User) (int64, error) {
-	params := orm.NewStringSlice(13, "?")
+	params := orm.NewStringSlice(14, "?")
 	q := fmt.Sprintf("INSERT INTO users(%s) VALUES(%s)",
 		strings.Join(obj.GetNoneIncrementColumns(), ","),
 		strings.Join(params, ","))
 
-	values := make([]interface{}, 0, 14)
+	values := make([]interface{}, 0, 15)
+	values = append(values, obj.SubID)
 	values = append(values, obj.Name)
 	values = append(values, obj.Mailbox)
 	values = append(values, obj.Sex)
@@ -1323,21 +1191,17 @@ func (m *_UserDBMgr) Create(obj *User) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	lastInsertId, err := result.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-	obj.Id = int32(lastInsertId)
 	return result.RowsAffected()
 }
 
 func (m *_UserDBMgr) CreateContext(ctx context.Context, obj *User) (int64, error) {
-	params := orm.NewStringSlice(13, "?")
+	params := orm.NewStringSlice(14, "?")
 	q := fmt.Sprintf("INSERT INTO users(%s) VALUES(%s)",
 		strings.Join(obj.GetNoneIncrementColumns(), ","),
 		strings.Join(params, ","))
 
-	values := make([]interface{}, 0, 14)
+	values := make([]interface{}, 0, 15)
+	values = append(values, obj.SubID)
 	values = append(values, obj.Name)
 	values = append(values, obj.Mailbox)
 	values = append(values, obj.Sex)
@@ -1359,11 +1223,6 @@ func (m *_UserDBMgr) CreateContext(ctx context.Context, obj *User) (int64, error
 	if err != nil {
 		return 0, err
 	}
-	lastInsertId, err := result.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-	obj.Id = int32(lastInsertId)
 	return result.RowsAffected()
 }
 
@@ -1386,7 +1245,7 @@ func (m *_UserDBMgr) Update(obj *User) (int64, error) {
 
 	pk := obj.GetPrimaryKey()
 	q := fmt.Sprintf("UPDATE users SET %s %s", strings.Join(columns, ","), pk.SQLFormat())
-	values := make([]interface{}, 0, 14-1)
+	values := make([]interface{}, 0, 15-2)
 	values = append(values, obj.Name)
 	values = append(values, obj.Mailbox)
 	values = append(values, obj.Sex)
@@ -1432,7 +1291,7 @@ func (m *_UserDBMgr) UpdateContext(ctx context.Context, obj *User) (int64, error
 
 	pk := obj.GetPrimaryKey()
 	q := fmt.Sprintf("UPDATE users SET %s %s", strings.Join(columns, ","), pk.SQLFormat())
-	values := make([]interface{}, 0, 14-1)
+	values := make([]interface{}, 0, 15-2)
 	values = append(values, obj.Name)
 	values = append(values, obj.Mailbox)
 	values = append(values, obj.Sex)
@@ -1482,16 +1341,17 @@ func (m *_UserDBMgr) SaveContext(ctx context.Context, obj *User) (int64, error) 
 }
 
 func (m *_UserDBMgr) Delete(obj *User) (int64, error) {
-	return m.DeleteByPrimaryKey(obj.Id)
+	return m.DeleteByPrimaryKey(obj.Id, obj.SubID)
 }
 
 func (m *_UserDBMgr) DeleteContext(ctx context.Context, obj *User) (int64, error) {
-	return m.DeleteByPrimaryKeyContext(ctx, obj.Id)
+	return m.DeleteByPrimaryKeyContext(ctx, obj.Id, obj.SubID)
 }
 
-func (m *_UserDBMgr) DeleteByPrimaryKey(id int32) (int64, error) {
-	pk := &IdOfUserPK{
-		Id: id,
+func (m *_UserDBMgr) DeleteByPrimaryKey(id int32, subID int32) (int64, error) {
+	pk := &IdSubIDOfUserPK{
+		Id:    id,
+		SubID: subID,
 	}
 	q := fmt.Sprintf("DELETE FROM users %s", pk.SQLFormat())
 	result, err := m.db.Exec(q, pk.SQLParams()...)
@@ -1501,9 +1361,10 @@ func (m *_UserDBMgr) DeleteByPrimaryKey(id int32) (int64, error) {
 	return result.RowsAffected()
 }
 
-func (m *_UserDBMgr) DeleteByPrimaryKeyContext(ctx context.Context, id int32) (int64, error) {
-	pk := &IdOfUserPK{
-		Id: id,
+func (m *_UserDBMgr) DeleteByPrimaryKeyContext(ctx context.Context, id int32, subID int32) (int64, error) {
+	pk := &IdSubIDOfUserPK{
+		Id:    id,
+		SubID: subID,
 	}
 	q := fmt.Sprintf("DELETE FROM users %s", pk.SQLFormat())
 	result, err := m.db.ExecContext(ctx, q, pk.SQLParams()...)
@@ -1600,11 +1461,13 @@ func (m *_UserRedisMgr) DelBySQL(db *_UserDBMgr, sql string, args ...interface{}
 
 var newUserObj = UserMgr.NewUser()
 
-// get redis key of User, PrimaryKeys: id int32
-func RedisKeyOfPrimaryUser(Id int32) string {
+// get redis key of User, PrimaryKeys: id int32, subID int32
+func RedisKeyOfPrimaryUser(Id int32, SubID int32) string {
 	strs := []string{
 		"Id",
 		fmt.Sprint(Id),
+		"SubID",
+		fmt.Sprint(SubID),
 	}
 	return keyOfObject(newUserObj, fmt.Sprintf("%s", strings.Join(strs, ":")))
 }
@@ -1747,6 +1610,7 @@ func (m *_UserRedisMgr) FetchByKey(key string) (*User, error) {
 	pipe.Exists(key)
 	pipe.HMGet(key,
 		"Id",
+		"SubID",
 		"Name",
 		"Mailbox",
 		"Sex",
@@ -1785,72 +1649,70 @@ func (m *_UserRedisMgr) FetchByKey(key string) (*User, error) {
 	}
 	if strs[1] != nil {
 		sv, _ = strs[1].(string)
-		if err := orm.StringScan(sv, &obj.Name); err != nil {
+		if err := orm.StringScan(sv, &obj.SubID); err != nil {
 			return nil, err
 		}
 	}
 	if strs[2] != nil {
 		sv, _ = strs[2].(string)
-		if err := orm.StringScan(sv, &obj.Mailbox); err != nil {
+		if err := orm.StringScan(sv, &obj.Name); err != nil {
 			return nil, err
 		}
 	}
 	if strs[3] != nil {
 		sv, _ = strs[3].(string)
-		if err := orm.StringScan(sv, &obj.Sex); err != nil {
+		if err := orm.StringScan(sv, &obj.Mailbox); err != nil {
 			return nil, err
 		}
 	}
 	if strs[4] != nil {
 		sv, _ = strs[4].(string)
-		if err := orm.StringScan(sv, &obj.Age); err != nil {
+		if err := orm.StringScan(sv, &obj.Sex); err != nil {
 			return nil, err
 		}
 	}
 	if strs[5] != nil {
 		sv, _ = strs[5].(string)
-		if err := orm.StringScan(sv, &obj.Longitude); err != nil {
+		if err := orm.StringScan(sv, &obj.Age); err != nil {
 			return nil, err
 		}
 	}
 	if strs[6] != nil {
 		sv, _ = strs[6].(string)
-		if err := orm.StringScan(sv, &obj.Latitude); err != nil {
+		if err := orm.StringScan(sv, &obj.Longitude); err != nil {
 			return nil, err
 		}
 	}
 	if strs[7] != nil {
 		sv, _ = strs[7].(string)
-		if err := orm.StringScan(sv, &obj.Description); err != nil {
+		if err := orm.StringScan(sv, &obj.Latitude); err != nil {
 			return nil, err
 		}
 	}
 	if strs[8] != nil {
 		sv, _ = strs[8].(string)
-		if err := orm.StringScan(sv, &obj.Password); err != nil {
+		if err := orm.StringScan(sv, &obj.Description); err != nil {
 			return nil, err
 		}
 	}
 	if strs[9] != nil {
 		sv, _ = strs[9].(string)
+		if err := orm.StringScan(sv, &obj.Password); err != nil {
+			return nil, err
+		}
+	}
+	if strs[10] != nil {
+		sv, _ = strs[10].(string)
 		if err := orm.StringScan(sv, &obj.HeadUrl); err != nil {
 			return nil, err
 		}
 		obj.HeadUrl = orm.Decode(obj.HeadUrl)
 	}
-	if strs[10] != nil {
-		sv, _ = strs[10].(string)
+	if strs[11] != nil {
+		sv, _ = strs[11].(string)
 		if err := orm.StringScan(sv, &obj.Status); err != nil {
 			return nil, err
 		}
-	}
-	if strs[11] != nil {
-		sv, _ = strs[11].(string)
-		var val11 int64
-		if err := orm.StringScan(sv, &val11); err != nil {
-			return nil, err
-		}
-		obj.CreatedAt = time.Unix(val11, 0)
 	}
 	if strs[12] != nil {
 		sv, _ = strs[12].(string)
@@ -1858,18 +1720,26 @@ func (m *_UserRedisMgr) FetchByKey(key string) (*User, error) {
 		if err := orm.StringScan(sv, &val12); err != nil {
 			return nil, err
 		}
-		obj.UpdatedAt = time.Unix(val12, 0)
+		obj.CreatedAt = time.Unix(val12, 0)
 	}
 	if strs[13] != nil {
 		sv, _ = strs[13].(string)
+		var val13 int64
+		if err := orm.StringScan(sv, &val13); err != nil {
+			return nil, err
+		}
+		obj.UpdatedAt = time.Unix(val13, 0)
+	}
+	if strs[14] != nil {
+		sv, _ = strs[14].(string)
 		if sv == "nil" {
 			obj.DeletedAt = nil
 		} else {
-			var val13 int64
-			if err := orm.StringScan(sv, &val13); err != nil {
+			var val14 int64
+			if err := orm.StringScan(sv, &val14); err != nil {
 				return nil, err
 			}
-			DeletedAtValue := time.Unix(val13, 0)
+			DeletedAtValue := time.Unix(val14, 0)
 			obj.DeletedAt = &DeletedAtValue
 		}
 	}
@@ -1885,6 +1755,7 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 		pipe.Exists(keyOfObject(obj, key))
 		pipe.HMGet(keyOfObject(obj, key),
 			"Id",
+			"SubID",
 			"Name",
 			"Mailbox",
 			"Sex",
@@ -1938,7 +1809,7 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[1]))
 				continue
 			}
-			if err := orm.StringScan(sv, &obj.Name); err != nil {
+			if err := orm.StringScan(sv, &obj.SubID); err != nil {
 				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 				continue
 			}
@@ -1949,7 +1820,7 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[2]))
 				continue
 			}
-			if err := orm.StringScan(sv, &obj.Mailbox); err != nil {
+			if err := orm.StringScan(sv, &obj.Name); err != nil {
 				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 				continue
 			}
@@ -1960,7 +1831,7 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[3]))
 				continue
 			}
-			if err := orm.StringScan(sv, &obj.Sex); err != nil {
+			if err := orm.StringScan(sv, &obj.Mailbox); err != nil {
 				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 				continue
 			}
@@ -1971,7 +1842,7 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[4]))
 				continue
 			}
-			if err := orm.StringScan(sv, &obj.Age); err != nil {
+			if err := orm.StringScan(sv, &obj.Sex); err != nil {
 				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 				continue
 			}
@@ -1982,7 +1853,7 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[5]))
 				continue
 			}
-			if err := orm.StringScan(sv, &obj.Longitude); err != nil {
+			if err := orm.StringScan(sv, &obj.Age); err != nil {
 				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 				continue
 			}
@@ -1993,7 +1864,7 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[6]))
 				continue
 			}
-			if err := orm.StringScan(sv, &obj.Latitude); err != nil {
+			if err := orm.StringScan(sv, &obj.Longitude); err != nil {
 				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 				continue
 			}
@@ -2004,7 +1875,7 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[7]))
 				continue
 			}
-			if err := orm.StringScan(sv, &obj.Description); err != nil {
+			if err := orm.StringScan(sv, &obj.Latitude); err != nil {
 				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 				continue
 			}
@@ -2015,7 +1886,7 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[8]))
 				continue
 			}
-			if err := orm.StringScan(sv, &obj.Password); err != nil {
+			if err := orm.StringScan(sv, &obj.Description); err != nil {
 				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 				continue
 			}
@@ -2026,11 +1897,10 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[9]))
 				continue
 			}
-			if err := orm.StringScan(sv, &obj.HeadUrl); err != nil {
+			if err := orm.StringScan(sv, &obj.Password); err != nil {
 				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 				continue
 			}
-			obj.HeadUrl = orm.Decode(obj.HeadUrl)
 		}
 		if strs[10] != nil {
 			sv, ok = strs[10].(string)
@@ -2038,23 +1908,22 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[10]))
 				continue
 			}
-			if err := orm.StringScan(sv, &obj.Status); err != nil {
+			if err := orm.StringScan(sv, &obj.HeadUrl); err != nil {
 				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 				continue
 			}
+			obj.HeadUrl = orm.Decode(obj.HeadUrl)
 		}
 		if strs[11] != nil {
 			sv, ok = strs[11].(string)
-			var val11 int64
 			if !ok {
 				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[11]))
 				continue
 			}
-			if err := orm.StringScan(sv, &val11); err != nil {
+			if err := orm.StringScan(sv, &obj.Status); err != nil {
 				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 				continue
 			}
-			obj.CreatedAt = time.Unix(val11, 0)
 		}
 		if strs[12] != nil {
 			sv, ok = strs[12].(string)
@@ -2067,23 +1936,36 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 				continue
 			}
-			obj.UpdatedAt = time.Unix(val12, 0)
+			obj.CreatedAt = time.Unix(val12, 0)
 		}
 		if strs[13] != nil {
 			sv, ok = strs[13].(string)
+			var val13 int64
+			if !ok {
+				errall = append(errall, fmt.Sprintf("convert %v to string error", strs[13]))
+				continue
+			}
+			if err := orm.StringScan(sv, &val13); err != nil {
+				errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
+				continue
+			}
+			obj.UpdatedAt = time.Unix(val13, 0)
+		}
+		if strs[14] != nil {
+			sv, ok = strs[14].(string)
 			if sv == "nil" {
 				obj.DeletedAt = nil
 			} else {
-				var val13 int64
+				var val14 int64
 				if !ok {
-					errall = append(errall, fmt.Sprintf("convert %v to string error", strs[13]))
+					errall = append(errall, fmt.Sprintf("convert %v to string error", strs[14]))
 					continue
 				}
-				if err := orm.StringScan(sv, &val13); err != nil {
+				if err := orm.StringScan(sv, &val14); err != nil {
 					errall = append(errall, fmt.Sprintf("key:%v,err:%v", pks[i].Key(), err.Error()))
 					continue
 				}
-				DeletedAtValue := time.Unix(val13, 0)
+				DeletedAtValue := time.Unix(val14, 0)
 				obj.DeletedAt = &DeletedAtValue
 			}
 		}
@@ -2140,31 +2022,17 @@ func (m *_UserRedisMgr) Delete(obj *User) error {
 
 	//! ranges
 	rg_key_0 := []string{
-		"Id",
+		"Age",
 	}
-	rg_pip_0 := IdOfUserRNGRelationRedisMgr().BeginPipeline(pipe.Pipeline)
-	rg_rel_0 := IdOfUserRNGRelationRedisMgr().NewIdOfUserRNGRelation(strings.Join(rg_key_0, ":"))
-	score_rg_0, err := orm.ToFloat64(obj.Id)
+	rg_pip_0 := AgeOfUserRNGRelationRedisMgr().BeginPipeline(pipe.Pipeline)
+	rg_rel_0 := AgeOfUserRNGRelationRedisMgr().NewAgeOfUserRNGRelation(strings.Join(rg_key_0, ":"))
+	score_rg_0, err := orm.ToFloat64(obj.Age)
 	if err != nil {
 		return err
 	}
 	rg_rel_0.Score = score_rg_0
 	rg_rel_0.Value = pk.Key()
 	if err := rg_pip_0.ZSetRem(rg_rel_0); err != nil {
-		return err
-	}
-	rg_key_1 := []string{
-		"Age",
-	}
-	rg_pip_1 := AgeOfUserRNGRelationRedisMgr().BeginPipeline(pipe.Pipeline)
-	rg_rel_1 := AgeOfUserRNGRelationRedisMgr().NewAgeOfUserRNGRelation(strings.Join(rg_key_1, ":"))
-	score_rg_1, err := orm.ToFloat64(obj.Age)
-	if err != nil {
-		return err
-	}
-	rg_rel_1.Score = score_rg_1
-	rg_rel_1.Value = pk.Key()
-	if err := rg_pip_1.ZSetRem(rg_rel_1); err != nil {
 		return err
 	}
 
@@ -2225,6 +2093,7 @@ func (m *_UserRedisMgr) addToPipeline(pipe *_UserRedisPipeline, obj *User, expir
 	key := pk.Key()
 	//! fields
 	pipe.HSet(keyOfObject(obj, key), "Id", fmt.Sprint(obj.Id))
+	pipe.HSet(keyOfObject(obj, key), "SubID", fmt.Sprint(obj.SubID))
 	pipe.HSet(keyOfObject(obj, key), "Name", fmt.Sprint(obj.Name))
 	pipe.HSet(keyOfObject(obj, key), "Mailbox", fmt.Sprint(obj.Mailbox))
 	pipe.HSet(keyOfObject(obj, key), "Sex", fmt.Sprint(obj.Sex))
@@ -2271,31 +2140,17 @@ func (m *_UserRedisMgr) addToPipeline(pipe *_UserRedisPipeline, obj *User, expir
 
 	//! ranges
 	rg_key_0 := []string{
-		"Id",
+		"Age",
 	}
-	rg_pip_0 := IdOfUserRNGRelationRedisMgr().BeginPipeline(pipe.Pipeline)
-	rg_rel_0 := IdOfUserRNGRelationRedisMgr().NewIdOfUserRNGRelation(strings.Join(rg_key_0, ":"))
-	score_rg_0, err := orm.ToFloat64(obj.Id)
+	rg_pip_0 := AgeOfUserRNGRelationRedisMgr().BeginPipeline(pipe.Pipeline)
+	rg_rel_0 := AgeOfUserRNGRelationRedisMgr().NewAgeOfUserRNGRelation(strings.Join(rg_key_0, ":"))
+	score_rg_0, err := orm.ToFloat64(obj.Age)
 	if err != nil {
 		return err
 	}
 	rg_rel_0.Score = score_rg_0
 	rg_rel_0.Value = key
 	if err := rg_pip_0.ZSetAdd(rg_rel_0); err != nil {
-		return err
-	}
-	rg_key_1 := []string{
-		"Age",
-	}
-	rg_pip_1 := AgeOfUserRNGRelationRedisMgr().BeginPipeline(pipe.Pipeline)
-	rg_rel_1 := AgeOfUserRNGRelationRedisMgr().NewAgeOfUserRNGRelation(strings.Join(rg_key_1, ":"))
-	score_rg_1, err := orm.ToFloat64(obj.Age)
-	if err != nil {
-		return err
-	}
-	rg_rel_1.Score = score_rg_1
-	rg_rel_1.Value = key
-	if err := rg_pip_1.ZSetAdd(rg_rel_1); err != nil {
 		return err
 	}
 	if expire > 0 {
@@ -2544,134 +2399,6 @@ func (m *_SexOfUserIDXRelationRedisMgr) Clear() error {
 }
 
 //! ranges
-
-//! relation
-type IdOfUserRNGRelation struct {
-	Key   string  `db:"key" json:"key"`
-	Score float64 `db:"score" json:"score"`
-	Value string  `db:"value" json:"value"`
-}
-
-func (relation *IdOfUserRNGRelation) GetClassName() string {
-	return "IdOfUserRNGRelation"
-}
-
-func (relation *IdOfUserRNGRelation) GetIndexes() []string {
-	idx := []string{}
-	return idx
-}
-
-func (relation *IdOfUserRNGRelation) GetStoreType() string {
-	return "zset"
-}
-
-type _IdOfUserRNGRelationRedisMgr struct {
-	*orm.RedisStore
-}
-
-func IdOfUserRNGRelationRedisMgr(stores ...*orm.RedisStore) *_IdOfUserRNGRelationRedisMgr {
-	if len(stores) > 0 {
-		return &_IdOfUserRNGRelationRedisMgr{stores[0]}
-	}
-	return &_IdOfUserRNGRelationRedisMgr{_redis_store}
-}
-
-func (m *_IdOfUserRNGRelationRedisMgr) NewIdOfUserRNGRelation(key string) *IdOfUserRNGRelation {
-	return &IdOfUserRNGRelation{
-		Key: key,
-	}
-}
-
-//! pipeline
-type _IdOfUserRNGRelationRedisPipeline struct {
-	*redis.Pipeline
-	Err error
-}
-
-func (m *_IdOfUserRNGRelationRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_IdOfUserRNGRelationRedisPipeline {
-	if len(pipes) > 0 {
-		return &_IdOfUserRNGRelationRedisPipeline{pipes[0], nil}
-	}
-	return &_IdOfUserRNGRelationRedisPipeline{m.Pipeline(), nil}
-}
-
-//! redis relation zset
-func (m *_IdOfUserRNGRelationRedisMgr) ZSetAdd(relation *IdOfUserRNGRelation) error {
-	return m.ZAdd(zsetOfClass("User", "IdOfUserRNGRelation", relation.Key), redis.Z{Score: relation.Score, Member: relation.Value}).Err()
-}
-
-func (pipe *_IdOfUserRNGRelationRedisPipeline) ZSetAdd(relation *IdOfUserRNGRelation) error {
-	return pipe.ZAdd(zsetOfClass("User", "IdOfUserRNGRelation", relation.Key), redis.Z{Score: relation.Score, Member: relation.Value}).Err()
-}
-
-func (m *_IdOfUserRNGRelationRedisMgr) ZSetRange(key string, min, max int64) ([]*IdOfUserRNGRelation, error) {
-	strs, err := m.ZRange(zsetOfClass("IdOfUserRNGRelation", key), min, max).Result()
-	if err != nil {
-		return nil, err
-	}
-
-	relations := make([]*IdOfUserRNGRelation, 0, len(strs))
-	for _, str := range strs {
-		relation := m.NewIdOfUserRNGRelation(key)
-		if err := orm.StringScan(str, &relation.Value); err != nil {
-			return nil, err
-		}
-		relations = append(relations, relation)
-	}
-	return relations, nil
-}
-
-func (m *_IdOfUserRNGRelationRedisMgr) ZSetRevertRange(key string, min, max int64) ([]*IdOfUserRNGRelation, error) {
-	strs, err := m.ZRevRange(zsetOfClass("IdOfUserRNGRelation", key), min, max).Result()
-	if err != nil {
-		return nil, err
-	}
-
-	relations := make([]*IdOfUserRNGRelation, 0, len(strs))
-	for _, str := range strs {
-		relation := m.NewIdOfUserRNGRelation(key)
-		if err := orm.StringScan(str, &relation.Value); err != nil {
-			return nil, err
-		}
-		relations = append(relations, relation)
-	}
-	return relations, nil
-}
-
-func (m *_IdOfUserRNGRelationRedisMgr) ZSetRem(relation *IdOfUserRNGRelation) error {
-	return m.ZRem(zsetOfClass("User", "IdOfUserRNGRelation", relation.Key), relation.Value).Err()
-}
-
-func (pipe *_IdOfUserRNGRelationRedisPipeline) ZSetRem(relation *IdOfUserRNGRelation) error {
-	return pipe.ZRem(zsetOfClass("User", "IdOfUserRNGRelation", relation.Key), relation.Value).Err()
-}
-
-func (m *_IdOfUserRNGRelationRedisMgr) ZSetDel(key string) error {
-	return m.Del(setOfClass("User", "IdOfUserRNGRelation", key)).Err()
-}
-
-func (pipe *_IdOfUserRNGRelationRedisPipeline) ZSetDel(key string) error {
-	return pipe.Del(setOfClass("User", "IdOfUserRNGRelation", key)).Err()
-}
-
-func (m *_IdOfUserRNGRelationRedisMgr) Range(key string, min, max int64) ([]string, error) {
-	return m.ZRange(zsetOfClass("User", "IdOfUserRNGRelation", key), min, max).Result()
-}
-
-func (m *_IdOfUserRNGRelationRedisMgr) RangeRevert(key string, min, max int64) ([]string, error) {
-	return m.ZRevRange(zsetOfClass("User", "IdOfUserRNGRelation", key), min, max).Result()
-}
-
-func (m *_IdOfUserRNGRelationRedisMgr) Clear() error {
-	strs, err := m.Keys(zsetOfClass("User", "IdOfUserRNGRelation", "*")).Result()
-	if err != nil {
-		return err
-	}
-	if len(strs) > 0 {
-		return m.Del(strs...).Err()
-	}
-	return nil
-}
 
 //! relation
 type AgeOfUserRNGRelation struct {

@@ -128,6 +128,10 @@ func (f *Field) IsRange() bool {
 	return f.Flags.Contains("range")
 }
 
+func (f *Field) IsNorange() bool {
+	return f.Flags.Contains("norange")
+}
+
 func (f *Field) IsIndex() bool {
 	return f.Flags.Contains("index")
 }

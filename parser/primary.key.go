@@ -42,7 +42,14 @@ func (pk *PrimaryKey) IsAutocrement() bool {
 }
 
 func (pk *PrimaryKey) IsRange() bool {
-	c := len(pk.Fields)
+	fs := make([]*Field, 0, len(pk.Fields))
+	for _, f := range pk.Fields {
+		if f.IsNorange() {
+			continue
+		}
+		fs = append(fs, f)
+	}
+	c := len(fs)
 	if c > 0 {
 		return pk.Fields[c-1].IsNumber()
 	}
