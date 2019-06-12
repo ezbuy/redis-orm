@@ -31,7 +31,7 @@ User:
     - DeletedAt: timeint
       flags: [nullable]
   uniques: [[Mailbox, Password]]
-  primary: [Id,SubID]
+  primary: [Id,SubID,Name]
 
 UserBaseInfo:
   dbs: [mysql]
