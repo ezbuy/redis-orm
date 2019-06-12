@@ -143,6 +143,7 @@ func (obj *User) GetPrimaryKey() PrimaryKey {
 	pk := UserMgr.NewPrimaryKey()
 	pk.Id = obj.Id
 	pk.SubID = obj.SubID
+	pk.Name = obj.Name
 	return pk
 }
 
@@ -169,26 +170,29 @@ func (obj *User) GetPrimaryName() string {
 
 //! primary key
 
-type IdSubIDOfUserPK struct {
+type IdSubIDNameOfUserPK struct {
 	Id    int32
 	SubID int32
+	Name  string
 }
 
-func (m *_UserMgr) NewPrimaryKey() *IdSubIDOfUserPK {
-	return &IdSubIDOfUserPK{}
+func (m *_UserMgr) NewPrimaryKey() *IdSubIDNameOfUserPK {
+	return &IdSubIDNameOfUserPK{}
 }
 
-func (u *IdSubIDOfUserPK) Key() string {
+func (u *IdSubIDNameOfUserPK) Key() string {
 	strs := []string{
 		"Id",
 		fmt.Sprint(u.Id),
 		"SubID",
 		fmt.Sprint(u.SubID),
+		"Name",
+		fmt.Sprint(u.Name),
 	}
 	return fmt.Sprintf("%s", strings.Join(strs, ":"))
 }
 
-func (u *IdSubIDOfUserPK) Parse(key string) error {
+func (u *IdSubIDNameOfUserPK) Parse(key string) error {
 	arr := strings.Split(key, ":")
 	if len(arr)%2 != 0 {
 		return fmt.Errorf("key (%s) format error", key)
@@ -211,28 +215,38 @@ func (u *IdSubIDOfUserPK) Parse(key string) error {
 	if err := orm.StringScan(vSubID, &(u.SubID)); err != nil {
 		return err
 	}
+	vName, ok := kv["Name"]
+	if !ok {
+		return fmt.Errorf("key (%s) without (Name) field", key)
+	}
+	if err := orm.StringScan(vName, &(u.Name)); err != nil {
+		return err
+	}
 	return nil
 }
 
-func (u *IdSubIDOfUserPK) SQLFormat() string {
+func (u *IdSubIDNameOfUserPK) SQLFormat() string {
 	conditions := []string{
 		"`id` = ?",
 		"`sub_id` = ?",
+		"`name` = ?",
 	}
 	return orm.SQLWhere(conditions)
 }
 
-func (u *IdSubIDOfUserPK) SQLParams() []interface{} {
+func (u *IdSubIDNameOfUserPK) SQLParams() []interface{} {
 	return []interface{}{
 		u.Id,
 		u.SubID,
+		u.Name,
 	}
 }
 
-func (u *IdSubIDOfUserPK) Columns() []string {
+func (u *IdSubIDNameOfUserPK) Columns() []string {
 	return []string{
 		"`id`",
 		"`sub_id`",
+		"`name`",
 	}
 }
 
@@ -665,11 +679,12 @@ func (m *_UserDBMgr) IsErrNotFound(err error) bool {
 }
 
 // primary key
-func (m *_UserDBMgr) FetchByPrimaryKey(id int32, subID int32) (*User, error) {
+func (m *_UserDBMgr) FetchByPrimaryKey(id int32, subID int32, name string) (*User, error) {
 	obj := UserMgr.NewUser()
-	pk := &IdSubIDOfUserPK{
+	pk := &IdSubIDNameOfUserPK{
 		Id:    id,
 		SubID: subID,
+		Name:  name,
 	}
 
 	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
@@ -683,11 +698,12 @@ func (m *_UserDBMgr) FetchByPrimaryKey(id int32, subID int32) (*User, error) {
 	return nil, fmt.Errorf("User fetch record not found")
 }
 
-func (m *_UserDBMgr) FetchByPrimaryKeyContext(ctx context.Context, id int32, subID int32) (*User, error) {
+func (m *_UserDBMgr) FetchByPrimaryKeyContext(ctx context.Context, id int32, subID int32, name string) (*User, error) {
 	obj := UserMgr.NewUser()
-	pk := &IdSubIDOfUserPK{
+	pk := &IdSubIDNameOfUserPK{
 		Id:    id,
 		SubID: subID,
+		Name:  name,
 	}
 
 	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
@@ -972,7 +988,7 @@ func (m *_UserDBMgr) queryLimit(where string, limit int, args ...interface{}) (r
 		offset++
 
 		result := UserMgr.NewPrimaryKey()
-		err = rows.Scan(&(result.Id), &(result.SubID))
+		err = rows.Scan(&(result.Id), &(result.SubID), &(result.Name))
 		if err != nil {
 			m.db.SetError(err)
 			return nil, err
@@ -1005,7 +1021,7 @@ func (m *_UserDBMgr) queryLimitContext(ctx context.Context, where string, limit 
 		offset++
 
 		result := UserMgr.NewPrimaryKey()
-		err = rows.Scan(&(result.Id), &(result.SubID))
+		err = rows.Scan(&(result.Id), &(result.SubID), &(result.Name))
 		if err != nil {
 			m.db.SetError(err)
 			return nil, err
@@ -1228,7 +1244,6 @@ func (m *_UserDBMgr) CreateContext(ctx context.Context, obj *User) (int64, error
 
 func (m *_UserDBMgr) Update(obj *User) (int64, error) {
 	columns := []string{
-		"`name` = ?",
 		"`mailbox` = ?",
 		"`sex` = ?",
 		"`age` = ?",
@@ -1245,8 +1260,7 @@ func (m *_UserDBMgr) Update(obj *User) (int64, error) {
 
 	pk := obj.GetPrimaryKey()
 	q := fmt.Sprintf("UPDATE users SET %s %s", strings.Join(columns, ","), pk.SQLFormat())
-	values := make([]interface{}, 0, 15-2)
-	values = append(values, obj.Name)
+	values := make([]interface{}, 0, 15-3)
 	values = append(values, obj.Mailbox)
 	values = append(values, obj.Sex)
 	values = append(values, obj.Age)
@@ -1274,7 +1288,6 @@ func (m *_UserDBMgr) Update(obj *User) (int64, error) {
 
 func (m *_UserDBMgr) UpdateContext(ctx context.Context, obj *User) (int64, error) {
 	columns := []string{
-		"`name` = ?",
 		"`mailbox` = ?",
 		"`sex` = ?",
 		"`age` = ?",
@@ -1291,8 +1304,7 @@ func (m *_UserDBMgr) UpdateContext(ctx context.Context, obj *User) (int64, error
 
 	pk := obj.GetPrimaryKey()
 	q := fmt.Sprintf("UPDATE users SET %s %s", strings.Join(columns, ","), pk.SQLFormat())
-	values := make([]interface{}, 0, 15-2)
-	values = append(values, obj.Name)
+	values := make([]interface{}, 0, 15-3)
 	values = append(values, obj.Mailbox)
 	values = append(values, obj.Sex)
 	values = append(values, obj.Age)
@@ -1341,17 +1353,18 @@ func (m *_UserDBMgr) SaveContext(ctx context.Context, obj *User) (int64, error) 
 }
 
 func (m *_UserDBMgr) Delete(obj *User) (int64, error) {
-	return m.DeleteByPrimaryKey(obj.Id, obj.SubID)
+	return m.DeleteByPrimaryKey(obj.Id, obj.SubID, obj.Name)
 }
 
 func (m *_UserDBMgr) DeleteContext(ctx context.Context, obj *User) (int64, error) {
-	return m.DeleteByPrimaryKeyContext(ctx, obj.Id, obj.SubID)
+	return m.DeleteByPrimaryKeyContext(ctx, obj.Id, obj.SubID, obj.Name)
 }
 
-func (m *_UserDBMgr) DeleteByPrimaryKey(id int32, subID int32) (int64, error) {
-	pk := &IdSubIDOfUserPK{
+func (m *_UserDBMgr) DeleteByPrimaryKey(id int32, subID int32, name string) (int64, error) {
+	pk := &IdSubIDNameOfUserPK{
 		Id:    id,
 		SubID: subID,
+		Name:  name,
 	}
 	q := fmt.Sprintf("DELETE FROM users %s", pk.SQLFormat())
 	result, err := m.db.Exec(q, pk.SQLParams()...)
@@ -1361,10 +1374,11 @@ func (m *_UserDBMgr) DeleteByPrimaryKey(id int32, subID int32) (int64, error) {
 	return result.RowsAffected()
 }
 
-func (m *_UserDBMgr) DeleteByPrimaryKeyContext(ctx context.Context, id int32, subID int32) (int64, error) {
-	pk := &IdSubIDOfUserPK{
+func (m *_UserDBMgr) DeleteByPrimaryKeyContext(ctx context.Context, id int32, subID int32, name string) (int64, error) {
+	pk := &IdSubIDNameOfUserPK{
 		Id:    id,
 		SubID: subID,
+		Name:  name,
 	}
 	q := fmt.Sprintf("DELETE FROM users %s", pk.SQLFormat())
 	result, err := m.db.ExecContext(ctx, q, pk.SQLParams()...)
@@ -1461,13 +1475,15 @@ func (m *_UserRedisMgr) DelBySQL(db *_UserDBMgr, sql string, args ...interface{}
 
 var newUserObj = UserMgr.NewUser()
 
-// get redis key of User, PrimaryKeys: id int32, subID int32
-func RedisKeyOfPrimaryUser(Id int32, SubID int32) string {
+// get redis key of User, PrimaryKeys: id int32, subID int32, name string
+func RedisKeyOfPrimaryUser(Id int32, SubID int32, Name string) string {
 	strs := []string{
 		"Id",
 		fmt.Sprint(Id),
 		"SubID",
 		fmt.Sprint(SubID),
+		"Name",
+		fmt.Sprint(Name),
 	}
 	return keyOfObject(newUserObj, fmt.Sprintf("%s", strings.Join(strs, ":")))
 }

@@ -51,7 +51,7 @@ func (pk *PrimaryKey) IsRange() bool {
 	}
 	c := len(fs)
 	if c > 0 {
-		return pk.Fields[c-1].IsNumber()
+		return fs[c-1].IsNumber()
 	}
 	return false
 }
