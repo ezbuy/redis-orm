@@ -10,15 +10,12 @@ jobs:
 
   build:
     name: Build & Test
+    strategy:
+      matrix:
+        go: [1.12,1.13,1.14]
     runs-on: ubuntu-latest
+    container: golang:${{ matrix.go }}-stretch
     steps:
-
-    - name: Set up Go 1.13
-      uses: actions/setup-go@v1
-      with:
-        go-version: 1.13
-      id: go
-
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
 
@@ -26,13 +23,8 @@ jobs:
       run: |
         go get -v -t -d ./...
 
-    - name: Build
-      run: go build -v .
-
     - name: Generate TPL
       run: |
-        export PATH=$PATH:$GOPATH/bin
-        echo $PATH
         GO111MODULE=off go get -u github.com/jteeuwen/go-bindata/...
         make buildTpl
 
