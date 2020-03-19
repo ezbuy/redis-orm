@@ -31,7 +31,9 @@ jobs:
 
     - name: Generate TPL
       run: |
-        go get -u github.com/jteeuwen/go-bindata/go-bindata@master
+        export PATH=$PATH:$GOPATH/bin
+        echo $PATH
+        GO111MODULE=off go get -u github.com/jteeuwen/go-bindata/...
         make buildTpl
 
     - name: Test
