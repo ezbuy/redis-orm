@@ -1,0 +1,41 @@
+name: Go
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Set up Go 1.13
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.13
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Get dependencies
+      run: |
+        go get -v -t -d ./...
+
+    - name: Build
+      run: go build -v .
+
+    - name: Generate TPL
+      run: |
+        go get -u github.com/jteeuwen/go-bindata/go-bindata@master
+        make buildTpl
+
+    - name: Test
+      run: |
+        go install
+        redis-orm code -i ./example/yaml/ -o ./example/model/
+        go test -v ./orm/sqlbuilder
