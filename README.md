@@ -1,5 +1,7 @@
 # redis-orm
 
+![Go](https://github.com/ezbuy/redis-orm/workflows/Go/badge.svg?branch=master)
+
 redis-orm fly orm up 
 
 ## features
