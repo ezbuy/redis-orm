@@ -1,6 +1,6 @@
 UserInfo:
   dbs: [mysql]
-  dbname: ezorm
+  dbname: testing
   fields:
     - Id: int32
       flags: [primary]

@@ -1,6 +1,6 @@
 Blog:
   dbs: [mysql, elastic]
-  dbname: ezorm
+  dbname: testing
   dbtable: blogs
   fields:
     - Id: int32

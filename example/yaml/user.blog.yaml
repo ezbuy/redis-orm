@@ -1,6 +1,6 @@
 UserBlogs:
   dbs: [mysql]
-  dbname: ezorm
+  dbname: testing
   dbtable: user_blogs
   fields:
     - UserId: int32

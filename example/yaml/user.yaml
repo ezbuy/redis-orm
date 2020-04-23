@@ -1,11 +1,11 @@
 User:
   dbs: [redis, mysql]
-  dbname: ezorm
+  dbname: testing
   dbtable: users
   comment: 用户表
   fields:
     - Id: int32
-      flags: [autoinc,norange]
+      flags: [autoinc]
     - SubID: int32
       flags: [norange]
     - Name: string
@@ -24,19 +24,18 @@ User:
       flags: [nullable]
     - Password: string
     - HeadUrl: string
-      flags: [nullable, encode]
+      flags: [nullable]
     - Status: int32
     - CreatedAt: timeint
     - UpdatedAt: timeint
     - DeletedAt: timeint
       flags: [nullable]
   uniques: [[Mailbox, Password]]
-  primary: [Id,SubID,Name]
-
-UserBaseInfo:
+  primary: [Id]
+UserViewBaseInfo:
   dbs: [mysql]
-  dbname: ezorm
-  dbview: user_base_info
+  dbname: testing
+  dbview: user_view_base_info
   fields:
     - Id: int32
       flags: [primary]

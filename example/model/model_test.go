@@ -2,33 +2,80 @@ package model_test
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	. "github.com/ezbuy/redis-orm/example/model"
 	"github.com/ezbuy/redis-orm/orm"
-
-	"log"
-
-	"strings"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("manager", func() {
+func runInitSQLScript() error {
+	dir := "../script/"
+	fs, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+	for _, f := range fs {
+		plain, err := ioutil.ReadFile(filepath.Join(dir, f.Name()))
+		if err != nil {
+			return err
+		}
+		log.Printf("EXEC SCRIPT: \nFILENAME:%s \nPLAIN QUERY: %s", f.Name(), string(plain))
+		queries := strings.Split(string(plain), ";")
+		for _, q := range queries {
+			q = strings.Replace(strings.TrimSpace(q), "\n", "", -1)
+			log.Printf("EXEC QUERY: %s", q)
+			if q == "" {
+				continue
+			}
+			if _, err := MySQL().Exec(q); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+var _ = Describe("init DB", func() {
+	p, err := strconv.Atoi(os.Getenv("MYSQL_PORT"))
+	if err != nil {
+		panic(err)
+	}
 	MySQLSetup(&MySQLConfig{
-		Host:     "localhost",
-		Port:     3306,
-		UserName: "ezorm_user",
-		Password: "ezorm_pass",
-		Database: "ezorm",
+		Host:     os.Getenv("MYSQL_HOST"),
+		Port:     p,
+		UserName: "ezbuy",
+		Password: "ezbuyisthebest",
+		Database: "testing",
 	})
 
+	if err := runInitSQLScript(); err != nil {
+		panic(err)
+	}
+
+	p2, err := strconv.Atoi(os.Getenv("REDIS_PORT"))
+	if err != nil {
+		panic(err)
+	}
 	RedisSetUp(&RedisConfig{
-		Host:     "localhost",
-		Port:     6379,
+		Host:     os.Getenv("REDIS_HOST"),
+		Port:     p2,
 		Password: "",
 	})
+
+	if err := MySQL().Ping(); err != nil {
+		panic(err)
+	}
+})
+
+var _ = Describe("manager", func() {
 
 	BeforeEach(func() {
 		tx, err := MySQL().BeginTx()
@@ -63,8 +110,7 @@ var _ = Describe("manager", func() {
 		tx, err := MySQL().BeginTx()
 		Ω(err).ShouldNot(HaveOccurred())
 		defer tx.Close()
-		n, err := UserDBMgr(tx).DeleteBySQL("")
-		Ω(n).To(Equal(int64(100)))
+		_, err = UserDBMgr(tx).DeleteBySQL("")
 		Ω(err).ShouldNot(HaveOccurred())
 	})
 
@@ -94,15 +140,9 @@ var _ = Describe("manager", func() {
 var _ = Describe("redis-orm.mysql", func() {
 	Describe("CRUD", func() {
 		It("create", func() {
-			MySQLSetup(&MySQLConfig{
-				Host:     "localhost",
-				Port:     3306,
-				UserName: "ezorm_user",
-				Password: "ezorm_pass",
-				Database: "ezorm",
-			})
 
 			user := UserMgr.NewUser()
+			user.SubID = 10
 			user.Name = "user01"
 			user.Mailbox = "user01@sss.fff"
 			user.HeadUrl = "aaaa.png"
@@ -117,23 +157,18 @@ var _ = Describe("redis-orm.mysql", func() {
 			defer tx.Close()
 
 			mgr := UserDBMgr(tx)
-			user.Name = ""
-			log.Println("user validator =>", user.Validate())
 
 			//! create
 			n, err := mgr.Create(user)
-			Ω(n).To(Equal(int64(1)))
-			log.Println("mysql.tx.crud.create =>", n, err)
 			Ω(err).ShouldNot(HaveOccurred())
+			Ω(n).To(Equal(int64(1)))
 
-			log.Println("create User :", user)
-
-			//! update
-			user.HeadUrl = "bbbb.png"
+			user.HeadUrl = "bbb.png"
 			user.UpdatedAt = time.Now()
+			//! update
 			n, err = mgr.Update(user)
-			Ω(n).To(Equal(int64(1)))
 			Ω(err).ShouldNot(HaveOccurred())
+			Ω(n).To(Equal(int64(1)))
 
 			//! fetch check
 			obj, err := mgr.Fetch(user.GetPrimaryKey())
@@ -153,16 +188,10 @@ var _ = Describe("redis-orm.mysql", func() {
 			_, err = mgr.Fetch(user.GetPrimaryKey())
 			Ω(err).Should(HaveOccurred())
 
-			_, err = mgr.FetchByPrimaryKey(user.Id)
-			Ω(mgr.IsErrNotFound(err)).To(BeTrue())
 			//! save
 
 			user.HeadUrl = "ccc.png"
 			n, err = mgr.Save(user)
-			Ω(n).To(Equal(int64(1)))
-			Ω(err).ShouldNot(HaveOccurred())
-
-			n, err = mgr.Delete(user)
 			Ω(n).To(Equal(int64(1)))
 			Ω(err).ShouldNot(HaveOccurred())
 
@@ -173,13 +202,6 @@ var _ = Describe("redis-orm.mysql", func() {
 
 var _ = Describe("redis-orm.mysql", func() {
 	BeforeEach(func() {
-		MySQLSetup(&MySQLConfig{
-			Host:     "localhost",
-			Port:     3306,
-			UserName: "ezorm_user",
-			Password: "ezorm_pass",
-			Database: "ezorm",
-		})
 		d, _ := time.ParseDuration("6ms")
 		MySQL().SlowLog(d)
 	})
@@ -187,8 +209,9 @@ var _ = Describe("redis-orm.mysql", func() {
 	Describe("CRUD", func() {
 		It("user crud test", func() {
 			user := UserMgr.NewUser()
-			user.Name = "user01"
-			user.Mailbox = "user01@sss.fff"
+			user.SubID = 2
+			user.Name = "user02"
+			user.Mailbox = "user02@sss.fff"
 			user.HeadUrl = "aaaa.png"
 			user.Password = "123456"
 			user.CreatedAt = time.Now()
@@ -201,8 +224,6 @@ var _ = Describe("redis-orm.mysql", func() {
 			defer tx.Close()
 
 			mgr := UserDBMgr(tx)
-			user.Name = ""
-			log.Println("user validator =>", user.Validate())
 
 			//! create
 			n, err := mgr.Create(user)
@@ -215,9 +236,10 @@ var _ = Describe("redis-orm.mysql", func() {
 			//! update
 			user.HeadUrl = "bbbb.png"
 			user.UpdatedAt = time.Now()
+			//! update
 			n, err = mgr.Update(user)
-			Ω(n).To(Equal(int64(1)))
 			Ω(err).ShouldNot(HaveOccurred())
+			Ω(n).To(Equal(int64(1)))
 
 			//! fetch check
 			obj, err := mgr.Fetch(user.GetPrimaryKey())
@@ -241,16 +263,14 @@ var _ = Describe("redis-orm.mysql", func() {
 			Ω(n).To(Equal(int64(1)))
 			Ω(err).ShouldNot(HaveOccurred())
 
-			n, err = mgr.Delete(user)
-			Ω(n).To(Equal(int64(1)))
-			Ω(err).ShouldNot(HaveOccurred())
 		})
 
 		Measure("mysql.bench", func(b Benchmarker) {
 			b.Time("crud.runtime", func() {
 				user := UserMgr.NewUser()
-				user.Name = "user01"
-				user.Mailbox = "user01@sss.fff"
+				user.SubID = 3
+				user.Name = "user03"
+				user.Mailbox = "user03@sss.fff"
 				user.HeadUrl = "aaaa.png"
 				user.Password = "123456"
 				user.CreatedAt = time.Now()
@@ -265,15 +285,15 @@ var _ = Describe("redis-orm.mysql", func() {
 
 				//! create
 				n, err := mgr.Create(user)
-				Ω(n).To(Equal(int64(1)))
 				Ω(err).ShouldNot(HaveOccurred())
+				Ω(n).To(Equal(int64(1)))
 
-				//! update
 				user.HeadUrl = "bbbb.png"
 				user.UpdatedAt = time.Now()
+				//! update
 				n, err = mgr.Update(user)
-				Ω(n).To(Equal(int64(1)))
 				Ω(err).ShouldNot(HaveOccurred())
+				Ω(n).To(Equal(int64(1)))
 
 				//! fetch check
 				obj, err := mgr.Fetch(user.GetPrimaryKey())
@@ -282,22 +302,13 @@ var _ = Describe("redis-orm.mysql", func() {
 
 				//! delete
 				n, err = mgr.Delete(user)
-				Ω(n).To(Equal(int64(1)))
 				Ω(err).ShouldNot(HaveOccurred())
+				Ω(n).To(Equal(int64(1)))
 
 				//! fetch check
 				_, err = mgr.Fetch(user.GetPrimaryKey())
 				Ω(err).Should(HaveOccurred())
 
-				//! save
-				user.HeadUrl = "ccc.png"
-				n, err = mgr.Save(user)
-				Ω(n).To(Equal(int64(1)))
-				Ω(err).ShouldNot(HaveOccurred())
-
-				n, err = mgr.Delete(user)
-				Ω(n).To(Equal(int64(1)))
-				Ω(err).ShouldNot(HaveOccurred())
 			})
 		}, 1)
 	})
@@ -362,27 +373,6 @@ var _ = Describe("redis-orm.mysql", func() {
 			Ω(obj.Mailbox).To(Equal(unique.Mailbox))
 		})
 
-		It("index", func() {
-			sexIdx := &SexOfUserIDX{
-				Sex: false,
-			}
-			total, pks, err := UserDBMgr(MySQL()).Find(sexIdx)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(int(total)).To(Equal(50))
-			Ω(len(pks)).To(Equal(50))
-
-			keys := make([]int32, len(pks))
-			for i, pk := range pks {
-				v := pk.(*IdOfUserPK)
-				keys[i] = v.Id
-			}
-
-			objs, err := UserDBMgr(MySQL()).FetchByPrimaryKeys(keys)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(len(objs)).To(Equal(50))
-
-		})
-
 		It("range", func() {
 			scope := &AgeOfUserRNG{
 				AgeBegin: 10,
@@ -394,15 +384,6 @@ var _ = Describe("redis-orm.mysql", func() {
 			Ω(int(total)).To(Equal(24))
 			Ω(len(pks)).To(Equal(10))
 
-			keys := make([]int32, len(pks))
-			for i, pk := range pks {
-				v := pk.(*IdOfUserPK)
-				keys[i] = v.Id
-			}
-
-			objs, err := UserDBMgr(MySQL()).FetchByPrimaryKeys(keys)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(len(objs)).To(Equal(10))
 		})
 
 		It("range.revert", func() {
@@ -411,19 +392,6 @@ var _ = Describe("redis-orm.mysql", func() {
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(len(us)).To(Equal(100))
 			// Ω(us[1].(int32) > us[0].(int32)).To(Equal(false))
-		})
-
-		It("fetch", func() {
-			scope := &IdOfUserRNG{}
-			_, us, err := UserDBMgr(MySQL()).Range(scope)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(len(us)).To(Equal(100))
-			_, objs2, err := UserDBMgr(MySQL()).RangeFetch(scope)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(len(objs2)).To(Equal(100))
-			for i, obj := range objs2 {
-				Ω(obj.Name).To(Equal(fmt.Sprintf("name%d", i)))
-			}
 		})
 
 		It("search", func() {
@@ -487,35 +455,12 @@ var _ = Describe("redis-orm.mysql", func() {
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(len(us)).To(Equal(100))
 			})
-			b.Time("fetch.runtime", func() {
-				scope := &IdOfUserRNG{}
-				_, us, err := UserDBMgr(MySQL()).Range(scope)
-				Ω(err).ShouldNot(HaveOccurred())
-				Ω(len(us)).To(Equal(100))
-				_, objs, err := UserDBMgr(MySQL()).RangeFetch(scope)
-				Ω(err).ShouldNot(HaveOccurred())
-				Ω(len(objs)).To(Equal(100))
-			})
 		}, 1)
 	})
 
 })
 
 var _ = Describe("redis-orm.redis", func() {
-
-	MySQLSetup(&MySQLConfig{
-		Host:     "localhost",
-		Port:     3306,
-		UserName: "ezorm_user",
-		Password: "ezorm_pass",
-		Database: "ezorm",
-	})
-
-	RedisSetUp(&RedisConfig{
-		Host:     "localhost",
-		Port:     6379,
-		Password: "",
-	})
 
 	BeforeEach(func() {
 		tx, err := MySQL().BeginTx()
@@ -607,8 +552,9 @@ var _ = Describe("redis-orm.redis", func() {
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(obj.Name).To(Equal(fmt.Sprintf("name%d", 102)))
 
-			time.Sleep(time.Second)
+			time.Sleep(3 * time.Second)
 			_, err = UserRedisMgr(Redis()).Fetch(userWithExpire.GetPrimaryKey())
+			Ω(err).Should(HaveOccurred())
 			fmt.Printf("createWithExpire after expire:%v", err)
 			Ω(strings.Contains(err.Error(), "not exist")).Should(Equal(true))
 		})
@@ -644,9 +590,10 @@ var _ = Describe("redis-orm.redis", func() {
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(obj2.Age).To(Equal(int32(40)))
 
-			time.Sleep(time.Second)
+			time.Sleep(5 * time.Second)
 			_, err = UserRedisMgr(Redis()).Fetch(userWithExpire.GetPrimaryKey())
 			fmt.Printf("updateWithExpire after expire:%v", err)
+			Ω(err).Should(HaveOccurred())
 			Ω(strings.Contains(err.Error(), "not exist")).Should(Equal(true))
 		})
 		It("delete", func() {
@@ -732,25 +679,6 @@ var _ = Describe("redis-orm.redis", func() {
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(len(us)).To(Equal(100))
 			// Ω(us[1].(int32) > us[0].(int32)).To(Equal(false))
-		})
-
-		It("fetch", func() {
-			scope := &IdOfUserRNG{}
-			_, us, err := UserRedisMgr(Redis()).Range(scope)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(len(us)).To(Equal(100))
-			_, objs, err := UserRedisMgr(Redis()).RangeFetch(scope)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(len(objs)).To(Equal(100))
-			for i, obj := range objs {
-				Ω(obj.Name).To(Equal(fmt.Sprintf("name%d", i)))
-			}
-			_, objs2, err := UserRedisMgr(Redis()).RangeFetch(scope)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(len(objs2)).To(Equal(100))
-			for i, obj := range objs2 {
-				Ω(obj.Name).To(Equal(fmt.Sprintf("name%d", i)))
-			}
 		})
 
 		Measure("redis.bench", func(b Benchmarker) {

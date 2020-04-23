@@ -17,17 +17,16 @@ CREATE TABLE `{{$obj.DbTable}}` (
 		{{- end -}}
 	)
 	{{- end}}
-	{{- end}}
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT '{{$obj.Comment}}';
+	{{- end}}) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT '{{$obj.Comment}}';
 
 {{- range $i, $index := $obj.Indexes}}
 {{- if not $index.HasPrimaryKey}}
-CREATE INDEX `{{$index.Name | camel2name}}` ON `{{$obj.DbTable}}`(
+CREATE INDEX {{$index.Name | camel2name}} ON {{$obj.DbTable}}(
 	{{- range $i, $f := $index.Fields -}}
 		{{- if eq (add $i 1) (len $index.Fields) -}}
-			`{{- $f.Name | camel2name -}}`
+			{{- $f.Name | camel2name -}}
 		{{- else -}}
-			`{{- $f.Name | camel2name -}}`,
+			{{- $f.Name | camel2name -}},
 		{{- end -}}
 	{{- end -}}
 );
@@ -36,12 +35,12 @@ CREATE INDEX `{{$index.Name | camel2name}}` ON `{{$obj.DbTable}}`(
 
 {{- range $i, $index := $obj.Ranges}}
 {{- if not $index.HasPrimaryKey}}
-CREATE INDEX `{{$index.Name | camel2name}}` ON `{{$obj.DbTable}}`(
+CREATE INDEX {{$index.Name | camel2name}} ON {{$obj.DbTable}}(
 	{{- range $i, $f := $index.Fields -}}
 		{{- if eq (add $i 1) (len $index.Fields) -}}
-			`{{- $f.Name | camel2name -}}`
+			{{- $f.Name | camel2name -}}
 		{{- else -}}
-			`{{- $f.Name | camel2name -}}`,
+			{{- $f.Name | camel2name -}},
 		{{- end -}}
 	{{- end -}}
 );
@@ -50,8 +49,8 @@ CREATE INDEX `{{$index.Name | camel2name}}` ON `{{$obj.DbTable}}`(
 {{- end}}
 
 {{- if ne $obj.DbView ""}}
-DROP VIEW IF EXISTS `{{$obj.DbView}}`;
-CREATE VIEW `{{$obj.DbView}}` AS {{$obj.ImportSQL}};
+DROP VIEW IF EXISTS {{$obj.DbView}};
+CREATE VIEW {{$obj.DbView}} AS {{$obj.ImportSQL}};
 {{- end}}
 
 {{end}}

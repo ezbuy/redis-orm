@@ -1214,9 +1214,9 @@ func (m *_BlogElasticMgr) IndexService() (*elastic.IndexService, error) {
 		_, err = m.PutMappingService().BodyJson(m.Mapping()).Do()
 	})
 
-	return ElasticClient().IndexService("ezorm").Type("blogs"), err
+	return ElasticClient().IndexService("testing").Type("blogs"), err
 }
 
 func (m *_BlogElasticMgr) PutMappingService() *elastic.PutMappingService {
-	return ElasticClient().PutMappingService("ezorm ").Type("blogs")
+	return ElasticClient().PutMappingService("testing ").Type("blogs")
 }

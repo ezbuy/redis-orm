@@ -13,8 +13,29 @@ jobs:
     strategy:
       matrix:
         go: [1.12,1.13,1.14]
+
     runs-on: ubuntu-latest
-    container: golang:${{ matrix.go }}-stretch
+
+    container:
+        image: golang:${{ matrix.go }}-stretch
+
+    services:
+      mysql:
+        image: mysql:5.7
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_USER: ezbuy
+          MYSQL_PASSWORD: ezbuyisthebest
+          MYSQL_ROOT_PASSWORD: ezbuyisthebest
+          MYSQL_DATABASE: testing
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+        options: --entrypoint redis-server
+
     steps:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
@@ -28,8 +49,17 @@ jobs:
         GO111MODULE=off go get -u github.com/jteeuwen/go-bindata/...
         make buildTpl
 
-    - name: Test
+    - name: Test Builder
       run: |
         go install
         redis-orm code -i ./example/yaml/ -o ./example/model/
         go test -v ./orm/sqlbuilder
+
+    - name: Test Model
+      run: |
+        go test -v ./example/model/
+      env:
+        MYSQL_HOST: mysql
+        MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
+        REDIS_HOST: redis
+        REDIS_PORT: ${{ job.services.redis.ports[6379] }}

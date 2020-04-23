@@ -8,7 +8,6 @@ CREATE TABLE `blogs` (
 	`readed` INT(11) NOT NULL DEFAULT '0',
 	`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	`updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	PRIMARY KEY(`id`,`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT 'blogs';
-CREATE INDEX `status_of_blog_idx` ON `blogs`(`status`);
+	PRIMARY KEY(`id`,`user_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT 'blogs';
+CREATE INDEX status_of_blog_idx ON blogs(status);
 
