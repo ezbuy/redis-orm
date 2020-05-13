@@ -1,0 +1,24 @@
+{{define "object.db.read.ex"}}
+{{$obj := .}}
+{{$primary := $obj.PrimaryKey}}
+
+// FetchByPK is the same as FetchByPrimaryKey
+// but it returns the specific error type(sql.ErrNoRows) when no rows found
+func (m *_{{$obj.Name}}DBMgr) FetchByPK(ctx context.Context,{{$primary.GetFuncParam}}) (*{{$obj.Name}}, error) {
+	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+	pk := &{{$primary.Name}}{
+	{{$primary.GetConstructor}}
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM {{$obj.FromDB}} %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	objs, err := m.FetchBySQLContext(ctx,query, pk.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0], nil
+	}
+	return nil, sql.ErrNoRows
+}
+
+{{end}}

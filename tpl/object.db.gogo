@@ -2,6 +2,7 @@
 {{$obj := .}}
 {{- if ne $obj.DbSource "" -}}
     {{- template "object.db.read" . -}}
+    {{- template "object.db.read.ex" . -}}
     {{- if ne $obj.DbTable "" -}}
     {{- template "object.db.write" . -}}
     {{- end -}}

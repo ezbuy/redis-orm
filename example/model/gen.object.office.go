@@ -790,6 +790,25 @@ func (m *_OfficeDBMgr) queryCountContext(ctx context.Context, where string, args
 	return count, nil
 }
 
+// FetchByPK is the same as FetchByPrimaryKey
+// but it returns the specific error type(sql.ErrNoRows) when no rows found
+func (m *_OfficeDBMgr) FetchByPK(ctx context.Context, officeId int32) (*Office, error) {
+	obj := OfficeMgr.NewOffice()
+	pk := &OfficeIdOfOfficePK{
+		OfficeId: officeId,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM [dbo].[testCRUD] %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	objs, err := m.FetchBySQLContext(ctx, query, pk.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0], nil
+	}
+	return nil, sql.ErrNoRows
+}
+
 func (m *_OfficeDBMgr) BatchCreate(objs []*Office) (int64, error) {
 	if len(objs) == 0 {
 		return 0, nil
