@@ -1,6 +1,8 @@
 package model_test
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -175,6 +177,10 @@ var _ = Describe("redis-orm.mysql", func() {
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(obj.HeadUrl).To(Equal(user.HeadUrl))
 
+			obj, err = mgr.FetchByPK(context.TODO(), user.Id)
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(obj.HeadUrl).To(Equal(user.HeadUrl))
+
 			exist, err := mgr.Exist(user.GetPrimaryKey())
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(exist).To(Equal(true))
@@ -183,6 +189,11 @@ var _ = Describe("redis-orm.mysql", func() {
 			log.Println("mysql.tx.crud.delete =>", n, err)
 			Ω(n).To(Equal(int64(1)))
 			Ω(err).ShouldNot(HaveOccurred())
+
+			_, err = mgr.FetchByPK(context.TODO(), user.Id)
+			Ω(err).Should(HaveOccurred())
+			Ω(err).To(Equal(sql.ErrNoRows))
+			Ω(orm.IsErrNotFound(err)).To(Equal(true))
 
 			//! fetch check
 			_, err = mgr.Fetch(user.GetPrimaryKey())

@@ -962,3 +962,22 @@ func (m *_UserViewBaseInfoDBMgr) queryCountContext(ctx context.Context, where st
 	}
 	return count, nil
 }
+
+// FetchByPK is the same as FetchByPrimaryKey
+// but it returns the specific error type(sql.ErrNoRows) when no rows found
+func (m *_UserViewBaseInfoDBMgr) FetchByPK(ctx context.Context, id int32) (*UserViewBaseInfo, error) {
+	obj := UserViewBaseInfoMgr.NewUserViewBaseInfo()
+	pk := &IdOfUserViewBaseInfoPK{
+		Id: id,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM user_view_base_info %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	objs, err := m.FetchBySQLContext(ctx, query, pk.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0], nil
+	}
+	return nil, sql.ErrNoRows
+}

@@ -1196,6 +1196,25 @@ func (m *_UserDBMgr) queryCountContext(ctx context.Context, where string, args .
 	return count, nil
 }
 
+// FetchByPK is the same as FetchByPrimaryKey
+// but it returns the specific error type(sql.ErrNoRows) when no rows found
+func (m *_UserDBMgr) FetchByPK(ctx context.Context, id int32) (*User, error) {
+	obj := UserMgr.NewUser()
+	pk := &IdOfUserPK{
+		Id: id,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM users %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	objs, err := m.FetchBySQLContext(ctx, query, pk.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0], nil
+	}
+	return nil, sql.ErrNoRows
+}
+
 func (m *_UserDBMgr) BatchCreate(objs []*User) (int64, error) {
 	if len(objs) == 0 {
 		return 0, nil

@@ -904,6 +904,26 @@ func (m *_BlogDBMgr) queryCountContext(ctx context.Context, where string, args .
 	return count, nil
 }
 
+// FetchByPK is the same as FetchByPrimaryKey
+// but it returns the specific error type(sql.ErrNoRows) when no rows found
+func (m *_BlogDBMgr) FetchByPK(ctx context.Context, id int32, userId int32) (*Blog, error) {
+	obj := BlogMgr.NewBlog()
+	pk := &IdUserIdOfBlogPK{
+		Id:     id,
+		UserId: userId,
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM blogs %s", strings.Join(obj.GetColumns(), ","), pk.SQLFormat())
+	objs, err := m.FetchBySQLContext(ctx, query, pk.SQLParams()...)
+	if err != nil {
+		return nil, err
+	}
+	if len(objs) > 0 {
+		return objs[0], nil
+	}
+	return nil, sql.ErrNoRows
+}
+
 func (m *_BlogDBMgr) BatchCreate(objs []*Blog) (int64, error) {
 	if len(objs) == 0 {
 		return 0, nil

@@ -144,6 +144,7 @@ func init() {
 		"tpl/script.mysql.sql",
 		"tpl/view.gogo",
 		"tpl/pb.db.converter.gogo",
+		"tpl/object.db.read.ex.gogo",
 	}
 	for _, fname := range files {
 		data, err := tpl.Asset(fname)
