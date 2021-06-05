@@ -1,9 +1,56 @@
 package orm
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"strings"
 )
+
+type FieldMultiIN struct {
+	rawFields []string
+	in        *FieldIN
+}
+
+func NewMultiFieldIN(fields []string) *FieldMultiIN {
+	var b bytes.Buffer
+	b.WriteByte('(')
+	b.WriteString(strings.Join(fields, ","))
+	b.WriteByte(')')
+	return &FieldMultiIN{
+		rawFields: fields,
+		in: &FieldIN{
+			Field: b.String(),
+		},
+	}
+}
+
+func (in *FieldMultiIN) Add(v []interface{}) error {
+	if len(v)%len(in.rawFields) != 0 {
+		return errors.New("builder: passed-in value length should be integer multiple than fields length")
+	}
+	in.in.Params = append(in.in.Params, v...)
+	var b bytes.Buffer
+	b.WriteByte('(')
+	for index := range v {
+		if index == len(v)-1 {
+			b.WriteByte('?')
+			continue
+		}
+		b.WriteString("?,")
+	}
+	b.WriteByte(')')
+	in.in.holders = append(in.in.holders, b.String())
+	return nil
+}
+
+func (in *FieldMultiIN) SQLFormat() string {
+	return in.in.SQLFormat()
+}
+
+func (in *FieldMultiIN) SQLParams() []interface{} {
+	return in.in.SQLParams()
+}
 
 type FieldIN struct {
 	Field   string
