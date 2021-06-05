@@ -22,5 +22,6 @@ require (
 	gopkg.in/olivere/elastic.v2 v2.0.61
 	gopkg.in/redis.v5 v5.2.9
 	gopkg.in/yaml.v2 v2.2.4
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
+
+replace github.com/stretchr/testify v1.7.0 => github.com/stretchr/testify v1.4.0

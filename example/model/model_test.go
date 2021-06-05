@@ -517,14 +517,6 @@ var _ = Describe("redis-orm.redis", func() {
 
 	Describe("crud", func() {
 		var user, userWithExpire *User
-		It("search", func() {
-			sexIdx := &SexOfUserIDX{
-				Sex: false,
-			}
-			_, us, err := UserRedisMgr(Redis()).Find(sexIdx)
-			Ω(len(us)).To(Equal(50))
-			Ω(err).ShouldNot(HaveOccurred())
-		})
 		It("create", func() {
 			user = UserMgr.NewUser()
 			user.Id = 101
