@@ -16,9 +16,12 @@ require (
 	github.com/onsi/gomega v1.9.0
 	github.com/spf13/cobra v0.0.4
 	github.com/spf13/viper v1.3.2
+	github.com/stretchr/testify v1.7.0
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v9 v9.31.0
 	gopkg.in/olivere/elastic.v2 v2.0.61
 	gopkg.in/redis.v5 v5.2.9
 	gopkg.in/yaml.v2 v2.2.4
 )
+
+replace github.com/stretchr/testify v1.7.0 => github.com/stretchr/testify v1.4.0

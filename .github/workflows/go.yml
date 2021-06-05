@@ -12,7 +12,7 @@ jobs:
     name: Build & Test
     strategy:
       matrix:
-        go: [1.12,1.13,1.14]
+        go: [1.12,1.13,1.14,1.15,1.16]
 
     runs-on: ubuntu-latest
 
@@ -53,6 +53,7 @@ jobs:
       run: |
         go install
         redis-orm code -i ./example/yaml/ -o ./example/model/
+        go test -v ./orm
         go test -v ./orm/sqlbuilder
 
     - name: Test Model
