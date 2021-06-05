@@ -23,4 +23,12 @@ func TestNewMultiFieldIN(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "(a,b) IN ((?,?),(?,?))", in.SQLFormat())
 	assert.Equal(t, []interface{}{1, 2, 3, 4}, in.SQLParams())
+
+	in = NewMultiFieldIN([]string{})
+	err = in.Add([]interface{}{1, 2})
+	assert.Error(t, err)
+
+	in = NewMultiFieldIN([]string{"a", "b"})
+	err = in.Add([]interface{}{})
+	assert.Error(t, err)
 }

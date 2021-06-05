@@ -8,8 +8,8 @@ import (
 )
 
 type FieldMultiIN struct {
-	rawFields []string
-	in        *FieldIN
+	rawFieldsLen int
+	in           *FieldIN
 }
 
 func NewMultiFieldIN(fields []string) *FieldMultiIN {
@@ -18,7 +18,7 @@ func NewMultiFieldIN(fields []string) *FieldMultiIN {
 	b.WriteString(strings.Join(fields, ","))
 	b.WriteByte(')')
 	return &FieldMultiIN{
-		rawFields: fields,
+		rawFieldsLen: len(fields),
 		in: &FieldIN{
 			Field: b.String(),
 		},
@@ -26,7 +26,10 @@ func NewMultiFieldIN(fields []string) *FieldMultiIN {
 }
 
 func (in *FieldMultiIN) Add(v []interface{}) error {
-	if len(v)%len(in.rawFields) != 0 {
+	if in.rawFieldsLen == 0 || len(v) == 0 {
+		return errors.New("builder: fields length and passed-in value length should above zero")
+	}
+	if len(v)%in.rawFieldsLen != 0 {
 		return errors.New("builder: passed-in value length should be integer multiple than fields length")
 	}
 	in.in.Params = append(in.in.Params, v...)
