@@ -11,7 +11,7 @@ CREATE TABLE `users` (
 	`description` VARCHAR(100) NULL ,
 	`password` VARCHAR(100) NOT NULL DEFAULT '',
 	`head_url` VARCHAR(100) NULL ,
-	`status` INT(11) NOT NULL DEFAULT '0',
+	`user_status` INT(11) NOT NULL DEFAULT '0',
 	`created_at` BIGINT(20) NOT NULL DEFAULT '0',
 	`updated_at` BIGINT(20) NOT NULL DEFAULT '0',
 	`deleted_at` BIGINT(20) NULL ,
