@@ -26,6 +26,7 @@ User:
     - HeadUrl: string
       flags: [nullable]
     - Status: int32
+      sqlcolumn: "user_status"
     - CreatedAt: timeint
     - UpdatedAt: timeint
     - DeletedAt: timeint

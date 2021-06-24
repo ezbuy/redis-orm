@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -461,6 +462,17 @@ var _ = Describe("redis-orm.mysql", func() {
 		}, 1)
 	})
 
+})
+
+var _ = Describe("redis-orm:ensure-mysql-db-struct", func() {
+	Describe("tag", func() {
+		It("reflect", func() {
+			user := &User{}
+			f, ok := reflect.TypeOf(user).Elem().FieldByName("Status")
+			Ω(ok).To(Equal(true))
+			Ω(f.Tag.Get("db")).To(Equal("user_status"))
+		})
+	})
 })
 
 var _ = Describe("redis-orm.redis", func() {

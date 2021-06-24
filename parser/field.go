@@ -374,12 +374,16 @@ func (f *Field) GetTag() string {
 	for tag, camel := range tags {
 		if val, ok := f.Attrs[tag+"Tag"]; ok {
 			tagstr = append(tagstr, fmt.Sprintf("%s:\"%s\"", tag, val))
-		} else {
-			if camel {
-				tagstr = append(tagstr, fmt.Sprintf("%s:\"%s\"", tag, f.Name))
-			} else {
-				tagstr = append(tagstr, fmt.Sprintf("%s:\"%s\"", tag, Camel2Name(f.Name)))
-			}
+			continue
+		}
+		switch {
+		// use `sqlcolumn` option first
+		case tag == "db":
+			tagstr = append(tagstr, fmt.Sprintf("%s:\"%s\"", tag, f.ColumnName()))
+		case camel:
+			tagstr = append(tagstr, fmt.Sprintf("%s:\"%s\"", tag, f.Name))
+		default:
+			tagstr = append(tagstr, fmt.Sprintf("%s:\"%s\"", tag, Camel2Name(f.Name)))
 		}
 	}
 	if f.Validator != "" {
@@ -522,7 +526,7 @@ func (f *Field) SQLColumn(driver string) string {
 func (f *Field) SQLName(driver string) string {
 	switch strings.ToLower(driver) {
 	case "mysql":
-		return "`" + Camel2Name(f.Name) + "`"
+		return "`" + f.ColumnName() + "`"
 	}
 	return ""
 }
