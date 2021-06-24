@@ -10,60 +10,60 @@ redis-orm fly orm up
 
 ### generate command
 
-````
-$: go get github.com/ezbuy/redis-orm
+```sh
+go get github.com/ezbuy/redis-orm
 
-$: redis-orm code -i example/yaml -o example/model
+redis-orm code -i example/yaml -o example/model
 
-````
+```
 
 ### read access usage
 
-````
+```go
 import "github.com/ezbuy/redis-orm/example/model"
 
-# mysql
+// mysql
 model.MySQLSetup(cf)
 
 
 db := model.MySQL()
-//! query (ids []string) by unique & index & range definitions
+// query (ids []string) by unique & index & range definitions
 model.UserDBMgr(db).FindOne(unique)
 model.UserDBMgr(db).Find(index)
 model.UserDBMgr(db).Range(scope)
 model.UserDBMgr(db).RangeRevert(scope)
 
-//! search usage
+// search usage
 blogs, err := model.BlogDBMgr(db).Search("INNER JOIN users ON blog.user_id = users.user_id WHERE users.mail_box=?", "", "", "foo@bar.com")
 
-//! fetch object 
+// fetch object 
 model.UserDBMgr(db).Fetch(pk PrimaryKey) (*User, error)
 model.UserDBMgr(db).FetchByPrimaryKey(id int32) (*User, error)
 model.UserDBMgr(db).FetchByPrimaryKeys(ids []int32) ([]*User, error)
 
-# redis
+// redis
 model.RedisSetup(cf)
 
 redis := model.Redis()
-//! query (ids []string) by unique & index & range definitions
+// query (ids []string) by unique & index & range definitions
 model.UserRedisMgr(redis).FindOne(unique)
 model.UserRedisMgr(redis).Find(index)
 model.UserRedisMgr(redis).Range(scope)
 model.UserRedisMgr(redis).RangeRevert(scope)
 
-//! fetch object 
+// fetch object 
 model.UserRedisMgr(redis).Fetch(pk PrimaryKey) (*User, error)
 model.UserRedisMgr(redis).FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error)
 
 
-````
+```
 
 ### write access usage
 
-````
+```go
 import "github.com/ezbuy/redis-orm/example/model"
 
-# mysql
+// mysql
 model.MySQLSetup(cf)
 
 db := model.MySQL()
@@ -84,7 +84,7 @@ model.UserDBMgr(tx).Fetch(id string) (*User, error)
 model.UserDBMgr(tx).FetchByPrimaryKey(id int32) (*User, error)
 model.UserDBMgr(tx).FetchByPrimaryKeys(ids []int32) ([]*User, error)
 
-# redis
+// redis
 model.RedisSetup(cf)
 
 redis := model.Redis()
@@ -93,11 +93,11 @@ model.UserRedisMgr(redis).Create(obj)
 model.UserRedisMgr(redis).Update(obj)
 model.UserRedisMgr(redis).Delete(obj)
 
-````
+```
 
 ### sync data
 
-````
+```go
 import "github.com/ezbuy/redis-orm/example/model"
 
 model.MySQLSetup(cf)
@@ -108,7 +108,7 @@ redis := model.Redis()
 
 model.UserRedisMgr(redis).Load(model.UserDBMgr(db))
 
-````
+```
 
 ## bench redis vs mysql
 
