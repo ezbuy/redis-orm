@@ -29,13 +29,20 @@ jobs:
           MYSQL_PASSWORD: ezbuyisthebest
           MYSQL_ROOT_PASSWORD: ezbuyisthebest
           MYSQL_DATABASE: testing
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
       redis:
         image: redis
         ports:
           - 6379:6379
         options: >-
-          --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5 --requirepass "123456"
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
     - name: Check out code into the Go module directory
@@ -66,4 +73,3 @@ jobs:
         MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
         REDIS_HOST: redis
         REDIS_PORT: ${{ job.services.redis.ports[6379] }}
-        REDIS_AUTH: 123456
