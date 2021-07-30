@@ -39,7 +39,7 @@ jobs:
         ports:
           - 6379:6379
         env:
-          REDIS_PASSWORD=123456
+          REDIS_PASSWORD: 123456
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
