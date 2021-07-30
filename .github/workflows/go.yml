@@ -35,7 +35,7 @@ jobs:
           --health-timeout=5s
           --health-retries=3
       redis:
-        image: bitnami/redis:latest
+        image: bitnami/redis
         ports:
           - 6379:6379
         env:
