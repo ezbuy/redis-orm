@@ -21,7 +21,7 @@ func (m *_{{$relation.Name}}RedisMgr) AddBySQL(db DBFetcher, sql string, args ..
 	}
 
 	for _, obj := range objs {
-		if err := m.ZSetAdd(obj.(*{{$relation.Name}})); err != nil {
+		if err := m.ZSetAdd(context.TODO(), obj.(*{{$relation.Name}})); err != nil {
 			return err
 		}
 	}
@@ -35,7 +35,7 @@ func (m *_{{$relation.Name}}RedisMgr) DelBySQL(db DBFetcher, sql string, args ..
 	}
 
 	for _, obj := range objs {
-		if err := m.ZSetRem(obj.(*{{$relation.Name}})); err != nil {
+		if err := m.ZSetRem(context.TODO(), obj.(*{{$relation.Name}})); err != nil {
 			return err
 		}
 	}

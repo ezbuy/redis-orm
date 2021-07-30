@@ -1,11 +1,13 @@
 package model
 
 import (
+	"context"
 	"fmt"
-	"github.com/ezbuy/redis-orm/orm"
-	redis "gopkg.in/redis.v5"
 	"strings"
 	"time"
+
+	"github.com/ezbuy/redis-orm/orm"
+	"github.com/go-redis/redis/v8"
 )
 
 var (
@@ -53,11 +55,11 @@ func (m *_UserIdRedisMgr) NewUserId(key string) *UserId {
 
 //! pipeline
 type _UserIdRedisPipeline struct {
-	*redis.Pipeline
+	redis.Pipeliner
 	Err error
 }
 
-func (m *_UserIdRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_UserIdRedisPipeline {
+func (m *_UserIdRedisMgr) BeginPipeline(pipes ...redis.Pipeliner) *_UserIdRedisPipeline {
 	if len(pipes) > 0 {
 		return &_UserIdRedisPipeline{pipes[0], nil}
 	}
@@ -66,15 +68,15 @@ func (m *_UserIdRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_UserIdRedisP
 
 //! redis relation list
 func (m *_UserIdRedisMgr) ListLPush(relation *UserId) error {
-	return m.LPush(listOfClass("UserId", "UserId", relation.Key), relation.Value).Err()
+	return m.LPush(context.TODO(), listOfClass("UserId", "UserId", relation.Key), relation.Value).Err()
 }
 
 func (m *_UserIdRedisMgr) ListRPush(relation *UserId) error {
-	return m.RPush(listOfClass("UserId", "UserId", relation.Key), relation.Value).Err()
+	return m.RPush(context.TODO(), listOfClass("UserId", "UserId", relation.Key), relation.Value).Err()
 }
 
 func (m *_UserIdRedisMgr) ListLPop(key string) (*UserId, error) {
-	str, err := m.LPop(listOfClass("UserId", "UserId", key)).Result()
+	str, err := m.LPop(context.TODO(), listOfClass("UserId", "UserId", key)).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +90,7 @@ func (m *_UserIdRedisMgr) ListLPop(key string) (*UserId, error) {
 }
 
 func (m *_UserIdRedisMgr) ListRPop(key string) (*UserId, error) {
-	str, err := m.RPop(listOfClass("UserId", "UserId", key)).Result()
+	str, err := m.RPop(context.TODO(), listOfClass("UserId", "UserId", key)).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +104,7 @@ func (m *_UserIdRedisMgr) ListRPop(key string) (*UserId, error) {
 }
 
 func (m *_UserIdRedisMgr) ListLRange(key string, start, stop int64) ([]*UserId, error) {
-	strs, err := m.LRange(listOfClass("UserId", "UserId", key), start, stop).Result()
+	strs, err := m.LRange(context.TODO(), listOfClass("UserId", "UserId", key), start, stop).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -119,24 +121,25 @@ func (m *_UserIdRedisMgr) ListLRange(key string, start, stop int64) ([]*UserId, 
 }
 
 func (m *_UserIdRedisMgr) ListLRem(relation *UserId) error {
-	return m.LRem(listOfClass("UserId", "UserId", relation.Key), 0, relation.Value).Err()
+	return m.LRem(context.TODO(), listOfClass("UserId", "UserId", relation.Key), 0, relation.Value).Err()
 }
 
 func (m *_UserIdRedisMgr) ListLLen(key string) (int64, error) {
-	return m.LLen(listOfClass("UserId", "UserId", key)).Result()
+	return m.LLen(context.TODO(), listOfClass("UserId", "UserId", key)).Result()
 }
 
 func (m *_UserIdRedisMgr) ListLDel(key string) error {
-	return m.Del(listOfClass("UserId", "UserId", key)).Err()
+	return m.Del(context.TODO(), listOfClass("UserId", "UserId", key)).Err()
 }
 
 func (m *_UserIdRedisMgr) Clear() error {
-	strs, err := m.Keys(listOfClass("UserId", "UserId", "*")).Result()
+	ctx := context.TODO()
+	strs, err := m.Keys(ctx, listOfClass("UserId", "UserId", "*")).Result()
 	if err != nil {
 		return err
 	}
 	if len(strs) > 0 {
-		return m.Del(strs...).Err()
+		return m.Del(ctx, strs...).Err()
 	}
 	return nil
 }

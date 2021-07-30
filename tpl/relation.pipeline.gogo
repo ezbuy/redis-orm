@@ -2,11 +2,11 @@
 {{$relation := .}}
 //! pipeline
 type _{{$relation.Name}}RedisPipeline struct {
-	*redis.Pipeline
+	redis.Pipeliner
 	Err error
 }
 
-func (m *_{{$relation.Name}}RedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_{{$relation.Name}}RedisPipeline {
+func (m *_{{$relation.Name}}RedisMgr) BeginPipeline(pipes ...redis.Pipeliner) *_{{$relation.Name}}RedisPipeline {
 	if len(pipes) > 0 {
 		return &_{{$relation.Name}}RedisPipeline{pipes[0], nil}
 	}

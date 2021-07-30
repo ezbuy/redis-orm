@@ -35,7 +35,7 @@ func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
 			{{- end}}
 		{{- end}}
 	}
-	uk_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline)
+	uk_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline())
 	if err := uk_pip_{{$i}}.PairRem(strings.Join(uk_key_{{$i}}, ":")); err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
 			{{- end}}
 		{{- end}}
 	}
-	idx_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline)
+	idx_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline())
 	idx_rel_{{$i}} := {{$relation.Name}}RedisMgr().New{{$relation.Name}}(strings.Join(idx_key_{{$i}}, ":"))
 	idx_rel_{{$i}}.Value = pk.Key()
 	if err := idx_pip_{{$i}}.SetRem(idx_rel_{{$i}}); err != nil {
@@ -79,7 +79,7 @@ func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
 			{{- end}}
 		{{- end}}
 	}
-	rg_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline)
+	rg_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline())
 	rg_rel_{{$i}} := {{$relation.Name}}RedisMgr().New{{$relation.Name}}(strings.Join(rg_key_{{$i}}, ":"))
 	score_rg_{{$i}}, err := orm.ToFloat64({{$rg.LastField.GetTransformValue "obj."}})
 	if err != nil {
@@ -92,11 +92,12 @@ func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
 	}
 	{{- end}}
 
-	if err := pipe.Del(keyOfObject(obj, pk.Key())).Err(); err != nil {
+    ctx := context.Background()
+	if err := pipe.Del(ctx, keyOfObject(obj, pk.Key())).Err(); err != nil {
 		return err
 	}
 
-	if _, err := pipe.Exec(); err != nil {
+	if _, err := pipe.Exec(ctx); err != nil {
 		return err
 	}
 	return nil
@@ -122,7 +123,7 @@ func (m *_{{$obj.Name}}RedisMgr) SaveBatchWithExpire(objs []*{{$obj.Name}}, expi
 			    return err
 			}
 		}
-		if _, err := pipe.Exec(); err != nil {
+		if _, err := pipe.Exec(context.TODO()); err != nil {
 		    pipe.Close()
 			return err
 		}
@@ -138,7 +139,7 @@ func (m *_{{$obj.Name}}RedisMgr) SaveWithExpire(obj *{{$obj.Name}}, expire time.
 			pipe.Close()
 			return err
 		}
-		if _, err = pipe.Exec(); err != nil {
+		if _, err = pipe.Exec(context.Background()); err != nil {
 			pipe.Close()
 			return err
 		}
@@ -147,6 +148,7 @@ func (m *_{{$obj.Name}}RedisMgr) SaveWithExpire(obj *{{$obj.Name}}, expire time.
 }
 
 func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipeline, obj *{{$obj.Name}}, expire time.Duration) error {
+    ctx := context.Background()
 	pk := obj.GetPrimaryKey()
 	key := pk.Key()
 	//! fields
@@ -154,18 +156,18 @@ func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipelin
 		{{- if and $field.IsNullable $field.IsNeedTransform}}
 			if obj.{{$field.Name}} != nil {
 				{{- if $field.IsEncode}}
-				pipe.HSet(keyOfObject(obj, key), "{{$field.Name}}", orm.Encode(fmt.Sprint({{$field.GetTransformValue "obj."}})))
+				pipe.HSet(ctx, keyOfObject(obj, key), "{{$field.Name}}", orm.Encode(fmt.Sprint({{$field.GetTransformValue "obj."}})))
 				{{- else}}
-				pipe.HSet(keyOfObject(obj, key), "{{$field.Name}}", fmt.Sprint({{$field.GetTransformValue "obj."}}))
+				pipe.HSet(ctx, keyOfObject(obj, key), "{{$field.Name}}", fmt.Sprint({{$field.GetTransformValue "obj."}}))
 				{{- end}}
 			} else {
-				pipe.HSet(keyOfObject(obj, key), "{{$field.Name}}", "nil")
+				pipe.HSet(ctx, keyOfObject(obj, key), "{{$field.Name}}", "nil")
 			}
 		{{- else}}
 			{{- if $field.IsEncode}}
-			pipe.HSet(keyOfObject(obj, key), "{{$field.Name}}", orm.Encode(fmt.Sprint({{$field.GetTransformValue "obj."}})))
+			pipe.HSet(ctx, keyOfObject(obj, key), "{{$field.Name}}", orm.Encode(fmt.Sprint({{$field.GetTransformValue "obj."}})))
 			{{- else}}
-			pipe.HSet(keyOfObject(obj, key), "{{$field.Name}}", fmt.Sprint({{$field.GetTransformValue "obj."}}))
+			pipe.HSet(ctx, keyOfObject(obj, key), "{{$field.Name}}", fmt.Sprint({{$field.GetTransformValue "obj."}}))
 			{{- end}}
 		{{- end}}
 	{{- end}}
@@ -183,7 +185,7 @@ func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipelin
 			{{- end}}
 		{{- end}}
 	}
-	uk_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline)
+	uk_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline())
 	uk_rel_{{$i}} := {{$relation.Name}}RedisMgr().New{{$relation.Name}}(strings.Join(uk_key_{{$i}}, ":"))
 	uk_rel_{{$i}}.Value = key
 	if err := uk_pip_{{$i}}.PairAdd(uk_rel_{{$i}}); err != nil {
@@ -204,7 +206,7 @@ func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipelin
 			{{- end}}
 		{{- end}}
 	}
-	idx_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline)
+	idx_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline())
 	idx_rel_{{$i}} := {{$relation.Name}}RedisMgr().New{{$relation.Name}}(strings.Join(idx_key_{{$i}}, ":"))
 	idx_rel_{{$i}}.Value = key
 	if err := idx_pip_{{$i}}.SetAdd(idx_rel_{{$i}}); err != nil {
@@ -229,7 +231,7 @@ func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipelin
 			{{- end}}
 		{{- end}}
 	}
-	rg_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline)
+	rg_pip_{{$i}} := {{$relation.Name}}RedisMgr().BeginPipeline(pipe.Pipeline())
 	rg_rel_{{$i}} := {{$relation.Name}}RedisMgr().New{{$relation.Name}}(strings.Join(rg_key_{{$i}}, ":"))
 	score_rg_{{$i}}, err := orm.ToFloat64({{$rg.LastField.GetTransformValue "obj."}})
 	if err != nil {
@@ -242,41 +244,42 @@ func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipelin
 	}
 	{{- end}}
 	if expire > 0 {
-	    pipe.Expire(keyOfObject(obj, key), expire)
+	    pipe.Expire(ctx, keyOfObject(obj, key), expire)
 	}
 
 	return nil
 }
 
 func (m *_{{$obj.Name}}RedisMgr) Clear() error {
-	if strs, err := m.Keys(pairOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
+    ctx := context.TODO()
+	if strs, err := m.Keys(ctx, pairOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
 		if len(strs) > 0 {
-			m.Del(strs...)
+			m.Del(ctx, strs...)
 		}
 	}
-	if strs, err := m.Keys(hashOfClass("{{$obj.Name}}", "object","*")).Result(); err == nil {
+	if strs, err := m.Keys(ctx, hashOfClass("{{$obj.Name}}", "object","*")).Result(); err == nil {
 		if len(strs) > 0 {
-			m.Del(strs...)
+			m.Del(ctx, strs...)
 		}
 	}
-	if strs, err := m.Keys(setOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
+	if strs, err := m.Keys(ctx, setOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
 		if len(strs) > 0 {
-			m.Del(strs...)
+			m.Del(ctx, strs...)
 		}
 	}
-	if strs, err := m.Keys(zsetOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
+	if strs, err := m.Keys(ctx, zsetOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
 		if len(strs) > 0 {
-			m.Del(strs...)
+			m.Del(ctx, strs...)
 		}
 	}
-	if strs, err := m.Keys(geoOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
+	if strs, err := m.Keys(ctx, geoOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
 		if len(strs) > 0 {
-			m.Del(strs...)
+			m.Del(ctx, strs...)
 		}
 	}
-	if strs, err := m.Keys(listOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
+	if strs, err := m.Keys(ctx, listOfClass("{{$obj.Name}}", "*")).Result(); err == nil {
 		if len(strs) > 0 {
-			m.Del(strs...)
+			m.Del(ctx, strs...)
 		}
 	}
 	return nil

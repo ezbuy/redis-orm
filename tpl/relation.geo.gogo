@@ -3,7 +3,7 @@
 {{$primaryField := $relation.PrimaryField}}
 //! redis relation pair
 func (m *_{{$relation.Name}}RedisMgr) LocationAdd(relation *{{$relation.Name}}) error {
-	return m.GeoAdd(geoOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), &redis.GeoLocation{
+	return m.GeoAdd(context.TODO(), geoOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), &redis.GeoLocation{
 		Longitude: relation.Longitude,
 		Latitude:  relation.Latitude,
 		Name:      fmt.Sprint(relation.Value),
@@ -11,7 +11,7 @@ func (m *_{{$relation.Name}}RedisMgr) LocationAdd(relation *{{$relation.Name}}) 
 }
 
 func (m *_{{$relation.Name}}RedisMgr) LocationRadius(key string, longitude float64, latitude float64, query *redis.GeoRadiusQuery) ([]*{{$relation.Name}}, error) {
-	locations, err := m.GeoRadius(geoOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key), longitude, latitude, query).Result()
+	locations, err := m.GeoRadius(context.TODO(), geoOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key), longitude, latitude, query).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -38,23 +38,23 @@ func (m *_{{$relation.Name}}RedisMgr) LocationRadius(key string, longitude float
 }
 
 func (m *_{{$relation.Name}}RedisMgr) LocationRem(relation *{{$relation.Name}}) error {
-	return m.ZRem(geoOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), fmt.Sprint(relation.Value)).Err()
+	return m.ZRem(context.TODO(), geoOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), fmt.Sprint(relation.Value)).Err()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) LocationDel(key string) error {
-	return m.Del(geoOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Err()
+	return m.Del(context.TODO(), geoOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Err()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) Clear() error {
-	strs, err := m.Keys(geoOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", "*")).Result()
+	ctx := context.TODO()
+	strs, err := m.Keys(ctx, geoOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", "*")).Result()
 	if err != nil {
 		return err
 	}
 	if len(strs) > 0 {
-		return m.Del(strs...).Err()
+		return m.Del(ctx, strs...).Err()
 	}
 	return nil
 }
 
 {{end}}
-

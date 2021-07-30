@@ -2,11 +2,11 @@
 {{$obj := .}}
 //! pipeline
 type _{{$obj.Name}}RedisPipeline struct {
-	*redis.Pipeline
+	redis.Pipeliner
 	Err error
 }
 
-func (m *_{{$obj.Name}}RedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_{{$obj.Name}}RedisPipeline {
+func (m *_{{$obj.Name}}RedisMgr) BeginPipeline(pipes ...redis.Pipeliner) *_{{$obj.Name}}RedisPipeline {
 	if len(pipes) > 0 {
 		return &_{{$obj.Name}}RedisPipeline{pipes[0], nil}
 	}

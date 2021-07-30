@@ -154,13 +154,14 @@ func (m *_{{$obj.Name}}RedisMgr) Fetch(pk PrimaryKey) (*{{$obj.Name}}, error) {
 func (m *_{{$obj.Name}}RedisMgr) FetchByKey(key string) (*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 
+    ctx := context.Background()
 	pipe := m.BeginPipeline()
-	pipe.Exists(key)
-	pipe.HMGet(key,
+	pipe.Exists(ctx, key)
+	pipe.HMGet(ctx, key,
 	{{- range $i, $field := $obj.Fields}}
 	"{{$field.Name}}",
 	{{- end -}})
-	cmds, err := pipe.Exec()
+	cmds, err := pipe.Exec(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -216,15 +217,16 @@ func (m *_{{$obj.Name}}RedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*{{$obj
 	objs := make([]*{{$obj.Name}}, 0, len(pks))
 	pipe := m.BeginPipeline()
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
+    ctx := context.Background()
 	for _, pk := range pks {
 		key := pk.Key()
-		pipe.Exists(keyOfObject(obj, key))
-		pipe.HMGet(keyOfObject(obj, key),
+		pipe.Exists(ctx, keyOfObject(obj, key))
+		pipe.HMGet(ctx, keyOfObject(obj, key),
 		{{- range $i, $field := $obj.Fields}}
 		"{{$field.Name}}",
 		{{- end -}})
 	}
-	cmds, err := pipe.Exec()
+	cmds, err := pipe.Exec(ctx)
 	if err != nil {
 		return nil, err
 	}
