@@ -1797,8 +1797,8 @@ func (m *_UserRedisMgr) FetchByKey(key string) (*User, error) {
 		return nil, err
 	}
 
-	if b, err := cmds[0].(*redis.BoolCmd).Result(); err == nil {
-		if !b {
+	if b, err := cmds[0].(*redis.IntCmd).Result(); err == nil {
+		if b <= 0 {
 			return nil, fmt.Errorf("User primary key:(%s) not exist", key)
 		}
 	}
@@ -1946,8 +1946,8 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 	sv := ""
 	ok := true
 	for i := 0; i < len(pks); i++ {
-		if b, err := cmds[2*i].(*redis.BoolCmd).Result(); err == nil {
-			if !b {
+		if b, err := cmds[2*i].(*redis.IntCmd).Result(); err == nil {
+			if b <= 0 {
 				errall = append(errall, fmt.Sprintf("User primary key:(%s) not exist", pks[i].Key()))
 				continue
 			}
