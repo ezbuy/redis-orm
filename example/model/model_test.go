@@ -70,7 +70,7 @@ var _ = Describe("init DB", func() {
 	RedisSetUp(&RedisConfig{
 		Host:     os.Getenv("REDIS_HOST"),
 		Port:     p2,
-		Password: os.Getenv("REDIS_AUTH"),
+		Password: "",
 	})
 
 	if err := MySQL().Ping(); err != nil {
