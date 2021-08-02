@@ -44,7 +44,7 @@ func (m *_{{$relation.Name}}RedisMgr) FindOne(key string) (string, error) {
 }
 
 func (m *_{{$relation.Name}}RedisMgr) Clear() error {
-    ctx := context.TODO()
+	ctx := context.TODO()
 	strs, err := m.Keys(ctx, pairOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", "*")).Result()
 	if err != nil {
 		return err

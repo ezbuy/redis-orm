@@ -9,7 +9,7 @@ import (
 	"context"
 
 	"github.com/ezbuy/redis-orm/orm"
-    "github.com/go-redis/redis/v8"
+	"github.com/go-redis/redis/v8"
 )
 var (
 	_ time.Time

@@ -217,7 +217,7 @@ func (m *_{{$obj.Name}}RedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*{{$obj
 	objs := make([]*{{$obj.Name}}, 0, len(pks))
 	pipe := m.BeginPipeline()
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
-    ctx := context.Background()
+	ctx := context.Background()
 	for _, pk := range pks {
 		key := pk.Key()
 		pipe.Exists(ctx, keyOfObject(obj, key))
