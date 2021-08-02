@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"time"
 	"strings"
+	"context"
+
 	"github.com/ezbuy/redis-orm/orm"
-	redis "gopkg.in/redis.v5"
+	"github.com/go-redis/redis/v8"
 )
 var (
 	_ time.Time

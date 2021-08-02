@@ -1,11 +1,13 @@
 package model
 
 import (
+	"context"
 	"fmt"
-	"github.com/ezbuy/redis-orm/orm"
-	redis "gopkg.in/redis.v5"
 	"strings"
 	"time"
+
+	"github.com/ezbuy/redis-orm/orm"
+	"github.com/go-redis/redis/v8"
 )
 
 var (
@@ -55,11 +57,11 @@ func (m *_SexUserLocationRedisMgr) NewSexUserLocation(key string) *SexUserLocati
 
 //! pipeline
 type _SexUserLocationRedisPipeline struct {
-	*redis.Pipeline
+	redis.Pipeliner
 	Err error
 }
 
-func (m *_SexUserLocationRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_SexUserLocationRedisPipeline {
+func (m *_SexUserLocationRedisMgr) BeginPipeline(pipes ...redis.Pipeliner) *_SexUserLocationRedisPipeline {
 	if len(pipes) > 0 {
 		return &_SexUserLocationRedisPipeline{pipes[0], nil}
 	}
@@ -68,7 +70,7 @@ func (m *_SexUserLocationRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_Sex
 
 //! redis relation pair
 func (m *_SexUserLocationRedisMgr) LocationAdd(relation *SexUserLocation) error {
-	return m.GeoAdd(geoOfClass("SexUserLocation", "SexUserLocation", relation.Key), &redis.GeoLocation{
+	return m.GeoAdd(context.TODO(), geoOfClass("SexUserLocation", "SexUserLocation", relation.Key), &redis.GeoLocation{
 		Longitude: relation.Longitude,
 		Latitude:  relation.Latitude,
 		Name:      fmt.Sprint(relation.Value),
@@ -76,7 +78,7 @@ func (m *_SexUserLocationRedisMgr) LocationAdd(relation *SexUserLocation) error 
 }
 
 func (m *_SexUserLocationRedisMgr) LocationRadius(key string, longitude float64, latitude float64, query *redis.GeoRadiusQuery) ([]*SexUserLocation, error) {
-	locations, err := m.GeoRadius(geoOfClass("SexUserLocation", "SexUserLocation", key), longitude, latitude, query).Result()
+	locations, err := m.GeoRadius(context.TODO(), geoOfClass("SexUserLocation", "SexUserLocation", key), longitude, latitude, query).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -95,20 +97,21 @@ func (m *_SexUserLocationRedisMgr) LocationRadius(key string, longitude float64,
 }
 
 func (m *_SexUserLocationRedisMgr) LocationRem(relation *SexUserLocation) error {
-	return m.ZRem(geoOfClass("SexUserLocation", "SexUserLocation", relation.Key), fmt.Sprint(relation.Value)).Err()
+	return m.ZRem(context.TODO(), geoOfClass("SexUserLocation", "SexUserLocation", relation.Key), fmt.Sprint(relation.Value)).Err()
 }
 
 func (m *_SexUserLocationRedisMgr) LocationDel(key string) error {
-	return m.Del(geoOfClass("SexUserLocation", "SexUserLocation", key)).Err()
+	return m.Del(context.TODO(), geoOfClass("SexUserLocation", "SexUserLocation", key)).Err()
 }
 
 func (m *_SexUserLocationRedisMgr) Clear() error {
-	strs, err := m.Keys(geoOfClass("SexUserLocation", "SexUserLocation", "*")).Result()
+	ctx := context.TODO()
+	strs, err := m.Keys(ctx, geoOfClass("SexUserLocation", "SexUserLocation", "*")).Result()
 	if err != nil {
 		return err
 	}
 	if len(strs) > 0 {
-		return m.Del(strs...).Err()
+		return m.Del(ctx, strs...).Err()
 	}
 	return nil
 }

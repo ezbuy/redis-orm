@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/ezbuy/redis-orm/orm"
+	"github.com/go-redis/redis/v8"
 	"gopkg.in/go-playground/validator.v9"
-	redis "gopkg.in/redis.v5"
 )
 
 var (
@@ -35,7 +35,7 @@ type User struct {
 	Description string     `db:"description" json:"description"`
 	Password    string     `db:"password" json:"password"`
 	HeadUrl     string     `db:"head_url" json:"head_url"`
-	Status      int32      `db:"status" json:"status"`
+	Status      int32      `db:"user_status" json:"status"`
 	CreatedAt   time.Time  `db:"created_at" json:"created_at"`
 	UpdatedAt   time.Time  `db:"updated_at" json:"updated_at"`
 	DeletedAt   *time.Time `db:"deleted_at" json:"deleted_at"`
@@ -69,7 +69,7 @@ var UserColumns = struct {
 	"description",
 	"password",
 	"head_url",
-	"status",
+	"user_status",
 	"created_at",
 	"updated_at",
 	"deleted_at",
@@ -111,7 +111,7 @@ func (obj *User) GetColumns() []string {
 		"users.`description`",
 		"users.`password`",
 		"users.`head_url`",
-		"users.`status`",
+		"users.`user_status`",
 		"users.`created_at`",
 		"users.`updated_at`",
 		"users.`deleted_at`",
@@ -131,7 +131,7 @@ func (obj *User) GetNoneIncrementColumns() []string {
 		"`description`",
 		"`password`",
 		"`head_url`",
-		"`status`",
+		"`user_status`",
 		"`created_at`",
 		"`updated_at`",
 		"`deleted_at`",
@@ -1405,7 +1405,7 @@ func (m *_UserDBMgr) Update(obj *User) (int64, error) {
 		"`description` = ?",
 		"`password` = ?",
 		"`head_url` = ?",
-		"`status` = ?",
+		"`user_status` = ?",
 		"`created_at` = ?",
 		"`updated_at` = ?",
 		"`deleted_at` = ?",
@@ -1453,7 +1453,7 @@ func (m *_UserDBMgr) UpdateContext(ctx context.Context, obj *User) (int64, error
 		"`description` = ?",
 		"`password` = ?",
 		"`head_url` = ?",
-		"`status` = ?",
+		"`user_status` = ?",
 		"`created_at` = ?",
 		"`updated_at` = ?",
 		"`deleted_at` = ?",
@@ -1584,11 +1584,11 @@ func UserRedisMgr(store *orm.RedisStore) *_UserRedisMgr {
 
 //! pipeline
 type _UserRedisPipeline struct {
-	*redis.Pipeline
+	redis.Pipeliner
 	Err error
 }
 
-func (m *_UserRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_UserRedisPipeline {
+func (m *_UserRedisMgr) BeginPipeline(pipes ...redis.Pipeliner) *_UserRedisPipeline {
 	if len(pipes) > 0 {
 		return &_UserRedisPipeline{pipes[0], nil}
 	}
@@ -1773,9 +1773,10 @@ func (m *_UserRedisMgr) Fetch(pk PrimaryKey) (*User, error) {
 func (m *_UserRedisMgr) FetchByKey(key string) (*User, error) {
 	obj := UserMgr.NewUser()
 
+	ctx := context.Background()
 	pipe := m.BeginPipeline()
-	pipe.Exists(key)
-	pipe.HMGet(key,
+	pipe.Exists(ctx, key)
+	pipe.HMGet(ctx, key,
 		"Id",
 		"SubID",
 		"Name",
@@ -1791,13 +1792,13 @@ func (m *_UserRedisMgr) FetchByKey(key string) (*User, error) {
 		"CreatedAt",
 		"UpdatedAt",
 		"DeletedAt")
-	cmds, err := pipe.Exec()
+	cmds, err := pipe.Exec(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	if b, err := cmds[0].(*redis.BoolCmd).Result(); err == nil {
-		if !b {
+	if b, err := cmds[0].(*redis.IntCmd).Result(); err == nil {
+		if b <= 0 {
 			return nil, fmt.Errorf("User primary key:(%s) not exist", key)
 		}
 	}
@@ -1916,10 +1917,11 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 	objs := make([]*User, 0, len(pks))
 	pipe := m.BeginPipeline()
 	obj := UserMgr.NewUser()
+	ctx := context.Background()
 	for _, pk := range pks {
 		key := pk.Key()
-		pipe.Exists(keyOfObject(obj, key))
-		pipe.HMGet(keyOfObject(obj, key),
+		pipe.Exists(ctx, keyOfObject(obj, key))
+		pipe.HMGet(ctx, keyOfObject(obj, key),
 			"Id",
 			"SubID",
 			"Name",
@@ -1936,7 +1938,7 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 			"UpdatedAt",
 			"DeletedAt")
 	}
-	cmds, err := pipe.Exec()
+	cmds, err := pipe.Exec(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -1944,8 +1946,8 @@ func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
 	sv := ""
 	ok := true
 	for i := 0; i < len(pks); i++ {
-		if b, err := cmds[2*i].(*redis.BoolCmd).Result(); err == nil {
-			if !b {
+		if b, err := cmds[2*i].(*redis.IntCmd).Result(); err == nil {
+			if b <= 0 {
 				errall = append(errall, fmt.Sprintf("User primary key:(%s) not exist", pks[i].Key()))
 				continue
 			}
@@ -2168,7 +2170,7 @@ func (m *_UserRedisMgr) Delete(obj *User) error {
 		"Password",
 		fmt.Sprint(obj.Password),
 	}
-	uk_pip_0 := MailboxPasswordOfUserUKRelationRedisMgr().BeginPipeline(pipe.Pipeline)
+	uk_pip_0 := MailboxPasswordOfUserUKRelationRedisMgr().BeginPipeline(pipe.Pipeline())
 	if err := uk_pip_0.PairRem(strings.Join(uk_key_0, ":")); err != nil {
 		return err
 	}
@@ -2178,7 +2180,7 @@ func (m *_UserRedisMgr) Delete(obj *User) error {
 		"Sex",
 		fmt.Sprint(obj.Sex),
 	}
-	idx_pip_0 := SexOfUserIDXRelationRedisMgr().BeginPipeline(pipe.Pipeline)
+	idx_pip_0 := SexOfUserIDXRelationRedisMgr().BeginPipeline(pipe.Pipeline())
 	idx_rel_0 := SexOfUserIDXRelationRedisMgr().NewSexOfUserIDXRelation(strings.Join(idx_key_0, ":"))
 	idx_rel_0.Value = pk.Key()
 	if err := idx_pip_0.SetRem(idx_rel_0); err != nil {
@@ -2189,7 +2191,7 @@ func (m *_UserRedisMgr) Delete(obj *User) error {
 	rg_key_0 := []string{
 		"Id",
 	}
-	rg_pip_0 := IdOfUserRNGRelationRedisMgr().BeginPipeline(pipe.Pipeline)
+	rg_pip_0 := IdOfUserRNGRelationRedisMgr().BeginPipeline(pipe.Pipeline())
 	rg_rel_0 := IdOfUserRNGRelationRedisMgr().NewIdOfUserRNGRelation(strings.Join(rg_key_0, ":"))
 	score_rg_0, err := orm.ToFloat64(obj.Id)
 	if err != nil {
@@ -2203,7 +2205,7 @@ func (m *_UserRedisMgr) Delete(obj *User) error {
 	rg_key_1 := []string{
 		"Age",
 	}
-	rg_pip_1 := AgeOfUserRNGRelationRedisMgr().BeginPipeline(pipe.Pipeline)
+	rg_pip_1 := AgeOfUserRNGRelationRedisMgr().BeginPipeline(pipe.Pipeline())
 	rg_rel_1 := AgeOfUserRNGRelationRedisMgr().NewAgeOfUserRNGRelation(strings.Join(rg_key_1, ":"))
 	score_rg_1, err := orm.ToFloat64(obj.Age)
 	if err != nil {
@@ -2215,11 +2217,12 @@ func (m *_UserRedisMgr) Delete(obj *User) error {
 		return err
 	}
 
-	if err := pipe.Del(keyOfObject(obj, pk.Key())).Err(); err != nil {
+	ctx := context.Background()
+	if err := pipe.Del(ctx, keyOfObject(obj, pk.Key())).Err(); err != nil {
 		return err
 	}
 
-	if _, err := pipe.Exec(); err != nil {
+	if _, err := pipe.Exec(ctx); err != nil {
 		return err
 	}
 	return nil
@@ -2243,7 +2246,7 @@ func (m *_UserRedisMgr) SaveBatchWithExpire(objs []*User, expire time.Duration) 
 				return err
 			}
 		}
-		if _, err := pipe.Exec(); err != nil {
+		if _, err := pipe.Exec(context.TODO()); err != nil {
 			pipe.Close()
 			return err
 		}
@@ -2259,7 +2262,7 @@ func (m *_UserRedisMgr) SaveWithExpire(obj *User, expire time.Duration) error {
 			pipe.Close()
 			return err
 		}
-		if _, err = pipe.Exec(); err != nil {
+		if _, err = pipe.Exec(context.Background()); err != nil {
 			pipe.Close()
 			return err
 		}
@@ -2268,27 +2271,28 @@ func (m *_UserRedisMgr) SaveWithExpire(obj *User, expire time.Duration) error {
 }
 
 func (m *_UserRedisMgr) addToPipeline(pipe *_UserRedisPipeline, obj *User, expire time.Duration) error {
+	ctx := context.Background()
 	pk := obj.GetPrimaryKey()
 	key := pk.Key()
 	//! fields
-	pipe.HSet(keyOfObject(obj, key), "Id", fmt.Sprint(obj.Id))
-	pipe.HSet(keyOfObject(obj, key), "SubID", fmt.Sprint(obj.SubID))
-	pipe.HSet(keyOfObject(obj, key), "Name", fmt.Sprint(obj.Name))
-	pipe.HSet(keyOfObject(obj, key), "Mailbox", fmt.Sprint(obj.Mailbox))
-	pipe.HSet(keyOfObject(obj, key), "Sex", fmt.Sprint(obj.Sex))
-	pipe.HSet(keyOfObject(obj, key), "Age", fmt.Sprint(obj.Age))
-	pipe.HSet(keyOfObject(obj, key), "Longitude", fmt.Sprint(obj.Longitude))
-	pipe.HSet(keyOfObject(obj, key), "Latitude", fmt.Sprint(obj.Latitude))
-	pipe.HSet(keyOfObject(obj, key), "Description", fmt.Sprint(obj.Description))
-	pipe.HSet(keyOfObject(obj, key), "Password", fmt.Sprint(obj.Password))
-	pipe.HSet(keyOfObject(obj, key), "HeadUrl", fmt.Sprint(obj.HeadUrl))
-	pipe.HSet(keyOfObject(obj, key), "Status", fmt.Sprint(obj.Status))
-	pipe.HSet(keyOfObject(obj, key), "CreatedAt", fmt.Sprint(obj.CreatedAt.Unix()))
-	pipe.HSet(keyOfObject(obj, key), "UpdatedAt", fmt.Sprint(obj.UpdatedAt.Unix()))
+	pipe.HSet(ctx, keyOfObject(obj, key), "Id", fmt.Sprint(obj.Id))
+	pipe.HSet(ctx, keyOfObject(obj, key), "SubID", fmt.Sprint(obj.SubID))
+	pipe.HSet(ctx, keyOfObject(obj, key), "Name", fmt.Sprint(obj.Name))
+	pipe.HSet(ctx, keyOfObject(obj, key), "Mailbox", fmt.Sprint(obj.Mailbox))
+	pipe.HSet(ctx, keyOfObject(obj, key), "Sex", fmt.Sprint(obj.Sex))
+	pipe.HSet(ctx, keyOfObject(obj, key), "Age", fmt.Sprint(obj.Age))
+	pipe.HSet(ctx, keyOfObject(obj, key), "Longitude", fmt.Sprint(obj.Longitude))
+	pipe.HSet(ctx, keyOfObject(obj, key), "Latitude", fmt.Sprint(obj.Latitude))
+	pipe.HSet(ctx, keyOfObject(obj, key), "Description", fmt.Sprint(obj.Description))
+	pipe.HSet(ctx, keyOfObject(obj, key), "Password", fmt.Sprint(obj.Password))
+	pipe.HSet(ctx, keyOfObject(obj, key), "HeadUrl", fmt.Sprint(obj.HeadUrl))
+	pipe.HSet(ctx, keyOfObject(obj, key), "Status", fmt.Sprint(obj.Status))
+	pipe.HSet(ctx, keyOfObject(obj, key), "CreatedAt", fmt.Sprint(obj.CreatedAt.Unix()))
+	pipe.HSet(ctx, keyOfObject(obj, key), "UpdatedAt", fmt.Sprint(obj.UpdatedAt.Unix()))
 	if obj.DeletedAt != nil {
-		pipe.HSet(keyOfObject(obj, key), "DeletedAt", fmt.Sprint(obj.DeletedAt.Unix()))
+		pipe.HSet(ctx, keyOfObject(obj, key), "DeletedAt", fmt.Sprint(obj.DeletedAt.Unix()))
 	} else {
-		pipe.HSet(keyOfObject(obj, key), "DeletedAt", "nil")
+		pipe.HSet(ctx, keyOfObject(obj, key), "DeletedAt", "nil")
 	}
 
 	//! uniques
@@ -2298,7 +2302,7 @@ func (m *_UserRedisMgr) addToPipeline(pipe *_UserRedisPipeline, obj *User, expir
 		"Password",
 		fmt.Sprint(obj.Password),
 	}
-	uk_pip_0 := MailboxPasswordOfUserUKRelationRedisMgr().BeginPipeline(pipe.Pipeline)
+	uk_pip_0 := MailboxPasswordOfUserUKRelationRedisMgr().BeginPipeline(pipe.Pipeline())
 	uk_rel_0 := MailboxPasswordOfUserUKRelationRedisMgr().NewMailboxPasswordOfUserUKRelation(strings.Join(uk_key_0, ":"))
 	uk_rel_0.Value = key
 	if err := uk_pip_0.PairAdd(uk_rel_0); err != nil {
@@ -2310,7 +2314,7 @@ func (m *_UserRedisMgr) addToPipeline(pipe *_UserRedisPipeline, obj *User, expir
 		"Sex",
 		fmt.Sprint(obj.Sex),
 	}
-	idx_pip_0 := SexOfUserIDXRelationRedisMgr().BeginPipeline(pipe.Pipeline)
+	idx_pip_0 := SexOfUserIDXRelationRedisMgr().BeginPipeline(pipe.Pipeline())
 	idx_rel_0 := SexOfUserIDXRelationRedisMgr().NewSexOfUserIDXRelation(strings.Join(idx_key_0, ":"))
 	idx_rel_0.Value = key
 	if err := idx_pip_0.SetAdd(idx_rel_0); err != nil {
@@ -2321,7 +2325,7 @@ func (m *_UserRedisMgr) addToPipeline(pipe *_UserRedisPipeline, obj *User, expir
 	rg_key_0 := []string{
 		"Id",
 	}
-	rg_pip_0 := IdOfUserRNGRelationRedisMgr().BeginPipeline(pipe.Pipeline)
+	rg_pip_0 := IdOfUserRNGRelationRedisMgr().BeginPipeline(pipe.Pipeline())
 	rg_rel_0 := IdOfUserRNGRelationRedisMgr().NewIdOfUserRNGRelation(strings.Join(rg_key_0, ":"))
 	score_rg_0, err := orm.ToFloat64(obj.Id)
 	if err != nil {
@@ -2335,7 +2339,7 @@ func (m *_UserRedisMgr) addToPipeline(pipe *_UserRedisPipeline, obj *User, expir
 	rg_key_1 := []string{
 		"Age",
 	}
-	rg_pip_1 := AgeOfUserRNGRelationRedisMgr().BeginPipeline(pipe.Pipeline)
+	rg_pip_1 := AgeOfUserRNGRelationRedisMgr().BeginPipeline(pipe.Pipeline())
 	rg_rel_1 := AgeOfUserRNGRelationRedisMgr().NewAgeOfUserRNGRelation(strings.Join(rg_key_1, ":"))
 	score_rg_1, err := orm.ToFloat64(obj.Age)
 	if err != nil {
@@ -2347,41 +2351,42 @@ func (m *_UserRedisMgr) addToPipeline(pipe *_UserRedisPipeline, obj *User, expir
 		return err
 	}
 	if expire > 0 {
-		pipe.Expire(keyOfObject(obj, key), expire)
+		pipe.Expire(ctx, keyOfObject(obj, key), expire)
 	}
 
 	return nil
 }
 
 func (m *_UserRedisMgr) Clear() error {
-	if strs, err := m.Keys(pairOfClass("User", "*")).Result(); err == nil {
+	ctx := context.TODO()
+	if strs, err := m.Keys(ctx, pairOfClass("User", "*")).Result(); err == nil {
 		if len(strs) > 0 {
-			m.Del(strs...)
+			m.Del(ctx, strs...)
 		}
 	}
-	if strs, err := m.Keys(hashOfClass("User", "object", "*")).Result(); err == nil {
+	if strs, err := m.Keys(ctx, hashOfClass("User", "object", "*")).Result(); err == nil {
 		if len(strs) > 0 {
-			m.Del(strs...)
+			m.Del(ctx, strs...)
 		}
 	}
-	if strs, err := m.Keys(setOfClass("User", "*")).Result(); err == nil {
+	if strs, err := m.Keys(ctx, setOfClass("User", "*")).Result(); err == nil {
 		if len(strs) > 0 {
-			m.Del(strs...)
+			m.Del(ctx, strs...)
 		}
 	}
-	if strs, err := m.Keys(zsetOfClass("User", "*")).Result(); err == nil {
+	if strs, err := m.Keys(ctx, zsetOfClass("User", "*")).Result(); err == nil {
 		if len(strs) > 0 {
-			m.Del(strs...)
+			m.Del(ctx, strs...)
 		}
 	}
-	if strs, err := m.Keys(geoOfClass("User", "*")).Result(); err == nil {
+	if strs, err := m.Keys(ctx, geoOfClass("User", "*")).Result(); err == nil {
 		if len(strs) > 0 {
-			m.Del(strs...)
+			m.Del(ctx, strs...)
 		}
 	}
-	if strs, err := m.Keys(listOfClass("User", "*")).Result(); err == nil {
+	if strs, err := m.Keys(ctx, listOfClass("User", "*")).Result(); err == nil {
 		if len(strs) > 0 {
-			m.Del(strs...)
+			m.Del(ctx, strs...)
 		}
 	}
 	return nil
@@ -2427,11 +2432,11 @@ func (m *_MailboxPasswordOfUserUKRelationRedisMgr) NewMailboxPasswordOfUserUKRel
 
 //! pipeline
 type _MailboxPasswordOfUserUKRelationRedisPipeline struct {
-	*redis.Pipeline
+	redis.Pipeliner
 	Err error
 }
 
-func (m *_MailboxPasswordOfUserUKRelationRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_MailboxPasswordOfUserUKRelationRedisPipeline {
+func (m *_MailboxPasswordOfUserUKRelationRedisMgr) BeginPipeline(pipes ...redis.Pipeliner) *_MailboxPasswordOfUserUKRelationRedisPipeline {
 	if len(pipes) > 0 {
 		return &_MailboxPasswordOfUserUKRelationRedisPipeline{pipes[0], nil}
 	}
@@ -2440,15 +2445,15 @@ func (m *_MailboxPasswordOfUserUKRelationRedisMgr) BeginPipeline(pipes ...*redis
 
 //! redis relation pair
 func (m *_MailboxPasswordOfUserUKRelationRedisMgr) PairAdd(obj *MailboxPasswordOfUserUKRelation) error {
-	return m.Set(pairOfClass("User", obj.GetClassName(), obj.Key), obj.Value, 0).Err()
+	return m.Set(context.TODO(), pairOfClass("User", obj.GetClassName(), obj.Key), obj.Value, 0).Err()
 }
 
 func (pipe *_MailboxPasswordOfUserUKRelationRedisPipeline) PairAdd(obj *MailboxPasswordOfUserUKRelation) error {
-	return pipe.Set(pairOfClass("User", obj.GetClassName(), obj.Key), obj.Value, 0).Err()
+	return pipe.Set(context.TODO(), pairOfClass("User", obj.GetClassName(), obj.Key), obj.Value, 0).Err()
 }
 
 func (m *_MailboxPasswordOfUserUKRelationRedisMgr) PairGet(key string) (*MailboxPasswordOfUserUKRelation, error) {
-	str, err := m.Get(pairOfClass("User", "MailboxPasswordOfUserUKRelation", key)).Result()
+	str, err := m.Get(context.TODO(), pairOfClass("User", "MailboxPasswordOfUserUKRelation", key)).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -2461,24 +2466,25 @@ func (m *_MailboxPasswordOfUserUKRelationRedisMgr) PairGet(key string) (*Mailbox
 }
 
 func (m *_MailboxPasswordOfUserUKRelationRedisMgr) PairRem(key string) error {
-	return m.Del(pairOfClass("User", "MailboxPasswordOfUserUKRelation", key)).Err()
+	return m.Del(context.TODO(), pairOfClass("User", "MailboxPasswordOfUserUKRelation", key)).Err()
 }
 
 func (pipe *_MailboxPasswordOfUserUKRelationRedisPipeline) PairRem(key string) error {
-	return pipe.Del(pairOfClass("User", "MailboxPasswordOfUserUKRelation", key)).Err()
+	return pipe.Del(context.TODO(), pairOfClass("User", "MailboxPasswordOfUserUKRelation", key)).Err()
 }
 
 func (m *_MailboxPasswordOfUserUKRelationRedisMgr) FindOne(key string) (string, error) {
-	return m.Get(pairOfClass("User", "MailboxPasswordOfUserUKRelation", key)).Result()
+	return m.Get(context.TODO(), pairOfClass("User", "MailboxPasswordOfUserUKRelation", key)).Result()
 }
 
 func (m *_MailboxPasswordOfUserUKRelationRedisMgr) Clear() error {
-	strs, err := m.Keys(pairOfClass("User", "MailboxPasswordOfUserUKRelation", "*")).Result()
+	ctx := context.TODO()
+	strs, err := m.Keys(ctx, pairOfClass("User", "MailboxPasswordOfUserUKRelation", "*")).Result()
 	if err != nil {
 		return err
 	}
 	if len(strs) > 0 {
-		return m.Del(strs...).Err()
+		return m.Del(ctx, strs...).Err()
 	}
 	return nil
 }
@@ -2523,11 +2529,11 @@ func (m *_SexOfUserIDXRelationRedisMgr) NewSexOfUserIDXRelation(key string) *Sex
 
 //! pipeline
 type _SexOfUserIDXRelationRedisPipeline struct {
-	*redis.Pipeline
+	redis.Pipeliner
 	Err error
 }
 
-func (m *_SexOfUserIDXRelationRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_SexOfUserIDXRelationRedisPipeline {
+func (m *_SexOfUserIDXRelationRedisMgr) BeginPipeline(pipes ...redis.Pipeliner) *_SexOfUserIDXRelationRedisPipeline {
 	if len(pipes) > 0 {
 		return &_SexOfUserIDXRelationRedisPipeline{pipes[0], nil}
 	}
@@ -2536,15 +2542,15 @@ func (m *_SexOfUserIDXRelationRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) 
 
 //! redis relation pair
 func (m *_SexOfUserIDXRelationRedisMgr) SetAdd(relation *SexOfUserIDXRelation) error {
-	return m.SAdd(setOfClass("User", "SexOfUserIDXRelation", relation.Key), relation.Value).Err()
+	return m.SAdd(context.TODO(), setOfClass("User", "SexOfUserIDXRelation", relation.Key), relation.Value).Err()
 }
 
 func (pipe *_SexOfUserIDXRelationRedisPipeline) SetAdd(relation *SexOfUserIDXRelation) error {
-	return pipe.SAdd(setOfClass("User", "SexOfUserIDXRelation", relation.Key), relation.Value).Err()
+	return pipe.SAdd(context.TODO(), setOfClass("User", "SexOfUserIDXRelation", relation.Key), relation.Value).Err()
 }
 
 func (m *_SexOfUserIDXRelationRedisMgr) SetGet(key string) ([]*SexOfUserIDXRelation, error) {
-	strs, err := m.SMembers(setOfClass("User", "SexOfUserIDXRelation", key)).Result()
+	strs, err := m.SMembers(context.TODO(), setOfClass("User", "SexOfUserIDXRelation", key)).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -2561,32 +2567,33 @@ func (m *_SexOfUserIDXRelationRedisMgr) SetGet(key string) ([]*SexOfUserIDXRelat
 }
 
 func (m *_SexOfUserIDXRelationRedisMgr) SetRem(relation *SexOfUserIDXRelation) error {
-	return m.SRem(setOfClass("User", "SexOfUserIDXRelation", relation.Key), relation.Value).Err()
+	return m.SRem(context.TODO(), setOfClass("User", "SexOfUserIDXRelation", relation.Key), relation.Value).Err()
 }
 
 func (pipe *_SexOfUserIDXRelationRedisPipeline) SetRem(relation *SexOfUserIDXRelation) error {
-	return pipe.SRem(setOfClass("User", "SexOfUserIDXRelation", relation.Key), relation.Value).Err()
+	return pipe.SRem(context.TODO(), setOfClass("User", "SexOfUserIDXRelation", relation.Key), relation.Value).Err()
 }
 
 func (m *_SexOfUserIDXRelationRedisMgr) SetDel(key string) error {
-	return m.Del(setOfClass("User", "SexOfUserIDXRelation", key)).Err()
+	return m.Del(context.TODO(), setOfClass("User", "SexOfUserIDXRelation", key)).Err()
 }
 
 func (pipe *_SexOfUserIDXRelationRedisPipeline) SetDel(key string) error {
-	return pipe.Del(setOfClass("User", "SexOfUserIDXRelation", key)).Err()
+	return pipe.Del(context.TODO(), setOfClass("User", "SexOfUserIDXRelation", key)).Err()
 }
 
 func (m *_SexOfUserIDXRelationRedisMgr) Find(key string) ([]string, error) {
-	return m.SMembers(setOfClass("User", "SexOfUserIDXRelation", key)).Result()
+	return m.SMembers(context.TODO(), setOfClass("User", "SexOfUserIDXRelation", key)).Result()
 }
 
 func (m *_SexOfUserIDXRelationRedisMgr) Clear() error {
-	strs, err := m.Keys(setOfClass("User", "SexOfUserIDXRelation", "*")).Result()
+	ctx := context.TODO()
+	strs, err := m.Keys(ctx, setOfClass("User", "SexOfUserIDXRelation", "*")).Result()
 	if err != nil {
 		return err
 	}
 	if len(strs) > 0 {
-		return m.Del(strs...).Err()
+		return m.Del(ctx, strs...).Err()
 	}
 	return nil
 }
@@ -2632,11 +2639,11 @@ func (m *_IdOfUserRNGRelationRedisMgr) NewIdOfUserRNGRelation(key string) *IdOfU
 
 //! pipeline
 type _IdOfUserRNGRelationRedisPipeline struct {
-	*redis.Pipeline
+	redis.Pipeliner
 	Err error
 }
 
-func (m *_IdOfUserRNGRelationRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_IdOfUserRNGRelationRedisPipeline {
+func (m *_IdOfUserRNGRelationRedisMgr) BeginPipeline(pipes ...redis.Pipeliner) *_IdOfUserRNGRelationRedisPipeline {
 	if len(pipes) > 0 {
 		return &_IdOfUserRNGRelationRedisPipeline{pipes[0], nil}
 	}
@@ -2645,15 +2652,15 @@ func (m *_IdOfUserRNGRelationRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *
 
 //! redis relation zset
 func (m *_IdOfUserRNGRelationRedisMgr) ZSetAdd(relation *IdOfUserRNGRelation) error {
-	return m.ZAdd(zsetOfClass("User", "IdOfUserRNGRelation", relation.Key), redis.Z{Score: relation.Score, Member: relation.Value}).Err()
+	return m.ZAdd(context.TODO(), zsetOfClass("User", "IdOfUserRNGRelation", relation.Key), &redis.Z{Score: relation.Score, Member: relation.Value}).Err()
 }
 
 func (pipe *_IdOfUserRNGRelationRedisPipeline) ZSetAdd(relation *IdOfUserRNGRelation) error {
-	return pipe.ZAdd(zsetOfClass("User", "IdOfUserRNGRelation", relation.Key), redis.Z{Score: relation.Score, Member: relation.Value}).Err()
+	return pipe.ZAdd(context.TODO(), zsetOfClass("User", "IdOfUserRNGRelation", relation.Key), &redis.Z{Score: relation.Score, Member: relation.Value}).Err()
 }
 
 func (m *_IdOfUserRNGRelationRedisMgr) ZSetRange(key string, min, max int64) ([]*IdOfUserRNGRelation, error) {
-	strs, err := m.ZRange(zsetOfClass("IdOfUserRNGRelation", key), min, max).Result()
+	strs, err := m.ZRange(context.TODO(), zsetOfClass("IdOfUserRNGRelation", key), min, max).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -2670,7 +2677,7 @@ func (m *_IdOfUserRNGRelationRedisMgr) ZSetRange(key string, min, max int64) ([]
 }
 
 func (m *_IdOfUserRNGRelationRedisMgr) ZSetRevertRange(key string, min, max int64) ([]*IdOfUserRNGRelation, error) {
-	strs, err := m.ZRevRange(zsetOfClass("IdOfUserRNGRelation", key), min, max).Result()
+	strs, err := m.ZRevRange(context.TODO(), zsetOfClass("IdOfUserRNGRelation", key), min, max).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -2687,36 +2694,37 @@ func (m *_IdOfUserRNGRelationRedisMgr) ZSetRevertRange(key string, min, max int6
 }
 
 func (m *_IdOfUserRNGRelationRedisMgr) ZSetRem(relation *IdOfUserRNGRelation) error {
-	return m.ZRem(zsetOfClass("User", "IdOfUserRNGRelation", relation.Key), relation.Value).Err()
+	return m.ZRem(context.TODO(), zsetOfClass("User", "IdOfUserRNGRelation", relation.Key), relation.Value).Err()
 }
 
 func (pipe *_IdOfUserRNGRelationRedisPipeline) ZSetRem(relation *IdOfUserRNGRelation) error {
-	return pipe.ZRem(zsetOfClass("User", "IdOfUserRNGRelation", relation.Key), relation.Value).Err()
+	return pipe.ZRem(context.TODO(), zsetOfClass("User", "IdOfUserRNGRelation", relation.Key), relation.Value).Err()
 }
 
 func (m *_IdOfUserRNGRelationRedisMgr) ZSetDel(key string) error {
-	return m.Del(setOfClass("User", "IdOfUserRNGRelation", key)).Err()
+	return m.Del(context.TODO(), setOfClass("User", "IdOfUserRNGRelation", key)).Err()
 }
 
 func (pipe *_IdOfUserRNGRelationRedisPipeline) ZSetDel(key string) error {
-	return pipe.Del(setOfClass("User", "IdOfUserRNGRelation", key)).Err()
+	return pipe.Del(context.TODO(), setOfClass("User", "IdOfUserRNGRelation", key)).Err()
 }
 
 func (m *_IdOfUserRNGRelationRedisMgr) Range(key string, min, max int64) ([]string, error) {
-	return m.ZRange(zsetOfClass("User", "IdOfUserRNGRelation", key), min, max).Result()
+	return m.ZRange(context.TODO(), zsetOfClass("User", "IdOfUserRNGRelation", key), min, max).Result()
 }
 
 func (m *_IdOfUserRNGRelationRedisMgr) RangeRevert(key string, min, max int64) ([]string, error) {
-	return m.ZRevRange(zsetOfClass("User", "IdOfUserRNGRelation", key), min, max).Result()
+	return m.ZRevRange(context.TODO(), zsetOfClass("User", "IdOfUserRNGRelation", key), min, max).Result()
 }
 
 func (m *_IdOfUserRNGRelationRedisMgr) Clear() error {
-	strs, err := m.Keys(zsetOfClass("User", "IdOfUserRNGRelation", "*")).Result()
+	ctx := context.TODO()
+	strs, err := m.Keys(ctx, zsetOfClass("User", "IdOfUserRNGRelation", "*")).Result()
 	if err != nil {
 		return err
 	}
 	if len(strs) > 0 {
-		return m.Del(strs...).Err()
+		return m.Del(ctx, strs...).Err()
 	}
 	return nil
 }
@@ -2760,11 +2768,11 @@ func (m *_AgeOfUserRNGRelationRedisMgr) NewAgeOfUserRNGRelation(key string) *Age
 
 //! pipeline
 type _AgeOfUserRNGRelationRedisPipeline struct {
-	*redis.Pipeline
+	redis.Pipeliner
 	Err error
 }
 
-func (m *_AgeOfUserRNGRelationRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) *_AgeOfUserRNGRelationRedisPipeline {
+func (m *_AgeOfUserRNGRelationRedisMgr) BeginPipeline(pipes ...redis.Pipeliner) *_AgeOfUserRNGRelationRedisPipeline {
 	if len(pipes) > 0 {
 		return &_AgeOfUserRNGRelationRedisPipeline{pipes[0], nil}
 	}
@@ -2773,15 +2781,15 @@ func (m *_AgeOfUserRNGRelationRedisMgr) BeginPipeline(pipes ...*redis.Pipeline) 
 
 //! redis relation zset
 func (m *_AgeOfUserRNGRelationRedisMgr) ZSetAdd(relation *AgeOfUserRNGRelation) error {
-	return m.ZAdd(zsetOfClass("User", "AgeOfUserRNGRelation", relation.Key), redis.Z{Score: relation.Score, Member: relation.Value}).Err()
+	return m.ZAdd(context.TODO(), zsetOfClass("User", "AgeOfUserRNGRelation", relation.Key), &redis.Z{Score: relation.Score, Member: relation.Value}).Err()
 }
 
 func (pipe *_AgeOfUserRNGRelationRedisPipeline) ZSetAdd(relation *AgeOfUserRNGRelation) error {
-	return pipe.ZAdd(zsetOfClass("User", "AgeOfUserRNGRelation", relation.Key), redis.Z{Score: relation.Score, Member: relation.Value}).Err()
+	return pipe.ZAdd(context.TODO(), zsetOfClass("User", "AgeOfUserRNGRelation", relation.Key), &redis.Z{Score: relation.Score, Member: relation.Value}).Err()
 }
 
 func (m *_AgeOfUserRNGRelationRedisMgr) ZSetRange(key string, min, max int64) ([]*AgeOfUserRNGRelation, error) {
-	strs, err := m.ZRange(zsetOfClass("AgeOfUserRNGRelation", key), min, max).Result()
+	strs, err := m.ZRange(context.TODO(), zsetOfClass("AgeOfUserRNGRelation", key), min, max).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -2798,7 +2806,7 @@ func (m *_AgeOfUserRNGRelationRedisMgr) ZSetRange(key string, min, max int64) ([
 }
 
 func (m *_AgeOfUserRNGRelationRedisMgr) ZSetRevertRange(key string, min, max int64) ([]*AgeOfUserRNGRelation, error) {
-	strs, err := m.ZRevRange(zsetOfClass("AgeOfUserRNGRelation", key), min, max).Result()
+	strs, err := m.ZRevRange(context.TODO(), zsetOfClass("AgeOfUserRNGRelation", key), min, max).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -2815,36 +2823,37 @@ func (m *_AgeOfUserRNGRelationRedisMgr) ZSetRevertRange(key string, min, max int
 }
 
 func (m *_AgeOfUserRNGRelationRedisMgr) ZSetRem(relation *AgeOfUserRNGRelation) error {
-	return m.ZRem(zsetOfClass("User", "AgeOfUserRNGRelation", relation.Key), relation.Value).Err()
+	return m.ZRem(context.TODO(), zsetOfClass("User", "AgeOfUserRNGRelation", relation.Key), relation.Value).Err()
 }
 
 func (pipe *_AgeOfUserRNGRelationRedisPipeline) ZSetRem(relation *AgeOfUserRNGRelation) error {
-	return pipe.ZRem(zsetOfClass("User", "AgeOfUserRNGRelation", relation.Key), relation.Value).Err()
+	return pipe.ZRem(context.TODO(), zsetOfClass("User", "AgeOfUserRNGRelation", relation.Key), relation.Value).Err()
 }
 
 func (m *_AgeOfUserRNGRelationRedisMgr) ZSetDel(key string) error {
-	return m.Del(setOfClass("User", "AgeOfUserRNGRelation", key)).Err()
+	return m.Del(context.TODO(), setOfClass("User", "AgeOfUserRNGRelation", key)).Err()
 }
 
 func (pipe *_AgeOfUserRNGRelationRedisPipeline) ZSetDel(key string) error {
-	return pipe.Del(setOfClass("User", "AgeOfUserRNGRelation", key)).Err()
+	return pipe.Del(context.TODO(), setOfClass("User", "AgeOfUserRNGRelation", key)).Err()
 }
 
 func (m *_AgeOfUserRNGRelationRedisMgr) Range(key string, min, max int64) ([]string, error) {
-	return m.ZRange(zsetOfClass("User", "AgeOfUserRNGRelation", key), min, max).Result()
+	return m.ZRange(context.TODO(), zsetOfClass("User", "AgeOfUserRNGRelation", key), min, max).Result()
 }
 
 func (m *_AgeOfUserRNGRelationRedisMgr) RangeRevert(key string, min, max int64) ([]string, error) {
-	return m.ZRevRange(zsetOfClass("User", "AgeOfUserRNGRelation", key), min, max).Result()
+	return m.ZRevRange(context.TODO(), zsetOfClass("User", "AgeOfUserRNGRelation", key), min, max).Result()
 }
 
 func (m *_AgeOfUserRNGRelationRedisMgr) Clear() error {
-	strs, err := m.Keys(zsetOfClass("User", "AgeOfUserRNGRelation", "*")).Result()
+	ctx := context.TODO()
+	strs, err := m.Keys(ctx, zsetOfClass("User", "AgeOfUserRNGRelation", "*")).Result()
 	if err != nil {
 		return err
 	}
 	if len(strs) > 0 {
-		return m.Del(strs...).Err()
+		return m.Del(ctx, strs...).Err()
 	}
 	return nil
 }

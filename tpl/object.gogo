@@ -21,7 +21,7 @@ import (
 	elastic "gopkg.in/olivere/elastic.v2"
 	{{- end}}
 	{{- if $obj.DbContains "redis"}}
-	redis "gopkg.in/redis.v5"
+	"github.com/go-redis/redis/v8"
 	{{- end}}
 )
 var (

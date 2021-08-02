@@ -1,9 +1,10 @@
 package orm
 
 import (
+	"context"
 	"fmt"
 
-	redis "gopkg.in/redis.v5"
+	"github.com/go-redis/redis/v8"
 )
 
 type RedisStore struct {
@@ -16,7 +17,7 @@ func NewRedisClient(host string, port int, password string, db int) (*RedisStore
 		Password: password,
 		DB:       db,
 	})
-	if err := client.Ping().Err(); err != nil {
+	if err := client.Ping(context.TODO()).Err(); err != nil {
 		return nil, err
 	}
 
@@ -25,7 +26,7 @@ func NewRedisClient(host string, port int, password string, db int) (*RedisStore
 
 func NewRedisClusterClient(opt *redis.ClusterOptions) (*RedisStore, error) {
 	client := redis.NewClusterClient(opt)
-	if err := client.Ping().Err(); err != nil {
+	if err := client.Ping(context.TODO()).Err(); err != nil {
 		return nil, err
 	}
 
@@ -34,7 +35,7 @@ func NewRedisClusterClient(opt *redis.ClusterOptions) (*RedisStore, error) {
 
 func NewRedisRingClient(opt *redis.RingOptions) (*RedisStore, error) {
 	client := redis.NewRing(opt)
-	if err := client.Ping().Err(); err != nil {
+	if err := client.Ping(context.TODO()).Err(); err != nil {
 		return nil, err
 	}
 
@@ -43,7 +44,7 @@ func NewRedisRingClient(opt *redis.RingOptions) (*RedisStore, error) {
 
 func NewRedisFailoverClient(failoverOpt *redis.FailoverOptions) (*RedisStore, error) {
 	client := redis.NewFailoverClient(failoverOpt)
-	if err := client.Ping().Err(); err != nil {
+	if err := client.Ping(context.TODO()).Err(); err != nil {
 		return nil, err
 	}
 

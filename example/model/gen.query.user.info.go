@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/ezbuy/redis-orm/orm"
 	"strings"
 	"time"
+
+	"github.com/ezbuy/redis-orm/orm"
 )
 
 var (

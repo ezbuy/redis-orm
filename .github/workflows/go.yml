@@ -12,7 +12,7 @@ jobs:
     name: Build & Test
     strategy:
       matrix:
-        go: [1.12,1.13,1.14,1.15,1.16]
+        go: [1.13,1.14,1.15,1.16]
 
     runs-on: ubuntu-latest
 
@@ -29,12 +29,22 @@ jobs:
           MYSQL_PASSWORD: ezbuyisthebest
           MYSQL_ROOT_PASSWORD: ezbuyisthebest
           MYSQL_DATABASE: testing
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
       redis:
-        image: redis
+        image: bitnami/redis
         ports:
           - 6379:6379
-        options: --entrypoint redis-server
+        env:
+          REDIS_PASSWORD: 123456
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
     - name: Check out code into the Go module directory
@@ -65,3 +75,4 @@ jobs:
         MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
         REDIS_HOST: redis
         REDIS_PORT: ${{ job.services.redis.ports[6379] }}
+        REDIS_AUTH: 123456

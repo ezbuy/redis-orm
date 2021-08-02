@@ -3,15 +3,15 @@
 {{$primaryField := $relation.PrimaryField}}
 //! redis relation pair
 func (m *_{{$relation.Name}}RedisMgr) PairAdd(obj *{{$relation.Name}}) error {
-	return m.Set(pairOfClass("{{$relation.Obj.Name}}", obj.GetClassName(), obj.Key), obj.Value, 0).Err()
+	return m.Set(context.TODO(), pairOfClass("{{$relation.Obj.Name}}", obj.GetClassName(), obj.Key), obj.Value, 0).Err()
 }
 
 func (pipe *_{{$relation.Name}}RedisPipeline) PairAdd(obj *{{$relation.Name}}) error {
-	return pipe.Set(pairOfClass("{{$relation.Obj.Name}}", obj.GetClassName(), obj.Key), obj.Value, 0).Err()
+	return pipe.Set(context.TODO(), pairOfClass("{{$relation.Obj.Name}}", obj.GetClassName(), obj.Key), obj.Value, 0).Err()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) PairGet(key string) (*{{$relation.Name}}, error) {
-	str, err := m.Get(pairOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Result()
+	str, err := m.Get(context.TODO(), pairOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -32,24 +32,25 @@ func (m *_{{$relation.Name}}RedisMgr) PairGet(key string) (*{{$relation.Name}}, 
 }
 
 func (m *_{{$relation.Name}}RedisMgr) PairRem(key string) error {
-	return m.Del(pairOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Err()
+	return m.Del(context.TODO(), pairOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Err()
 }
 
 func (pipe *_{{$relation.Name}}RedisPipeline) PairRem(key string) error {
-	return pipe.Del(pairOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Err()
+	return pipe.Del(context.TODO(), pairOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Err()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) FindOne(key string) (string, error) {
-	return m.Get(pairOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Result()
+	return m.Get(context.TODO(), pairOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Result()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) Clear() error {
-	strs, err := m.Keys(pairOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", "*")).Result()
+	ctx := context.TODO()
+	strs, err := m.Keys(ctx, pairOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", "*")).Result()
 	if err != nil {
 		return err
 	}
 	if len(strs) > 0 {
-		return m.Del(strs...).Err()
+		return m.Del(ctx, strs...).Err()
 	}
 	return nil
 }

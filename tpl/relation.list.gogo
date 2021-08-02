@@ -3,15 +3,15 @@
 {{$primaryField := $relation.PrimaryField}}
 //! redis relation list
 func (m *_{{$relation.Name}}RedisMgr) ListLPush(relation *{{$relation.Name}}) error {
-	return m.LPush(listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), relation.Value).Err()
+	return m.LPush(context.TODO(), listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), relation.Value).Err()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) ListRPush(relation *{{$relation.Name}}) error {
-	return m.RPush(listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), relation.Value).Err()
+	return m.RPush(context.TODO(), listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), relation.Value).Err()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) ListLPop(key string) (*{{$relation.Name}}, error) {
-	str, err := m.LPop(listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Result()
+	str, err := m.LPop(context.TODO(), listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func (m *_{{$relation.Name}}RedisMgr) ListLPop(key string) (*{{$relation.Name}},
 }
 
 func (m *_{{$relation.Name}}RedisMgr) ListRPop(key string) (*{{$relation.Name}}, error) {
-	str, err := m.RPop(listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Result()
+	str, err := m.RPop(context.TODO(), listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (m *_{{$relation.Name}}RedisMgr) ListRPop(key string) (*{{$relation.Name}},
 }
 
 func (m *_{{$relation.Name}}RedisMgr) ListLRange(key string, start, stop int64) ([]*{{$relation.Name}}, error) {
-	strs, err := m.LRange(listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key), start, stop).Result()
+	strs, err := m.LRange(context.TODO(), listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key), start, stop).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -80,24 +80,25 @@ func (m *_{{$relation.Name}}RedisMgr) ListLRange(key string, start, stop int64) 
 }
 
 func (m *_{{$relation.Name}}RedisMgr) ListLRem(relation *{{$relation.Name}}) error {
-	return m.LRem(listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), 0, relation.Value).Err()
+	return m.LRem(context.TODO(), listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), 0, relation.Value).Err()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) ListLLen(key string) (int64, error) {
-	return m.LLen(listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Result()
+	return m.LLen(context.TODO(), listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Result()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) ListLDel(key string) error {
-	return m.Del(listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Err()
+	return m.Del(context.TODO(), listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Err()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) Clear() error {
-	strs, err := m.Keys(listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", "*")).Result()
+	ctx := context.TODO()
+	strs, err := m.Keys(ctx, listOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", "*")).Result()
 	if err != nil {
 		return err
 	}
 	if len(strs) > 0 {
-		return m.Del(strs...).Err()
+		return m.Del(ctx, strs...).Err()
 	}
 	return nil
 }

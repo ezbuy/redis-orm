@@ -3,15 +3,15 @@
 {{$primaryField := $relation.PrimaryField}}
 //! redis relation zset
 func (m *_{{$relation.Name}}RedisMgr) ZSetAdd(relation *{{$relation.Name}}) error {
-	return m.ZAdd(zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), redis.Z{Score: relation.Score, Member: {{$relation.ValueField.GetTransformValue "relation."}}}).Err()
+	return m.ZAdd(context.TODO(), zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), &redis.Z{Score: relation.Score, Member: {{$relation.ValueField.GetTransformValue "relation."}}}).Err()
 }
 
 func (pipe *_{{$relation.Name}}RedisPipeline) ZSetAdd(relation *{{$relation.Name}}) error {
-	return pipe.ZAdd(zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), redis.Z{Score: relation.Score, Member: {{$relation.ValueField.GetTransformValue "relation."}}}).Err()
+	return pipe.ZAdd(context.TODO(), zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), &redis.Z{Score: relation.Score, Member: {{$relation.ValueField.GetTransformValue "relation."}}}).Err()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) ZSetRange(key string, min, max int64) ([]*{{$relation.Name}}, error) {
-	strs, err := m.ZRange(zsetOfClass("{{$relation.Name}}", key), min, max).Result()
+	strs, err := m.ZRange(context.TODO(), zsetOfClass("{{$relation.Name}}", key), min, max).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func (m *_{{$relation.Name}}RedisMgr) ZSetRange(key string, min, max int64) ([]*
 }
 
 func (m *_{{$relation.Name}}RedisMgr) ZSetRevertRange(key string, min, max int64) ([]*{{$relation.Name}}, error) {
-	strs, err := m.ZRevRange(zsetOfClass("{{$relation.Name}}", key), min, max).Result()
+	strs, err := m.ZRevRange(context.TODO(), zsetOfClass("{{$relation.Name}}", key), min, max).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -61,36 +61,37 @@ func (m *_{{$relation.Name}}RedisMgr) ZSetRevertRange(key string, min, max int64
 }
 
 func (m *_{{$relation.Name}}RedisMgr) ZSetRem(relation *{{$relation.Name}}) error {
-	return m.ZRem(zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), {{$relation.ValueField.GetTransformValue "relation."}}).Err()
+	return m.ZRem(context.TODO(), zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), {{$relation.ValueField.GetTransformValue "relation."}}).Err()
 }
 
 func (pipe *_{{$relation.Name}}RedisPipeline) ZSetRem(relation *{{$relation.Name}}) error {
-	return pipe.ZRem(zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), {{$relation.ValueField.GetTransformValue "relation."}}).Err()
+	return pipe.ZRem(context.TODO(), zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", relation.Key), {{$relation.ValueField.GetTransformValue "relation."}}).Err()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) ZSetDel(key string) error {
-	return m.Del(setOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Err()
+	return m.Del(context.TODO(), setOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Err()
 }
 
 func (pipe *_{{$relation.Name}}RedisPipeline) ZSetDel(key string) error {
-	return pipe.Del(setOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Err()
+	return pipe.Del(context.TODO(), setOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key)).Err()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) Range(key string, min, max int64) ([]string, error) {
-	return m.ZRange(zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key), min, max).Result()
+	return m.ZRange(context.TODO(), zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key), min, max).Result()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) RangeRevert(key string, min, max int64) ([]string, error) {
-	return m.ZRevRange(zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key), min, max).Result()
+	return m.ZRevRange(context.TODO(), zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", key), min, max).Result()
 }
 
 func (m *_{{$relation.Name}}RedisMgr) Clear() error {
-	strs, err := m.Keys(zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", "*")).Result()
+	ctx := context.TODO()
+	strs, err := m.Keys(ctx, zsetOfClass("{{$relation.Obj.Name}}", "{{$relation.Name}}", "*")).Result()
 	if err != nil {
 		return err
 	}
 	if len(strs) > 0 {
-		return m.Del(strs...).Err()
+		return m.Del(ctx, strs...).Err()
 	}
 	return nil
 }
