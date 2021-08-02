@@ -154,7 +154,7 @@ func (m *_{{$obj.Name}}RedisMgr) Fetch(pk PrimaryKey) (*{{$obj.Name}}, error) {
 func (m *_{{$obj.Name}}RedisMgr) FetchByKey(key string) (*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 
-    ctx := context.Background()
+	ctx := context.Background()
 	pipe := m.BeginPipeline()
 	pipe.Exists(ctx, key)
 	pipe.HMGet(ctx, key,
