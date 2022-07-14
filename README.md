@@ -4,6 +4,11 @@
 
 redis-orm fly orm up 
 
+## Important NOTE
+
+redis-orm is not maintained anymore , try to use the [ezorm's mysqlr](https://github.com/ezbuy/ezorm/blob/main/doc/schema/yaml_mysqlr.md) driver instead.
+
+
 ## features
 
 ## quick start
