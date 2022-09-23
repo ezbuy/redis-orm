@@ -1773,7 +1773,7 @@ func (m *_UserRedisMgr) Fetch(pk PrimaryKey) (*User, error) {
 func (m *_UserRedisMgr) FetchByKey(key string) (*User, error) {
 	obj := UserMgr.NewUser()
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	pipe := m.BeginPipeline()
 	pipe.Exists(ctx, key)
 	pipe.HMGet(ctx, key,
@@ -1914,10 +1914,14 @@ func (m *_UserRedisMgr) FetchByKey(key string) (*User, error) {
 }
 
 func (m *_UserRedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*User, error) {
+	if len(pks) == 0 {
+		return nil, orm.ErrPrimaryKeysIsEmpty
+	}
+
 	objs := make([]*User, 0, len(pks))
 	pipe := m.BeginPipeline()
 	obj := UserMgr.NewUser()
-	ctx := context.Background()
+	ctx := context.TODO()
 	for _, pk := range pks {
 		key := pk.Key()
 		pipe.Exists(ctx, keyOfObject(obj, key))
@@ -2217,7 +2221,7 @@ func (m *_UserRedisMgr) Delete(obj *User) error {
 		return err
 	}
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	if err := pipe.Del(ctx, keyOfObject(obj, pk.Key())).Err(); err != nil {
 		return err
 	}
@@ -2262,7 +2266,7 @@ func (m *_UserRedisMgr) SaveWithExpire(obj *User, expire time.Duration) error {
 			pipe.Close()
 			return err
 		}
-		if _, err = pipe.Exec(context.Background()); err != nil {
+		if _, err = pipe.Exec(context.TODO()); err != nil {
 			pipe.Close()
 			return err
 		}
@@ -2271,7 +2275,7 @@ func (m *_UserRedisMgr) SaveWithExpire(obj *User, expire time.Duration) error {
 }
 
 func (m *_UserRedisMgr) addToPipeline(pipe *_UserRedisPipeline, obj *User, expire time.Duration) error {
-	ctx := context.Background()
+	ctx := context.TODO()
 	pk := obj.GetPrimaryKey()
 	key := pk.Key()
 	//! fields

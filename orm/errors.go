@@ -2,6 +2,7 @@ package orm
 
 import (
 	"database/sql"
+	"errors"
 	"strings"
 )
 
@@ -10,3 +11,7 @@ import (
 func IsErrNotFound(err error) bool {
 	return strings.Contains(err.Error(), "not found") || err == sql.ErrNoRows
 }
+
+var (
+    ErrPrimaryKeysIsEmpty = errors.New("redis-orm: provided primary keys are empty")
+)

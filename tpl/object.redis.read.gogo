@@ -154,7 +154,7 @@ func (m *_{{$obj.Name}}RedisMgr) Fetch(pk PrimaryKey) (*{{$obj.Name}}, error) {
 func (m *_{{$obj.Name}}RedisMgr) FetchByKey(key string) (*{{$obj.Name}}, error) {
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	pipe := m.BeginPipeline()
 	pipe.Exists(ctx, key)
 	pipe.HMGet(ctx, key,
@@ -214,10 +214,14 @@ func (m *_{{$obj.Name}}RedisMgr) FetchByKey(key string) (*{{$obj.Name}}, error) 
 }
 
 func (m *_{{$obj.Name}}RedisMgr) FetchByPrimaryKeys(pks []PrimaryKey) ([]*{{$obj.Name}}, error) {
+	if len(pks) == 0 {
+		return nil, orm.ErrPrimaryKeysIsEmpty
+	}
+
 	objs := make([]*{{$obj.Name}}, 0, len(pks))
 	pipe := m.BeginPipeline()
 	obj := {{$obj.Name}}Mgr.New{{$obj.Name}}()
-	ctx := context.Background()
+	ctx := context.TODO()
 	for _, pk := range pks {
 		key := pk.Key()
 		pipe.Exists(ctx, keyOfObject(obj, key))

@@ -92,7 +92,7 @@ func (m *_{{$obj.Name}}RedisMgr) Delete(obj *{{$obj.Name}}) error {
 	}
 	{{- end}}
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	if err := pipe.Del(ctx, keyOfObject(obj, pk.Key())).Err(); err != nil {
 		return err
 	}
@@ -139,7 +139,7 @@ func (m *_{{$obj.Name}}RedisMgr) SaveWithExpire(obj *{{$obj.Name}}, expire time.
 			pipe.Close()
 			return err
 		}
-		if _, err = pipe.Exec(context.Background()); err != nil {
+		if _, err = pipe.Exec(context.TODO()); err != nil {
 			pipe.Close()
 			return err
 		}
@@ -148,7 +148,7 @@ func (m *_{{$obj.Name}}RedisMgr) SaveWithExpire(obj *{{$obj.Name}}, expire time.
 }
 
 func (m *_{{$obj.Name}}RedisMgr) addToPipeline(pipe * _{{$obj.Name}}RedisPipeline, obj *{{$obj.Name}}, expire time.Duration) error {
-	ctx := context.Background()
+	ctx := context.TODO()
 	pk := obj.GetPrimaryKey()
 	key := pk.Key()
 	//! fields
